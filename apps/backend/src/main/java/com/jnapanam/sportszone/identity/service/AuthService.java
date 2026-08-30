@@ -1,0 +1,57 @@
+package com.jnapanam.sportszone.identity.service;
+
+import com.jnapanam.sportszone.common.exception.*;
+import com.jnapanam.sportszone.identity.dto.*;
+import com.jnapanam.sportszone.identity.model.*;
+import com.jnapanam.sportszone.identity.repository.*;
+import com.jnapanam.sportszone.security.TokenService;
+import java.util.Locale;
+import org.springframework.security.authentication.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class AuthService {
+    private final UserRepository users; private final RoleRepository roles; private final RefreshTokenRepository refreshTokens;
+    private final PasswordEncoder passwordEncoder; private final AuthenticationManager authenticationManager; private final TokenService tokens;
+    public AuthService(UserRepository users, RoleRepository roles, RefreshTokenRepository refreshTokens, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokens) {
+        this.users=users; this.roles=roles; this.refreshTokens=refreshTokens; this.passwordEncoder=passwordEncoder; this.authenticationManager=authenticationManager; this.tokens=tokens;
+    }
+
+    @Transactional
+    public TokenResponse register(RegisterRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        if (users.existsByEmailIgnoreCase(email)) throw new ConflictException("An account already exists for this email");
+        String mobile = request.mobile() == null || request.mobile().isBlank() ? null : request.mobile().replaceAll("[ -]", "");
+        if (mobile != null && users.existsByMobile(mobile)) throw new ConflictException("An account already exists for this mobile number");
+        Role customer = roles.findByName(RoleName.CUSTOMER).orElseThrow(() -> new IllegalStateException("CUSTOMER role is missing"));
+        User user = users.save(new User(request.fullName().trim(), email, mobile, passwordEncoder.encode(request.password()), customer));
+        return issueTokens(user);
+    }
+
+    @Transactional
+    public TokenResponse login(LoginRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
+        User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+        return issueTokens(user);
+    }
+
+    @Transactional
+    public TokenResponse refresh(RefreshRequest request) {
+        RefreshToken stored = refreshTokens.findByTokenHash(tokens.hash(request.refreshToken())).orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+        if (!stored.isUsable() || !stored.getUser().isActive()) throw new UnauthorizedException("Refresh token expired or revoked");
+        stored.revoke();
+        return issueTokens(stored.getUser());
+    }
+
+    @Transactional
+    public void logout(RefreshRequest request) { refreshTokens.findByTokenHash(tokens.hash(request.refreshToken())).ifPresent(RefreshToken::revoke); }
+
+    private TokenResponse issueTokens(User user) {
+        String rawRefresh = tokens.newRefreshToken();
+        refreshTokens.save(new RefreshToken(user, tokens.hash(rawRefresh), tokens.refreshExpiry()));
+        return tokens.response(tokens.createAccessToken(user), rawRefresh);
+    }
+}

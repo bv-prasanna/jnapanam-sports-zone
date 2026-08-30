@@ -1,0 +1,7 @@
+target/
+.idea/
+.vscode/
+.env
+*.iml
+*.log
+startup-error*.txt
