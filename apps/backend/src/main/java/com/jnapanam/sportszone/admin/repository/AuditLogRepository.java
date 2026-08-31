@@ -1,1 +1,10 @@
-package com.jnapanam.sportszone.admin.repository;import com.jnapanam.sportszone.admin.model.AuditLog;import java.util.*;import org.springframework.data.domain.Pageable;import org.springframework.data.jpa.repository.JpaRepository;public interface AuditLogRepository extends JpaRepository<AuditLog,UUID>{List<AuditLog>findAllByOrderByOccurredAtDesc(Pageable p);}
+package com.jnapanam.sportszone.admin.repository;
+
+import com.jnapanam.sportszone.admin.model.AuditLog;
+import java.util.*;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
+    List<AuditLog> findAllByOrderByOccurredAtDesc(Pageable pageable);
+}

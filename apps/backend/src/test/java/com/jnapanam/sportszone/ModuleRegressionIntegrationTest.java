@@ -406,6 +406,36 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isConflict());
     }
 
+    @Test
+    void adminUsesDetailedReportsCsvExportsAndSearchableImmutableAudit() throws Exception {
+        String adminEmail=uniqueEmail("audit-report-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String code="REPORT_"+UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        MvcResult mutation=mvc.perform(post("/api/v1/admin/catalog/sports")
+                        .header("Authorization",bearer(adminToken)).header("X-Correlation-ID","module12-test-correlation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\""+code+"\",\"name\":\"Report Test Sport\",\"displayOrder\":700}"))
+                .andExpect(status().isCreated()).andExpect(header().string("X-Correlation-ID","module12-test-correlation")).andReturn();
+        field(mutation,ID);
+
+        mvc.perform(get("/api/v1/admin/reports/utilization").header("Authorization",bearer(adminToken))).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/admin/reports/customers").header("Authorization",bearer(adminToken))).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/admin/reports/training").header("Authorization",bearer(adminToken))).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/admin/reports/tournaments").header("Authorization",bearer(adminToken))).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/admin/reports/customers/export").param("format","csv").header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith("text/csv"))
+                .andExpect(header().string("Content-Disposition",containsString("customers-report.csv")));
+        mvc.perform(get("/api/v1/admin/reports/customers/export").param("format","pdf").header("Authorization",bearer(adminToken)))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(get("/api/v1/admin/audit-logs/search").param("resourceType","CATALOG").param("successful","true")
+                        .header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[*].resource_type",hasItem("CATALOG")))
+                .andExpect(jsonPath("$[*].correlation_id",hasItem("module12-test-correlation")));
+
+        String auditId=jdbc.queryForObject("SELECT id::text FROM audit_logs WHERE correlation_id='module12-test-correlation' ORDER BY occurred_at DESC LIMIT 1",String.class);
+        Assertions.assertThrows(Exception.class,()->jdbc.update("DELETE FROM audit_logs WHERE id=?::uuid",auditId));
+    }
+
     private TokenPair register(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(registerBody(email)))
                 .andExpect(status().isCreated()).andReturn();

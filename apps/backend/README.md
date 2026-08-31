@@ -1,4 +1,16 @@
-# Jnapanam Sports Zone Backend — Modules 01 through 05
+# Jnapanam Sports Zone Backend — Modules 01 through 12
+
+This package is the complete backend through Module 12. See `MODULE-06.md` through
+`MODULE-12.md` for the later module capabilities and API details.
+
+## Module 12 — Reports, Audit and Stabilization
+
+- Operational, revenue, booking, membership, utilization, customer, training and tournament reports
+- CSV export endpoints for Admin/Ops
+- Searchable, correlation-aware audit history
+- Authentication and administrative mutation auditing
+- Database-enforced immutable audit records
+- Complete regression suite covering Modules 01–12
 
 This full replacement backend contains the completed identity foundation plus configurable sports, facilities and schedules.
 
