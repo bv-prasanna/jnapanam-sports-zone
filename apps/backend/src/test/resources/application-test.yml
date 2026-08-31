@@ -12,6 +12,8 @@ spring:
     enabled: true
 
 app:
+  booking:
+    hold-minutes: 10
   security:
     jwt-secret: Sm5hcGFuYW0gU3BvcnRzIFpvbmUgQXV0b21hdGVkIFRlc3QgSldUIFNlY3JldCE=
     access-token-minutes: 60
@@ -19,4 +21,3 @@ app:
   cors:
     allowed-origins:
       - http://localhost:3000
-

@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: "jdbc:tc:postgresql:17-alpine:///jnapanam_test"
+    username: test
+    password: test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+app:
+  security:
+    jwt-secret: Sm5hcGFuYW0gU3BvcnRzIFpvbmUgQXV0b21hdGVkIFRlc3QgSldUIFNlY3JldCE=
+    access-token-minutes: 60
+    refresh-token-days: 1
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+

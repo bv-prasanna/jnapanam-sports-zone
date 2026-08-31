@@ -1,6 +1,39 @@
-# Jnapanam Sports Zone Backend — Modules 01 and 02
+# Jnapanam Sports Zone Backend — Modules 01, 02 and 03
 
 This full replacement backend contains the completed identity foundation plus configurable sports, facilities and schedules.
+
+## Module 03 capabilities
+
+- Generates bookable slots from each facility's weekly hours and date overrides
+- Returns live remaining capacity for every slot
+- Creates configurable 10-minute capacity holds before confirmation
+- Uses PostgreSQL row locks to prevent overbooking under concurrent requests
+- Confirms holds into bookings with human-readable booking numbers
+- Releases holds and automatically cleans expired holds
+- Supports customer booking history and cancellation with capacity restoration
+- Provides date-filtered admin booking visibility
+
+## Module 03 APIs
+
+- `GET /api/v1/public/facilities/{facilityId}/slots?date=2026-09-15`
+- `POST /api/v1/bookings/holds`
+- `DELETE /api/v1/bookings/holds/{holdId}`
+- `POST /api/v1/bookings/confirm`
+- `GET /api/v1/bookings/me`
+- `POST /api/v1/bookings/{bookingId}/cancel`
+- `GET /api/v1/admin/bookings?date=2026-09-15`
+
+Hold request:
+
+```json
+{"slotId":"00000000-0000-0000-0000-000000000000","quantity":1}
+```
+
+Confirmation request:
+
+```json
+{"holdId":"00000000-0000-0000-0000-000000000000"}
+```
 
 ## Module 02 capabilities
 
@@ -96,5 +129,6 @@ The suite automatically starts a disposable PostgreSQL 17 container, applies eve
 - Admin sport creation, suspension and reactivation
 - Facility creation, operating hours, closures and schedule overrides
 - Public facility and schedule retrieval
+- Slot generation, capacity holds, overbooking rejection, confirmation and cancellation
 
 The disposable test database is removed automatically and does not modify the local development database. Test reports are written to `target/surefire-reports`.

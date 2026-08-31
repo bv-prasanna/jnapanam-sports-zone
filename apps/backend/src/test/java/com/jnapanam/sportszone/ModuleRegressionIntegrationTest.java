@@ -142,6 +142,48 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(jsonPath("$.overrides", hasSize(1)));
     }
 
+    @Test
+    void customerGeneratesHoldsConfirmsAndCancelsBooking() throws Exception {
+        String adminEmail = uniqueEmail("booking-admin");
+        register(adminEmail); promote(adminEmail, "ADMIN");
+        String adminToken = login(adminEmail, "Test@12345").accessToken();
+        String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String sportCode = "BOOK_" + suffix;
+        mvc.perform(post("/api/v1/admin/catalog/sports").header("Authorization", bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"" + sportCode + "\",\"name\":\"Booking Test Sport\",\"description\":\"Automated\",\"iconKey\":\"test\",\"displayOrder\":99}"))
+                .andExpect(status().isCreated());
+        MvcResult facilityResult = mvc.perform(post("/api/v1/admin/catalog/facilities").header("Authorization", bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"BF_" + suffix + "\",\"sportCode\":\"" + sportCode + "\",\"name\":\"Booking Court\",\"slotDurationMinutes\":60,\"capacity\":2}"))
+                .andExpect(status().isCreated()).andReturn();
+        String facilityId = field(facilityResult, ID);
+        java.time.LocalDate bookingDate = java.time.LocalDate.now().plusDays(14);
+        while (bookingDate.getDayOfWeek() != java.time.DayOfWeek.MONDAY) bookingDate = bookingDate.plusDays(1);
+        mvc.perform(put("/api/v1/admin/catalog/facilities/{id}/operating-hours", facilityId).header("Authorization", bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dayOfWeek\":\"MONDAY\",\"openTime\":\"06:00:00\",\"closeTime\":\"08:00:00\",\"closed\":false}"))
+                .andExpect(status().isOk());
+        MvcResult slotResult = mvc.perform(get("/api/v1/public/facilities/{id}/slots", facilityId).param("date", bookingDate.toString()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2))).andExpect(jsonPath("$[0].available").value(2)).andReturn();
+        String slotId = field(slotResult, ID);
+        TokenPair customer = register(uniqueEmail("booking-customer"));
+        MvcResult holdResult = mvc.perform(post("/api/v1/bookings/holds").header("Authorization", bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"slotId\":\"" + slotId + "\",\"quantity\":2}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("ACTIVE")).andReturn();
+        String holdId = field(holdResult, ID);
+        mvc.perform(post("/api/v1/bookings/holds").header("Authorization", bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"slotId\":\"" + slotId + "\",\"quantity\":1}"))
+                .andExpect(status().isConflict());
+        MvcResult bookingResult = mvc.perform(post("/api/v1/bookings/confirm").header("Authorization", bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"holdId\":\"" + holdId + "\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CONFIRMED")).andReturn();
+        String bookingId = field(bookingResult, ID);
+        mvc.perform(get("/api/v1/bookings/me").header("Authorization", bearer(customer.accessToken())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(bookingId));
+        mvc.perform(post("/api/v1/bookings/{id}/cancel", bookingId).header("Authorization", bearer(customer.accessToken())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+        mvc.perform(get("/api/v1/public/facilities/{id}/slots", facilityId).param("date", bookingDate.toString()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].available").value(2));
+    }
+
     private TokenPair register(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(registerBody(email)))
                 .andExpect(status().isCreated()).andReturn();
