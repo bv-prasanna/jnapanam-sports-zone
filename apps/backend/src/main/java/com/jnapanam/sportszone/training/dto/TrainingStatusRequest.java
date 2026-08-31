@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.training.dto;import com.jnapanam.sportszone.training.model.TrainingStatus;import jakarta.validation.constraints.NotNull;public record TrainingStatusRequest(@NotNull TrainingStatus status){}

@@ -1,6 +1,26 @@
-# Jnapanam Sports Zone Backend — Modules 01 through 04
+# Jnapanam Sports Zone Backend — Modules 01 through 05
 
 This full replacement backend contains the completed identity foundation plus configurable sports, facilities and schedules.
+
+## Module 05 — Training & Coaching
+
+- Configurable sport-specific training programs, levels and age ranges
+- Batches mapped to facilities, coaches, dates, times and recurring weekdays
+- Capacity and fee configuration with concurrency-safe enrollment
+- Customer enrollment history and cancellation
+- Duplicate, age-range and full-batch rejection
+- Admin/coach participant rosters and session attendance
+- Program and batch activation, completion and cancellation statuses
+
+### Training APIs
+
+- `GET /api/v1/public/training/programs`
+- `GET /api/v1/public/training/batches`
+- `POST /api/v1/training/batches/{id}/enrollments`
+- `GET /api/v1/training/enrollments/me`
+- `POST /api/v1/training/enrollments/{id}/cancel`
+- `/api/v1/admin/training/**` for program and batch management
+- `/api/v1/coaching/**` for participant rosters and attendance
 
 ## Module 04 — Memberships
 
@@ -155,5 +175,6 @@ The suite automatically starts a disposable PostgreSQL 17 container, applies eve
 - Public facility and schedule retrieval
 - Slot generation, capacity holds, overbooking rejection, confirmation and cancellation
 - Membership plan, subscription, activation, duplicate prevention and cancellation lifecycle
+- Training program, coach/batch configuration, enrollment, capacity, attendance and cancellation
 
 The disposable test database is removed automatically and does not modify the local development database. Test reports are written to `target/surefire-reports`.

@@ -207,6 +207,30 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("INACTIVE"));
     }
 
+    @Test
+    void adminCreatesTrainingAndCustomerEnrollsAttendsAndCancels() throws Exception {
+        String adminEmail=uniqueEmail("training-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String coachEmail=uniqueEmail("coach");register(coachEmail);promote(coachEmail,"COACH");
+        String suffix=UUID.randomUUID().toString().substring(0,8).toUpperCase();String facilityCode="TRAIN_"+suffix;
+        mvc.perform(post("/api/v1/admin/catalog/facilities").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"code\":\""+facilityCode+"\",\"sportCode\":\"SWIMMING\",\"name\":\"Training Pool\",\"slotDurationMinutes\":60,\"capacity\":20}"))
+                .andExpect(status().isCreated());
+        String programCode="PROG_"+suffix;
+        mvc.perform(post("/api/v1/admin/training/programs").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"code\":\""+programCode+"\",\"sportCode\":\"SWIMMING\",\"name\":\"Junior Swimming\",\"description\":\"Beginner camp\",\"minAge\":8,\"maxAge\":14,\"level\":\"BEGINNER\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("ACTIVE"));
+        java.time.LocalDate start=java.time.LocalDate.now().plusDays(14);while(start.getDayOfWeek()!=java.time.DayOfWeek.MONDAY)start=start.plusDays(1);java.time.LocalDate end=start.plusDays(28);
+        MvcResult batch=mvc.perform(post("/api/v1/admin/training/batches").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"programCode\":\""+programCode+"\",\"facilityCode\":\""+facilityCode+"\",\"coachEmail\":\""+coachEmail+"\",\"name\":\"Morning Batch\",\"startDate\":\""+start+"\",\"endDate\":\""+end+"\",\"startTime\":\"07:00:00\",\"endTime\":\"08:00:00\",\"daysOfWeek\":[\"MONDAY\"],\"capacity\":1,\"fee\":1500.00}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.available").value(1)).andExpect(jsonPath("$.coachName").value("Automation User")).andReturn();
+        String batchId=field(batch,ID);TokenPair customer=register(uniqueEmail("trainee"));
+        MvcResult enrollment=mvc.perform(post("/api/v1/training/batches/{id}/enrollments",batchId).header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"participantName\":\"Junior Test\",\"participantAge\":10}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("ENROLLED")).andReturn();String enrollmentId=field(enrollment,ID);
+        mvc.perform(post("/api/v1/training/batches/{id}/enrollments",batchId).header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"participantName\":\"Junior Test\",\"participantAge\":10}"))
+                .andExpect(status().isConflict());
+        mvc.perform(get("/api/v1/admin/training/batches/{id}/participants",batchId).header("Authorization",bearer(adminToken))).andExpect(status().isOk()).andExpect(jsonPath("$",hasSize(1)));
+        mvc.perform(put("/api/v1/admin/training/enrollments/{id}/attendance",enrollmentId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"sessionDate\":\""+start+"\",\"present\":true}")).andExpect(status().isNoContent());
+        mvc.perform(post("/api/v1/training/enrollments/{id}/cancel",enrollmentId).header("Authorization",bearer(customer.accessToken()))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+        mvc.perform(get("/api/v1/public/training/batches")).andExpect(status().isOk()).andExpect(jsonPath("$[*].id",hasItem(batchId))).andExpect(jsonPath("$[0].available").value(1));
+    }
+
     private TokenPair register(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(registerBody(email)))
                 .andExpect(status().isCreated()).andReturn();

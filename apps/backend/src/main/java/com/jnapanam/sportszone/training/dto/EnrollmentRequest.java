@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.training.dto;import jakarta.validation.constraints.*;public record EnrollmentRequest(@NotBlank@Size(max=120)String participantName,@Min(3)@Max(100)int participantAge){}
