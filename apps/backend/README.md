@@ -1,6 +1,30 @@
-# Jnapanam Sports Zone Backend — Modules 01, 02 and 03
+# Jnapanam Sports Zone Backend — Modules 01 through 04
 
 This full replacement backend contains the completed identity foundation plus configurable sports, facilities and schedules.
+
+## Module 04 — Memberships
+
+- Configurable plans with duration, price and daily/monthly booking limits
+- Any plan can include one or more configured sports
+- Public listing exposes active plans only
+- Customer subscription starts as `PENDING_PAYMENT`
+- Admin manual activation supports development before Module 06 payment integration
+- Activation calculates the inclusive membership end date
+- Suspension, reactivation, cancellation and automatic expiry
+- Duplicate open subscriptions are rejected
+- Customer membership history and admin subscription listing
+
+### Membership APIs
+
+- `GET /api/v1/public/membership-plans`
+- `POST /api/v1/memberships`
+- `GET /api/v1/memberships/me`
+- `POST /api/v1/memberships/{id}/cancel`
+- `GET/POST /api/v1/admin/memberships/plans`
+- `PUT /api/v1/admin/memberships/plans/{id}`
+- `PATCH /api/v1/admin/memberships/plans/{id}/status`
+- `GET /api/v1/admin/memberships`
+- `PATCH /api/v1/admin/memberships/{id}/status`
 
 ## Module 03 capabilities
 
@@ -130,5 +154,6 @@ The suite automatically starts a disposable PostgreSQL 17 container, applies eve
 - Facility creation, operating hours, closures and schedule overrides
 - Public facility and schedule retrieval
 - Slot generation, capacity holds, overbooking rejection, confirmation and cancellation
+- Membership plan, subscription, activation, duplicate prevention and cancellation lifecycle
 
 The disposable test database is removed automatically and does not modify the local development database. Test reports are written to `target/surefire-reports`.

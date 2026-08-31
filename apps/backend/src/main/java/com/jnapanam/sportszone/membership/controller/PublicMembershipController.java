@@ -1,0 +1,2 @@
+package com.jnapanam.sportszone.membership.controller; import com.jnapanam.sportszone.membership.dto.MembershipPlanResponse; import com.jnapanam.sportszone.membership.service.MembershipService; import java.util.*; import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/api/v1/public/membership-plans") public class PublicMembershipController{private final MembershipService service;public PublicMembershipController(MembershipService s){service=s;}@GetMapping public List<MembershipPlanResponse> plans(){return service.publicPlans();}}

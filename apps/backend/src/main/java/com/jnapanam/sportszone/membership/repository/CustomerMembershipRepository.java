@@ -1,0 +1,2 @@
+package com.jnapanam.sportszone.membership.repository; import com.jnapanam.sportszone.membership.model.*; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository;
+public interface CustomerMembershipRepository extends JpaRepository<CustomerMembership,UUID>{List<CustomerMembership> findByUserIdOrderBySubscribedAtDesc(UUID userId);List<CustomerMembership> findAllByOrderBySubscribedAtDesc();boolean existsByUserIdAndPlanIdAndStatusIn(UUID userId,UUID planId,Collection<MembershipStatus> statuses);}

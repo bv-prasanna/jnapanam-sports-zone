@@ -1,0 +1,2 @@
+package com.jnapanam.sportszone.membership.dto; import jakarta.validation.constraints.*; import java.math.BigDecimal; import java.util.Set;
+public record MembershipPlanRequest(@NotBlank @Pattern(regexp="[A-Za-z0-9_-]{2,40}") String code,@NotBlank @Size(max=120) String name,@Size(max=600) String description,@Min(1) @Max(3650) int durationDays,@NotNull @DecimalMin("0.00") BigDecimal price,@Min(1) Integer dailyBookingLimit,@Min(1) Integer monthlyBookingLimit,@NotEmpty Set<String> sportCodes){}

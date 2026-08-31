@@ -184,6 +184,29 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].available").value(2));
     }
 
+    @Test
+    void adminCreatesPlanAndCustomerCompletesMembershipLifecycle() throws Exception {
+        String adminEmail=uniqueEmail("membership-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String code="MEM_"+UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        MvcResult plan=mvc.perform(post("/api/v1/admin/memberships/plans").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\""+code+"\",\"name\":\"Family Fitness\",\"description\":\"Test plan\",\"durationDays\":30,\"price\":999.00,\"dailyBookingLimit\":2,\"monthlyBookingLimit\":20,\"sportCodes\":[\"SWIMMING\",\"GYM\"]}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("ACTIVE")).andExpect(jsonPath("$.sportCodes",hasItems("SWIMMING","GYM"))).andReturn();
+        String planId=field(plan,ID);
+        mvc.perform(get("/api/v1/public/membership-plans")).andExpect(status().isOk()).andExpect(jsonPath("$[*].code",hasItem(code)));
+        TokenPair customer=register(uniqueEmail("member"));
+        MvcResult subscribed=mvc.perform(post("/api/v1/memberships").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"planCode\":\""+code+"\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING_PAYMENT")).andReturn();
+        String membershipId=field(subscribed,ID);
+        mvc.perform(post("/api/v1/memberships").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"planCode\":\""+code+"\"}"))
+                .andExpect(status().isConflict());
+        mvc.perform(patch("/api/v1/admin/memberships/{id}/status",membershipId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ACTIVE\",\"startDate\":\"2030-01-01\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.endDate").value("2030-01-30"));
+        mvc.perform(get("/api/v1/memberships/me").header("Authorization",bearer(customer.accessToken()))).andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("ACTIVE"));
+        mvc.perform(post("/api/v1/memberships/{id}/cancel",membershipId).header("Authorization",bearer(customer.accessToken()))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+        mvc.perform(patch("/api/v1/admin/memberships/plans/{id}/status",planId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INACTIVE\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("INACTIVE"));
+    }
+
     private TokenPair register(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(registerBody(email)))
                 .andExpect(status().isCreated()).andReturn();

@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.membership.dto; import com.jnapanam.sportszone.membership.model.MembershipPlanStatus; import jakarta.validation.constraints.NotNull; public record PlanStatusRequest(@NotNull MembershipPlanStatus status){}
