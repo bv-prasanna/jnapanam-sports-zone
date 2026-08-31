@@ -176,8 +176,11 @@ class ModuleRegressionIntegrationTest {
                         .content("{\"holdId\":\"" + holdId + "\"}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CONFIRMED")).andReturn();
         String bookingId = field(bookingResult, ID);
+        String bookingNumber=field(bookingResult,Pattern.compile("\\\"bookingNumber\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""));
         mvc.perform(get("/api/v1/bookings/me").header("Authorization", bearer(customer.accessToken())))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(bookingId));
+        mvc.perform(post("/api/v1/operations/bookings/{bookingNumber}/check-in",bookingNumber).header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.checkedInAt").isNotEmpty()).andExpect(jsonPath("$.checkedInBy").value("Automation User"));
         mvc.perform(post("/api/v1/bookings/{id}/cancel", bookingId).header("Authorization", bearer(customer.accessToken())))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
         mvc.perform(get("/api/v1/public/facilities/{id}/slots", facilityId).param("date", bookingDate.toString()))
@@ -312,6 +315,23 @@ class ModuleRegressionIntegrationTest {
         mvc.perform(patch("/api/v1/admin/tournaments/fixtures/{id}/result",fixtureId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"homeScore\":120,\"awayScore\":110}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED")).andExpect(jsonPath("$.winner").value("Warriors"));
         mvc.perform(get("/api/v1/public/tournaments/{id}/fixtures",tournamentId)).andExpect(status().isOk()).andExpect(jsonPath("$[0].homeScore").value(120));
+    }
+
+    @Test
+    void adminDashboardReportsReconciliationAndAuditAreProtected() throws Exception {
+        String adminEmail=uniqueEmail("report-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String code="AUDIT_"+UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        mvc.perform(post("/api/v1/admin/catalog/sports").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\""+code+"\",\"name\":\"Audit Sport\",\"displayOrder\":500}"))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/admin/dashboard").header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.users",greaterThanOrEqualTo(1))).andExpect(jsonPath("$.activeSports",greaterThanOrEqualTo(8))).andExpect(jsonPath("$.netRevenuePaise").isNumber());
+        mvc.perform(get("/api/v1/admin/reconciliation").header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.paidOrders").isNumber());
+        mvc.perform(get("/api/v1/admin/audit-logs").header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[*].path",hasItem("/api/v1/admin/catalog/sports")));
+        TokenPair customer=register(uniqueEmail("report-customer"));
+        mvc.perform(get("/api/v1/admin/dashboard").header("Authorization",bearer(customer.accessToken()))).andExpect(status().isForbidden());
     }
 
     private TokenPair register(String email) throws Exception {

@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.admin.dto;public record ReconciliationResponse(long createdOrders,long paidOrders,long partiallyRefundedOrders,long refundedOrders,long processedRefunds,long paymentsMissingProviderId){}

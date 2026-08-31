@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.admin.dto;import java.time.LocalDate;public record DashboardResponse(LocalDate from,LocalDate to,long users,long activeSports,long activeFacilities,long bookings,long checkedInBookings,long activeMemberships,long trainingEnrollments,long activeTournaments,long grossRevenuePaise,long refundsPaise,long netRevenuePaise){}
