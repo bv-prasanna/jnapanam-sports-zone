@@ -1,7 +1,15 @@
-# Jnapanam Sports Zone Backend — Modules 01 through 12
+# Jnapanam Sports Zone Backend — Modules 01 through 13
 
-This package is the complete backend through Module 12. See `MODULE-06.md` through
-`MODULE-12.md` for the later module capabilities and API details.
+This package is the complete backend through Module 13. See `MODULE-06.md` through
+`MODULE-13.md` for the later module capabilities and API details.
+
+## Module 13 — Completion and Operational Workflows
+
+- Payment-gated booking, training and tournament workflows
+- Pending-payment expiration and capacity release
+- Operations cancellation, refund, no-show and check-in correction
+- Secure Super Admin bootstrap
+- Forgot/reset-password APIs and authentication rate limiting
 
 ## Module 12 — Reports, Audit and Stabilization
 

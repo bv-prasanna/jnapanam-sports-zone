@@ -31,6 +31,8 @@ app:
     key-secret: ${RAZORPAY_KEY_SECRET:}
     webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
     currency: INR
+    pending-minutes: ${PAYMENT_PENDING_MINUTES:15}
+    cleanup-delay-ms: ${PAYMENT_CLEANUP_DELAY_MS:60000}
   booking:
     hold-minutes: ${BOOKING_HOLD_MINUTES:10}
   cors:
@@ -39,3 +41,9 @@ app:
     jwt-secret: ${JWT_SECRET:Sm5hcGFuYW0gU3BvcnRzIFpvbmUgRGV2ZWxvcG1lbnQgSldUIFNlY3JldCAyMDI2IQ==}
     access-token-minutes: ${JWT_ACCESS_MINUTES:43200}
     refresh-token-days: ${JWT_REFRESH_DAYS:30}
+    expose-development-reset-token: ${EXPOSE_DEVELOPMENT_RESET_TOKEN:true}
+    auth-rate-limit-per-minute: ${AUTH_RATE_LIMIT_PER_MINUTE:60}
+  bootstrap:
+    super-admin-email: ${BOOTSTRAP_SUPER_ADMIN_EMAIL:}
+    super-admin-password: ${BOOTSTRAP_SUPER_ADMIN_PASSWORD:}
+    super-admin-name: ${BOOTSTRAP_SUPER_ADMIN_NAME:Jnapanam Super Admin}

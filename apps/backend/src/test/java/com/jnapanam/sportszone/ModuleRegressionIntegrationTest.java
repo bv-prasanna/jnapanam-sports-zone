@@ -225,7 +225,12 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.available").value(1)).andExpect(jsonPath("$.coachName").value("Automation User")).andReturn();
         String batchId=field(batch,ID);TokenPair customer=register(uniqueEmail("trainee"));
         MvcResult enrollment=mvc.perform(post("/api/v1/training/batches/{id}/enrollments",batchId).header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"participantName\":\"Junior Test\",\"participantAge\":10}"))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("ENROLLED")).andReturn();String enrollmentId=field(enrollment,ID);
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING_PAYMENT")).andReturn();String enrollmentId=field(enrollment,ID);
+        MvcResult trainingPayment=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken())).header("Idempotency-Key","training-"+UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON).content("{\"purpose\":\"TRAINING\",\"referenceId\":\""+enrollmentId+"\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.amountPaise").value(150000)).andReturn();
+        mvc.perform(post("/api/v1/payments/verify").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"paymentOrderId\":\""+field(trainingPayment,ID)+"\",\"providerPaymentId\":\"pay_training_mock\",\"signature\":\"mock-signature\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PAID"));
+        mvc.perform(get("/api/v1/training/enrollments/me").header("Authorization",bearer(customer.accessToken()))).andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("ENROLLED"));
         mvc.perform(post("/api/v1/training/batches/{id}/enrollments",batchId).header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"participantName\":\"Junior Test\",\"participantAge\":10}"))
                 .andExpect(status().isConflict());
         mvc.perform(get("/api/v1/admin/training/batches/{id}/participants",batchId).header("Authorization",bearer(adminToken))).andExpect(status().isOk()).andExpect(jsonPath("$",hasSize(1)));
@@ -303,12 +308,13 @@ class ModuleRegressionIntegrationTest {
         mvc.perform(patch("/api/v1/admin/tournaments/{id}/status",tournamentId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"REGISTRATION_OPEN\"}"))
                 .andExpect(status().isOk());
         TokenPair captain1=register(uniqueEmail("captain-one"));TokenPair captain2=register(uniqueEmail("captain-two"));
-        mvc.perform(post("/api/v1/tournaments/{id}/teams",tournamentId).header("Authorization",bearer(captain1.accessToken())).contentType(MediaType.APPLICATION_JSON)
+        MvcResult registeredOne=mvc.perform(post("/api/v1/tournaments/{id}/teams",tournamentId).header("Authorization",bearer(captain1.accessToken())).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"teamName\":\"Warriors\",\"members\":[{\"name\":\"Player One\"},{\"name\":\"Player Two\"}]}"))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.members",hasSize(2)));
-        mvc.perform(post("/api/v1/tournaments/{id}/teams",tournamentId).header("Authorization",bearer(captain2.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING_PAYMENT")).andExpect(jsonPath("$.members",hasSize(2))).andReturn();
+        MvcResult registeredTwo=mvc.perform(post("/api/v1/tournaments/{id}/teams",tournamentId).header("Authorization",bearer(captain2.accessToken())).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"teamName\":\"Challengers\",\"members\":[{\"name\":\"Player Three\"},{\"name\":\"Player Four\"}]}"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING_PAYMENT")).andReturn();
+        payMock(captain1,field(registeredOne,ID),"TOURNAMENT","tour-one-");payMock(captain2,field(registeredTwo,ID),"TOURNAMENT","tour-two-");
         MvcResult generated=mvc.perform(post("/api/v1/admin/tournaments/{id}/fixtures/generate",tournamentId).header("Authorization",bearer(adminToken)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$",hasSize(1))).andReturn();
         String fixtureId=field(generated,ID);
@@ -434,6 +440,28 @@ class ModuleRegressionIntegrationTest {
 
         String auditId=jdbc.queryForObject("SELECT id::text FROM audit_logs WHERE correlation_id='module12-test-correlation' ORDER BY occurred_at DESC LIMIT 1",String.class);
         Assertions.assertThrows(Exception.class,()->jdbc.update("DELETE FROM audit_logs WHERE id=?::uuid",auditId));
+    }
+
+    @Test
+    void customerRecoversForgottenPasswordWithoutAccountDisclosure() throws Exception {
+        String email=uniqueEmail("forgot-password");register(email);
+        MvcResult forgot=mvc.perform(post("/api/v1/auth/password/forgot").contentType(MediaType.APPLICATION_JSON).content("{\"email\":\""+email+"\"}"))
+                .andExpect(status().isAccepted()).andExpect(jsonPath("$.message").isNotEmpty()).andExpect(jsonPath("$.developmentResetToken").isNotEmpty()).andReturn();
+        String resetToken=field(forgot,Pattern.compile("\\\"developmentResetToken\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""));
+        mvc.perform(post("/api/v1/auth/password/reset").contentType(MediaType.APPLICATION_JSON).content("{\"token\":\""+resetToken+"\",\"newPassword\":\"Recovered@123\"}"))
+                .andExpect(status().isNoContent());
+        login(email,"Recovered@123");
+        mvc.perform(post("/api/v1/auth/password/reset").contentType(MediaType.APPLICATION_JSON).content("{\"token\":\""+resetToken+"\",\"newPassword\":\"Again@12345\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/auth/password/forgot").contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"missing-"+UUID.randomUUID()+"@example.com\"}"))
+                .andExpect(status().isAccepted()).andExpect(jsonPath("$.developmentResetToken").doesNotExist());
+    }
+
+    private void payMock(TokenPair customer,String referenceId,String purpose,String prefix)throws Exception{
+        MvcResult payment=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken())).header("Idempotency-Key",prefix+UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON).content("{\"purpose\":\""+purpose+"\",\"referenceId\":\""+referenceId+"\"}"))
+                .andExpect(status().isCreated()).andReturn();
+        mvc.perform(post("/api/v1/payments/verify").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"paymentOrderId\":\""+field(payment,ID)+"\",\"providerPaymentId\":\"pay_"+UUID.randomUUID().toString().replace("-","")+"\",\"signature\":\"mock-signature\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PAID"));
     }
 
     private TokenPair register(String email) throws Exception {

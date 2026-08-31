@@ -1,0 +1,9 @@
+package com.jnapanam.sportszone.security;
+import jakarta.servlet.*;import jakarta.servlet.http.*;import java.io.IOException;import java.time.Instant;import java.util.concurrent.*;import org.springframework.beans.factory.annotation.Value;import org.springframework.core.annotation.Order;import org.springframework.http.MediaType;import org.springframework.stereotype.Component;import org.springframework.web.filter.OncePerRequestFilter;
+@Component@Order(-110)public class AuthRateLimitFilter extends OncePerRequestFilter{
+ private final ConcurrentHashMap<String,Window>requests=new ConcurrentHashMap<>();private final int limit;
+ public AuthRateLimitFilter(@Value("${app.security.auth-rate-limit-per-minute:60}")int limit){this.limit=Math.max(5,limit);}
+ @Override protected boolean shouldNotFilter(HttpServletRequest request){String p=request.getRequestURI();return !"POST".equals(request.getMethod())||!(p.equals("/api/v1/auth/login")||p.equals("/api/v1/auth/password/forgot")||p.equals("/api/v1/auth/password/reset"));}
+ @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain)throws ServletException,IOException{long minute=Instant.now().getEpochSecond()/60;String key=client(request)+":"+request.getRequestURI();Window w=requests.compute(key,(k,v)->v==null||v.minute()!=minute?new Window(minute,1):new Window(minute,v.count()+1));if(w.count()>limit){response.setStatus(429);response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);response.getWriter().write("{\"title\":\"Too Many Requests\",\"status\":429,\"detail\":\"Please retry after one minute\"}");return;}chain.doFilter(request,response);if(requests.size()>10000)requests.entrySet().removeIf(e->e.getValue().minute()<minute-2);}
+ private static String client(HttpServletRequest r){String f=r.getHeader("X-Forwarded-For");return f==null||f.isBlank()?r.getRemoteAddr():f.split(",")[0].trim();}private record Window(long minute,int count){}
+}

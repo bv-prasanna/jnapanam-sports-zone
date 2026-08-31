@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.identity.repository;import com.jnapanam.sportszone.identity.model.PasswordResetToken;import java.util.*;import org.springframework.data.jpa.repository.JpaRepository;public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken,UUID>{Optional<PasswordResetToken>findByTokenHash(String hash);void deleteByUserId(UUID userId);}

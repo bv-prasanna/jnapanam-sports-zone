@@ -2,8 +2,10 @@ package com.jnapanam.sportszone;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 @org.springframework.boot.context.properties.EnableConfigurationProperties(com.jnapanam.sportszone.payment.config.PaymentProperties.class)
 public class SportsZoneApplication {
     public static void main(String[] args) {

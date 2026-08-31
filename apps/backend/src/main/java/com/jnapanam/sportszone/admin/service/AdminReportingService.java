@@ -49,46 +49,10 @@ public class AdminReportingService {
     @Transactional(readOnly = true) public List<AuditLogResponse> audit(int limit){int safe=Math.max(1,Math.min(limit,500));return audit.findAllByOrderByOccurredAtDesc(PageRequest.of(0,safe)).stream().map(AuditLogResponse::from).toList();}
 
     @Transactional(readOnly = true)
-public List<Map<String, Object>> searchAudit(
-        UUID actor,
-        String action,
-        String resourceType,
-        Boolean successful,
-        Instant from,
-        Instant to,
-        int limit) {
-
-    int safe = Math.max(1, Math.min(limit, 500));
-
-    return jdbc.queryForList(
-        """
-        SELECT id, actor_user_id, http_method, request_path, response_status,
-               remote_address, occurred_at, action, resource_type, resource_id,
-               query_string, correlation_id, user_agent, duration_ms, successful
-        FROM audit_logs
-        WHERE (CAST(? AS uuid) IS NULL OR actor_user_id = CAST(? AS uuid))
-          AND (CAST(? AS varchar) IS NULL
-               OR action ILIKE '%' || CAST(? AS varchar) || '%')
-          AND (CAST(? AS varchar) IS NULL
-               OR resource_type = CAST(? AS varchar))
-          AND (CAST(? AS boolean) IS NULL
-               OR successful = CAST(? AS boolean))
-          AND (CAST(? AS timestamptz) IS NULL
-               OR occurred_at >= CAST(? AS timestamptz))
-          AND (CAST(? AS timestamptz) IS NULL
-               OR occurred_at <= CAST(? AS timestamptz))
-        ORDER BY occurred_at DESC
-        LIMIT ?
-        """,
-        actor, actor,
-        blankNull(action), blankNull(action),
-        blankNull(resourceType), blankNull(resourceType),
-        successful, successful,
-        from, from,
-        to, to,
-        safe
-    );
-}
+    public List<Map<String,Object>> searchAudit(UUID actor,String action,String resourceType,Boolean successful,Instant from,Instant to,int limit){
+        int safe=Math.max(1,Math.min(limit,500));
+        return jdbc.queryForList("SELECT id,actor_user_id,http_method,request_path,response_status,remote_address,occurred_at,action,resource_type,resource_id,query_string,correlation_id,user_agent,duration_ms,successful FROM audit_logs WHERE (CAST(? AS uuid) IS NULL OR actor_user_id=CAST(? AS uuid)) AND (CAST(? AS varchar) IS NULL OR action ILIKE '%'||CAST(? AS varchar)||'%') AND (CAST(? AS varchar) IS NULL OR resource_type=CAST(? AS varchar)) AND (CAST(? AS boolean) IS NULL OR successful=CAST(? AS boolean)) AND (CAST(? AS timestamptz) IS NULL OR occurred_at>=CAST(? AS timestamptz)) AND (CAST(? AS timestamptz) IS NULL OR occurred_at<=CAST(? AS timestamptz)) ORDER BY occurred_at DESC LIMIT ?",actor,actor,blankNull(action),blankNull(action),blankNull(resourceType),blankNull(resourceType),successful,successful,from,from,to,to,safe);
+    }
 
     @Transactional(readOnly = true)
     public byte[] csv(String report,LocalDate from,LocalDate to){

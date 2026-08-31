@@ -1,7 +1,7 @@
 # Backend delivery modules
 
-Status: backend MVP completed through Module 12, including customer/user/role
-management and the final reports, audit and stabilization module.
+Status: backend MVP completed through Module 13, including customer/user/role
+management, reports/audit, payment-gated fulfilment and operational workflows.
 
 1. **Foundation & Identity** — included and completed.
 2. **Sports, Facilities & Scheduling** — included: configurable catalogue, facilities, lifecycle status, hours, closures and schedule overrides.
@@ -11,5 +11,5 @@ management and the final reports, audit and stabilization module.
 6. **Tournaments** — organizers, approvals, categories, registrations, teams, fixtures and results.
 7. **Administration & Reporting** — operations APIs, dashboard data, reconciliation and audit history.
 
-Every package builds on the previous module. Module 12 is supplied as a full
+Every package builds on the previous module. Module 13 is supplied as a full
 replacement backend ZIP so no manual file merging is required.
