@@ -1,112 +1,100 @@
-# Jnapanam Sports Zone Backend — Module 01
+# Jnapanam Sports Zone Backend — Modules 01 and 02
 
-This is the first runnable backend module. It includes the platform foundation and customer authentication.
+This full replacement backend contains the completed identity foundation plus configurable sports, facilities and schedules.
 
-## Included
+## Module 02 capabilities
 
-- Java 21 and Spring Boot 4.1
-- PostgreSQL 17 with Docker Compose
-- Flyway versioned schema
-- Customer registration and login
-- JWT access tokens and rotating refresh tokens
-- Logout and authenticated profile endpoint
-- Roles: CUSTOMER, ADMIN, OPERATIONS, COACH, ORGANIZER, SUPER_ADMIN
-- Standard validation and API errors
-- Swagger/OpenAPI documentation
-- Actuator health endpoint
-- Unit tests
+- Configurable sports catalogue; seven initial sports are seed data, not hardcoded limits
+- Configurable facilities and courts associated with any sport
+- Default slot duration and capacity per facility
+- Weekly operating hours, including fully closed days
+- Full-day facility closures
+- Date/time overrides for extra availability, blocked periods, capacity overrides and slot-duration overrides
+- ACTIVE, TEMPORARILY_SUSPENDED and INACTIVE lifecycle for sports and facilities
+- Temporary suspension dates and operational reason
+- Public catalogue and schedule APIs
+- Admin and operations management APIs
 
-## Requirements
-
-- Java 21
-- Maven 3.6.3+
-- Docker Desktop
-
-## Start PostgreSQL
-
-From this folder:
+## Start and verify
 
 ```powershell
 docker compose up -d
-docker compose ps
-```
-
-## Run tests
-
-```powershell
 mvn clean test
-```
-
-## Start the backend
-
-```powershell
 mvn spring-boot:run
 ```
 
 Open:
 
 - Health: http://localhost:8080/actuator/health
-- Swagger: http://localhost:8080/swagger-ui.html
-- OpenAPI JSON: http://localhost:8080/v3/api-docs
+- Swagger: http://localhost:8080/swagger-ui/index.html
 
-## API sequence
+Flyway applies `V3__sports_facilities_schema.sql` and inserts the initial seven sports.
 
-### 1. Register
+## Public APIs
 
-`POST /api/v1/auth/register`
+- `GET /api/v1/public/sports`
+- `GET /api/v1/public/sports/{code}`
+- `GET /api/v1/public/facilities?sportCode=BADMINTON&date=2026-09-15`
+- `GET /api/v1/public/facilities/{code}`
+- `GET /api/v1/public/facilities/{facilityId}/schedule?from=2026-09-01&to=2026-09-30`
 
-```json
-{
-  "fullName": "Prasanna Kumar",
-  "email": "prasanna@example.com",
-  "mobile": "+918296022107",
-  "password": "ChangeMe123!"
-}
-```
+## Admin APIs
 
-### 2. Login
+Admin APIs require `SUPER_ADMIN`, `ADMIN` or `OPERATIONS`:
 
-`POST /api/v1/auth/login`
+- Create/update/list sports and facilities
+- Change sport/facility status
+- Upsert weekly operating hours
+- Add/remove full-day closures
+- Add/remove schedule overrides
 
-```json
-{
-  "email": "prasanna@example.com",
-  "password": "ChangeMe123!"
-}
-```
-
-### 3. View profile
-
-`GET /api/v1/profile/me` with header:
-
-```text
-Authorization: Bearer <accessToken>
-```
-
-### 4. Refresh
-
-`POST /api/v1/auth/refresh`
-
-```json
-{
-  "refreshToken": "<refreshToken>"
-}
-```
-
-Refresh tokens rotate: after a successful refresh, replace the old token with the newly returned token.
-
-## Important production configuration
-
-Copy `.env.example` to `.env` only for reference. Set environment variables through your deployment platform. Never commit a production database password or JWT secret.
-
-Generate a production JWT secret using PowerShell:
+For local testing, promote an already registered user:
 
 ```powershell
-$bytes = New-Object byte[] 32
-[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
-[Convert]::ToBase64String($bytes)
+docker exec jnapanam-postgres psql -U jnapanam -d jnapanam_sports_zone -c "INSERT INTO user_roles(user_id, role_id) SELECT u.id, r.id FROM users u CROSS JOIN roles r WHERE u.email='prasanna.test01@example.com' AND r.name='ADMIN' ON CONFLICT DO NOTHING;"
 ```
 
-## Next module
+Log in again after promotion to receive a JWT containing the new role.
 
-Module 02 adds sports, facilities, operating hours, closures, pricing foundations and slot generation.
+## Status examples
+
+Activate:
+
+```json
+{"status":"ACTIVE","suspendedFrom":null,"suspendedUntil":null,"reason":null}
+```
+
+Temporarily suspend:
+
+```json
+{"status":"TEMPORARILY_SUSPENDED","suspendedFrom":"2026-09-10","suspendedUntil":"2026-09-20","reason":"Scheduled maintenance"}
+```
+
+Permanently deactivate:
+
+```json
+{"status":"INACTIVE","suspendedFrom":null,"suspendedUntil":null,"reason":"Service discontinued"}
+```
+
+Production must provide database credentials and a randomly generated Base64 JWT secret through environment variables.
+The local development access-token lifetime is 30 days (`43200` minutes); reduce it before production deployment.
+
+## Automated regression tests
+
+Keep Docker Desktop running, then execute the complete Module 01 and Module 02 regression suite with one command:
+
+```powershell
+mvn clean verify
+```
+
+The suite automatically starts a disposable PostgreSQL 17 container, applies every Flyway migration and tests:
+
+- Registration, profile, login, refresh-token rotation and logout
+- Duplicate registration, invalid input and incorrect-password rejection
+- Public access to the sports catalogue
+- Customer rejection from protected admin APIs
+- Admin sport creation, suspension and reactivation
+- Facility creation, operating hours, closures and schedule overrides
+- Public facility and schedule retrieval
+
+The disposable test database is removed automatically and does not modify the local development database. Test reports are written to `target/surefire-reports`.

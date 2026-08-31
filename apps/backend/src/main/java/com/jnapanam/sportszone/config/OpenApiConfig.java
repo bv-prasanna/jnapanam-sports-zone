@@ -1,7 +1,6 @@
 package com.jnapanam.sportszone.config;
 
 import io.swagger.v3.oas.models.*;
-//import io.swagger.v3.oas.models.components.*;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.*;
 import org.springframework.context.annotation.*;

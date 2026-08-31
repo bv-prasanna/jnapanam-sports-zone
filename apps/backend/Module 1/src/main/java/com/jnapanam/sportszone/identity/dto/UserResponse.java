@@ -1,0 +1,13 @@
+package com.jnapanam.sportszone.identity.dto;
+
+import com.jnapanam.sportszone.identity.model.User;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+public record UserResponse(UUID id, String fullName, String email, String mobile, String status, Set<String> roles) {
+    public static UserResponse from(User user) {
+        return new UserResponse(user.getId(), user.getFullName(), user.getEmail(), user.getMobile(), user.getStatus().name(),
+                user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toUnmodifiableSet()));
+    }
+}

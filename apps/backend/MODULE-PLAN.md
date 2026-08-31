@@ -1,7 +1,7 @@
 # Backend delivery modules
 
-1. **Foundation & Identity** — included in this package.
-2. **Sports, Facilities & Scheduling** — sports catalogue, facility areas, hours, closures and slots.
+1. **Foundation & Identity** — included and completed.
+2. **Sports, Facilities & Scheduling** — included: configurable catalogue, facilities, lifecycle status, hours, closures and schedule overrides.
 3. **Bookings** — holds, capacity, booking lifecycle, cancellation and attendance.
 4. **Memberships & Training** — plans, subscriptions, coaching programs, batches and enrolment.
 5. **Payments & Notifications** — provider abstraction, webhooks, receipts, email/SMS/push queue.
