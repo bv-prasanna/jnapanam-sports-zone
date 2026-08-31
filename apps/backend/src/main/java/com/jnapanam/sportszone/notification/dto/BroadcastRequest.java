@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.notification.dto;import com.jnapanam.sportszone.notification.model.NotificationChannel;import jakarta.validation.constraints.*;public record BroadcastRequest(@NotNull NotificationChannel channel,@NotBlank@Size(max=40)String category,@Size(max=180)String subject,@NotBlank String message){}

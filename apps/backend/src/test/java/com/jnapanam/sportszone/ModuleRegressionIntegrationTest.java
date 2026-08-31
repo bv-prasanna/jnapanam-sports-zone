@@ -257,6 +257,25 @@ class ModuleRegressionIntegrationTest {
         mvc.perform(post("/api/v1/admin/payments/{id}/refunds",paymentId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"reason\":\"Automation refund\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.amountPaise").value(125000)).andExpect(jsonPath("$.status").value("PROCESSED"));
+        mvc.perform(get("/api/v1/notifications/me").header("Authorization",bearer(customer.accessToken())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[*].category",hasItems("PAYMENT","REFUND")));
+    }
+
+    @Test
+    void customerControlsPreferencesAndReceivesAdminBroadcast() throws Exception {
+        String adminEmail=uniqueEmail("notification-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        TokenPair customer=register(uniqueEmail("notification-customer"));
+        mvc.perform(put("/api/v1/notifications/preferences").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"emailEnabled\":false,\"smsEnabled\":true,\"pushEnabled\":false}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.emailEnabled").value(false)).andExpect(jsonPath("$.smsEnabled").value(true));
+        mvc.perform(post("/api/v1/admin/notifications/broadcasts").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"channel\":\"IN_APP\",\"category\":\"ANNOUNCEMENT\",\"subject\":\"Pool maintenance\",\"message\":\"Pool closes at 8 PM today.\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.queued",greaterThanOrEqualTo(1)));
+        MvcResult inbox=mvc.perform(get("/api/v1/notifications/me").header("Authorization",bearer(customer.accessToken())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].category").value("ANNOUNCEMENT")).andExpect(jsonPath("$[0].readAt").doesNotExist()).andReturn();
+        String notificationId=field(inbox,ID);
+        mvc.perform(patch("/api/v1/notifications/{id}/read",notificationId).header("Authorization",bearer(customer.accessToken())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.readAt").isNotEmpty());
     }
 
     private TokenPair register(String email) throws Exception {

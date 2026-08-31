@@ -1,253 +1,37 @@
 package com.jnapanam.sportszone.payment.service;
 
-import com.jnapanam.sportszone.booking.model.*;
-import com.jnapanam.sportszone.booking.repository.BookingRepository;
-import com.jnapanam.sportszone.common.exception.*;
-import com.jnapanam.sportszone.identity.model.User;
-import com.jnapanam.sportszone.identity.repository.UserRepository;
-import com.jnapanam.sportszone.membership.model.*;
-import com.jnapanam.sportszone.membership.repository.CustomerMembershipRepository;
-import com.jnapanam.sportszone.payment.config.PaymentProperties;
-import com.jnapanam.sportszone.payment.dto.*;
-import com.jnapanam.sportszone.payment.gateway.PaymentGateway;
-import com.jnapanam.sportszone.payment.model.*;
-import com.jnapanam.sportszone.payment.repository.*;
-import com.jnapanam.sportszone.training.model.*;
-import com.jnapanam.sportszone.training.repository.TrainingEnrollmentRepository;
-import java.math.*;
-import java.time.LocalDate;
-import java.util.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.jnapanam.sportszone.booking.model.*;import com.jnapanam.sportszone.booking.repository.BookingRepository;
+import com.jnapanam.sportszone.common.exception.*;import com.jnapanam.sportszone.identity.model.User;import com.jnapanam.sportszone.identity.repository.UserRepository;
+import com.jnapanam.sportszone.membership.model.*;import com.jnapanam.sportszone.membership.repository.CustomerMembershipRepository;
+import com.jnapanam.sportszone.payment.config.PaymentProperties;import com.jnapanam.sportszone.payment.dto.*;import com.jnapanam.sportszone.payment.gateway.PaymentGateway;
+import com.jnapanam.sportszone.payment.model.*;import com.jnapanam.sportszone.payment.repository.*;
+import com.jnapanam.sportszone.training.model.*;import com.jnapanam.sportszone.training.repository.TrainingEnrollmentRepository;
+import com.jnapanam.sportszone.notification.service.NotificationService;
+import java.math.*;import java.time.LocalDate;import java.util.*;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;
 
-@Service
-public class PaymentService {
-    private final PaymentOrderRepository orders;
-    private final PaymentRefundRepository refunds;
-    private final UserRepository users;
-    private final BookingRepository bookings;
-    private final CustomerMembershipRepository memberships;
-    private final TrainingEnrollmentRepository enrollments;
-    private final PaymentGateway gateway;
-    private final PaymentProperties properties;
-    private final PaymentWebhookEventRepository webhookEvents;
-
-    public PaymentService(PaymentOrderRepository o, PaymentRefundRepository r, UserRepository u, BookingRepository b,
-            CustomerMembershipRepository m, TrainingEnrollmentRepository e, PaymentGateway g, PaymentProperties p,
-            PaymentWebhookEventRepository w) {
-        orders = o;
-        refunds = r;
-        users = u;
-        bookings = b;
-        memberships = m;
-        enrollments = e;
-        gateway = g;
-        properties = p;
-        webhookEvents = w;
-    }
-
-
-@Transactional
-public PaymentResponse create(
-        UUID userId,
-        String key,
-        CreatePaymentRequest request
-) {
-    if (key == null || key.isBlank() || key.length() > 100) {
-        throw new BadRequestException(
-                "A valid Idempotency-Key header is required"
-        );
-    }
-
-    Optional<PaymentOrder> existing =
-            orders.findByUserIdAndIdempotencyKey(userId, key);
-
-    if (existing.isPresent()) {
-        return response(existing.get());
-    }
-
-    if (orders.existsByPurposeAndReferenceIdAndStatus(
-            request.purpose(),
-            request.referenceId(),
-            PaymentStatus.PAID
-    )) {
-        throw new ConflictException("This item is already paid");
-    }
-
-    User user = users.findById(userId)
-            .orElseThrow(() ->
-                    new UnauthorizedException("User not found"));
-
-    long amount = resolveAmount(
-            userId,
-            request.purpose(),
-            request.referenceId()
-    );
-
-    if (amount <= 0) {
-        throw new ConflictException(
-                "Payment amount is not configured"
-        );
-    }
-
-    PaymentOrder order = new PaymentOrder(
-            user,
-            request.purpose(),
-            request.referenceId(),
-            amount,
-            properties.currency(),
-            gateway.provider(),
-            key
-    );
-
-    orders.save(order);
-
-    order.providerOrder(
-            gateway.createOrder(
-                    order.getReceiptNumber(),
-                    amount,
-                    order.getCurrency()
-            ).id()
-    );
-
-    return response(orders.save(order));
-}
-
-
-    @Transactional
-    public PaymentResponse verify(UUID userId, VerifyPaymentRequest request) {
-        PaymentOrder order = own(userId, request.paymentOrderId());
-        if (order.getStatus() == PaymentStatus.PAID)
-            return response(order);
-        if (!gateway.verifyPayment(order.getProviderOrderId(), request.providerPaymentId(), request.signature()))
-            throw new BadRequestException("Invalid payment signature");
-        order.paid(request.providerPaymentId());
-        fulfil(order);
-        return response(order);
-    }
-
-    @Transactional(readOnly = true)
-    public List<PaymentResponse> mine(UUID userId) {
-        return orders.findByUserIdOrderByCreatedAtDesc(userId).stream().map(this::response).toList();
-    }
-
-    @Transactional(readOnly = true)
-    public PaymentResponse one(UUID userId, UUID id) {
-        return response(own(userId, id));
-    }
-
-    @Transactional(readOnly = true)
-    public List<PaymentResponse> all() {
-        return orders.findAllByOrderByCreatedAtDesc().stream().map(this::response).toList();
-    }
-
-    @Transactional
-    public RefundResponse refund(UUID id, RefundRequest request) {
-        PaymentOrder order = orders.findById(id).orElseThrow(() -> new NotFoundException("Payment not found"));
-        if (order.getStatus() != PaymentStatus.PAID && order.getStatus() != PaymentStatus.PARTIALLY_REFUNDED)
-            throw new ConflictException("Only paid payments can be refunded");
-        long already = refunds.findByPaymentOrderId(id).stream().filter(r -> r.getStatus() == RefundStatus.PROCESSED)
-                .mapToLong(PaymentRefund::getAmountPaise).sum();
-        long amount = request.amountPaise() == null ? order.getAmountPaise() - already : request.amountPaise();
-        if (amount <= 0 || already + amount > order.getAmountPaise())
-            throw new BadRequestException("Refund exceeds refundable amount");
-        PaymentRefund refund = refunds.save(new PaymentRefund(order, amount, request.reason().trim()));
-        refund.processed(gateway.refund(order.getProviderPaymentId(), amount, request.reason()).id());
-        order.refundStatus(already + amount);
-        return refundResponse(refund);
-    }
-
-    @Transactional
-    public void webhook(String eventId, String signature, String body, com.fasterxml.jackson.databind.JsonNode json) {
-        if (eventId == null || eventId.isBlank())
-            throw new BadRequestException("Missing webhook event id");
-        if (webhookEvents.existsByProviderEventId(eventId))
-            return;
-        if (!gateway.verifyWebhook(body, signature))
-            throw new BadRequestException("Invalid webhook signature");
-        String type = json.path("event").asText();
-        if ("payment.captured".equals(type)) {
-            var payment = json.path("payload").path("payment").path("entity");
-            String orderId = payment.path("order_id").asText();
-            String paymentId = payment.path("id").asText();
-            orders.findByProviderOrderId(orderId).ifPresent(o -> {
-                if (o.getStatus() != PaymentStatus.PAID) {
-                    o.paid(paymentId);
-                    fulfil(o);
-                }
-            });
-        }
-        webhookEvents.save(new PaymentWebhookEvent(eventId, type, sha256(body)));
-    }
-
-    private long resolveAmount(UUID userId, PaymentPurpose purpose, UUID ref) {
-        BigDecimal rupees = switch (purpose) {
-            case BOOKING -> {
-                Booking b = bookings.findById(ref).orElseThrow(() -> new NotFoundException("Booking not found"));
-                owner(userId, b.getUser());
-                if (b.getStatus() == BookingStatus.CANCELLED)
-                    throw new ConflictException("Cancelled booking cannot be paid");
-                yield b.getSlot().getFacility().getBookingPrice().multiply(BigDecimal.valueOf(b.getQuantity()));
-            }
-            case MEMBERSHIP -> {
-                CustomerMembership m = memberships.findById(ref)
-                        .orElseThrow(() -> new NotFoundException("Membership not found"));
-                owner(userId, m.getUser());
-                if (m.getStatus() != MembershipStatus.PENDING_PAYMENT)
-                    throw new ConflictException("Membership is not awaiting payment");
-                yield m.getPlan().getPrice();
-            }
-            case TRAINING -> {
-                TrainingEnrollment e = enrollments.findById(ref)
-                        .orElseThrow(() -> new NotFoundException("Enrollment not found"));
-                owner(userId, e.getUser());
-                if (e.getStatus() == EnrollmentStatus.CANCELLED)
-                    throw new ConflictException("Cancelled enrollment cannot be paid");
-                yield e.getBatch().getFee();
-            }
-        };
-        try {
-            return rupees.movePointRight(2).setScale(0, RoundingMode.UNNECESSARY).longValueExact();
-        } catch (ArithmeticException e) {
-            throw new BadRequestException("Invalid configured payment amount");
-        }
-    }
-
-    private void fulfil(PaymentOrder o) {
-        if (o.getPurpose() == PaymentPurpose.MEMBERSHIP) {
-            CustomerMembership m = memberships.findById(o.getReferenceId()).orElseThrow();
-            if (m.getStatus() == MembershipStatus.PENDING_PAYMENT)
-                m.activate(LocalDate.now());
-        }
-    }
-
-    private PaymentOrder own(UUID userId, UUID id) {
-        PaymentOrder o = orders.findById(id).orElseThrow(() -> new NotFoundException("Payment not found"));
-        owner(userId, o.getUser());
-        return o;
-    }
-
-    private void owner(UUID id, User u) {
-        if (!u.getId().equals(id))
-            throw new NotFoundException("Payment reference not found");
-    }
-
-    private PaymentResponse response(PaymentOrder o) {
-        return new PaymentResponse(o.getId(), o.getPurpose(), o.getReferenceId(), o.getReceiptNumber(),
-                o.getAmountPaise(), o.getCurrency(), o.getProvider(), o.getProviderOrderId(), o.getProviderPaymentId(),
-                o.getStatus(), gateway.publicKey(), o.getPaidAt(), o.getCreatedAt());
-    }
-
-    private RefundResponse refundResponse(PaymentRefund r) {
-        return new RefundResponse(r.getId(), r.getAmountPaise(), r.getReason(), r.getStatus(), r.getProviderRefundId());
-    }
-
-    private static String sha256(String value) {
-        try {
-            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
-                    .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
+@Service public class PaymentService{
+ private final PaymentOrderRepository orders;private final PaymentRefundRepository refunds;private final UserRepository users;private final BookingRepository bookings;
+ private final CustomerMembershipRepository memberships;private final TrainingEnrollmentRepository enrollments;private final PaymentGateway gateway;private final PaymentProperties properties;private final PaymentWebhookEventRepository webhookEvents;private final NotificationService notificationService;
+ public PaymentService(PaymentOrderRepository o,PaymentRefundRepository r,UserRepository u,BookingRepository b,CustomerMembershipRepository m,TrainingEnrollmentRepository e,PaymentGateway g,PaymentProperties p,PaymentWebhookEventRepository w,NotificationService n){orders=o;refunds=r;users=u;bookings=b;memberships=m;enrollments=e;gateway=g;properties=p;webhookEvents=w;notificationService=n;}
+ @Transactional public PaymentResponse create(UUID userId,String key,CreatePaymentRequest request){
+  if(key==null||key.isBlank()||key.length()>100)throw new BadRequestException("A valid Idempotency-Key header is required");
+  Optional<PaymentOrder> existing=orders.findByUserIdAndIdempotencyKey(userId,key);if(existing.isPresent())return response(existing.get());
+  if(orders.existsByPurposeAndReferenceIdAndStatus(request.purpose(),request.referenceId(),PaymentStatus.PAID))throw new ConflictException("This item is already paid");
+  User user=users.findById(userId).orElseThrow(()->new UnauthorizedException("User not found"));long amount=resolveAmount(userId,request.purpose(),request.referenceId());
+  if(amount<=0)throw new ConflictException("Payment amount is not configured");
+  PaymentOrder order=new PaymentOrder(user,request.purpose(),request.referenceId(),amount,properties.currency(),gateway.provider(),key);orders.save(order);
+  order.providerOrder(gateway.createOrder(order.getReceiptNumber(),amount,order.getCurrency()).id());return response(orders.save(order));
+ }
+ @Transactional public PaymentResponse verify(UUID userId,VerifyPaymentRequest request){PaymentOrder order=own(userId,request.paymentOrderId());if(order.getStatus()==PaymentStatus.PAID)return response(order);if(!gateway.verifyPayment(order.getProviderOrderId(),request.providerPaymentId(),request.signature()))throw new BadRequestException("Invalid payment signature");order.paid(request.providerPaymentId());fulfil(order);notificationService.payment(userId,order.getReceiptNumber(),order.getAmountPaise());return response(order);}
+ @Transactional(readOnly=true)public List<PaymentResponse> mine(UUID userId){return orders.findByUserIdOrderByCreatedAtDesc(userId).stream().map(this::response).toList();}
+ @Transactional(readOnly=true)public PaymentResponse one(UUID userId,UUID id){return response(own(userId,id));}
+ @Transactional(readOnly=true)public List<PaymentResponse> all(){return orders.findAllByOrderByCreatedAtDesc().stream().map(this::response).toList();}
+ @Transactional public RefundResponse refund(UUID id,RefundRequest request){PaymentOrder order=orders.findById(id).orElseThrow(()->new NotFoundException("Payment not found"));if(order.getStatus()!=PaymentStatus.PAID&&order.getStatus()!=PaymentStatus.PARTIALLY_REFUNDED)throw new ConflictException("Only paid payments can be refunded");long already=refunds.findByPaymentOrderId(id).stream().filter(r->r.getStatus()==RefundStatus.PROCESSED).mapToLong(PaymentRefund::getAmountPaise).sum();long amount=request.amountPaise()==null?order.getAmountPaise()-already:request.amountPaise();if(amount<=0||already+amount>order.getAmountPaise())throw new BadRequestException("Refund exceeds refundable amount");PaymentRefund refund=refunds.save(new PaymentRefund(order,amount,request.reason().trim()));refund.processed(gateway.refund(order.getProviderPaymentId(),amount,request.reason()).id());order.refundStatus(already+amount);notificationService.refund(order.getUser().getId(),order.getReceiptNumber(),amount);return refundResponse(refund);}
+ @Transactional public void webhook(String eventId,String signature,String body,com.fasterxml.jackson.databind.JsonNode json){if(eventId==null||eventId.isBlank())throw new BadRequestException("Missing webhook event id");if(webhookEvents.existsByProviderEventId(eventId))return;if(!gateway.verifyWebhook(body,signature))throw new BadRequestException("Invalid webhook signature");String type=json.path("event").asText();if("payment.captured".equals(type)){var payment=json.path("payload").path("payment").path("entity");String orderId=payment.path("order_id").asText();String paymentId=payment.path("id").asText();orders.findByProviderOrderId(orderId).ifPresent(o->{if(o.getStatus()!=PaymentStatus.PAID){o.paid(paymentId);fulfil(o);notificationService.payment(o.getUser().getId(),o.getReceiptNumber(),o.getAmountPaise());}});}webhookEvents.save(new PaymentWebhookEvent(eventId,type,sha256(body)));}
+ private long resolveAmount(UUID userId,PaymentPurpose purpose,UUID ref){BigDecimal rupees=switch(purpose){case BOOKING->{Booking b=bookings.findById(ref).orElseThrow(()->new NotFoundException("Booking not found"));owner(userId,b.getUser());if(b.getStatus()==BookingStatus.CANCELLED)throw new ConflictException("Cancelled booking cannot be paid");yield b.getSlot().getFacility().getBookingPrice().multiply(BigDecimal.valueOf(b.getQuantity()));}case MEMBERSHIP->{CustomerMembership m=memberships.findById(ref).orElseThrow(()->new NotFoundException("Membership not found"));owner(userId,m.getUser());if(m.getStatus()!=MembershipStatus.PENDING_PAYMENT)throw new ConflictException("Membership is not awaiting payment");yield m.getPlan().getPrice();}case TRAINING->{TrainingEnrollment e=enrollments.findById(ref).orElseThrow(()->new NotFoundException("Enrollment not found"));owner(userId,e.getUser());if(e.getStatus()==EnrollmentStatus.CANCELLED)throw new ConflictException("Cancelled enrollment cannot be paid");yield e.getBatch().getFee();}};try{return rupees.movePointRight(2).setScale(0,RoundingMode.UNNECESSARY).longValueExact();}catch(ArithmeticException e){throw new BadRequestException("Invalid configured payment amount");}}
+ private void fulfil(PaymentOrder o){if(o.getPurpose()==PaymentPurpose.MEMBERSHIP){CustomerMembership m=memberships.findById(o.getReferenceId()).orElseThrow();if(m.getStatus()==MembershipStatus.PENDING_PAYMENT)m.activate(LocalDate.now());}}
+ private PaymentOrder own(UUID userId,UUID id){PaymentOrder o=orders.findById(id).orElseThrow(()->new NotFoundException("Payment not found"));owner(userId,o.getUser());return o;}private void owner(UUID id,User u){if(!u.getId().equals(id))throw new NotFoundException("Payment reference not found");}
+ private PaymentResponse response(PaymentOrder o){return new PaymentResponse(o.getId(),o.getPurpose(),o.getReferenceId(),o.getReceiptNumber(),o.getAmountPaise(),o.getCurrency(),o.getProvider(),o.getProviderOrderId(),o.getProviderPaymentId(),o.getStatus(),gateway.publicKey(),o.getPaidAt(),o.getCreatedAt());}
+ private RefundResponse refundResponse(PaymentRefund r){return new RefundResponse(r.getId(),r.getAmountPaise(),r.getReason(),r.getStatus(),r.getProviderRefundId());}
+ private static String sha256(String value){try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
 }
