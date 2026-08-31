@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.tournament.dto;import jakarta.validation.constraints.*;public record OrganizerApplicationRequest(@NotBlank@Size(max=160)String organizationName,@Size(max=1000)String experience,@NotBlank@Pattern(regexp="^[0-9+ -]{8,20}$")String contactNumber){}

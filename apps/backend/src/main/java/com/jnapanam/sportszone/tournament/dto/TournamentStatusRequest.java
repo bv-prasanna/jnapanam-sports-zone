@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.tournament.dto;import com.jnapanam.sportszone.tournament.model.TournamentStatus;import jakarta.validation.constraints.NotNull;public record TournamentStatusRequest(@NotNull TournamentStatus status){}

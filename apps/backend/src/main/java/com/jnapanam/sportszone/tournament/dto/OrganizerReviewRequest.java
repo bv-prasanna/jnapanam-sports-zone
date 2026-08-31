@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.tournament.dto;import com.jnapanam.sportszone.tournament.model.OrganizerStatus;import jakarta.validation.constraints.*;public record OrganizerReviewRequest(@NotNull OrganizerStatus status,@Size(max=300)String reviewNote){}

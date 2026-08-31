@@ -278,6 +278,42 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.readAt").isNotEmpty());
     }
 
+    @Test
+    void approvedOrganizerRunsTournamentTeamsFixturesAndResults() throws Exception {
+        String adminEmail=uniqueEmail("tournament-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        TokenPair organizer=register(uniqueEmail("organizer"));
+        MvcResult profile=mvc.perform(get("/api/v1/profile/me").header("Authorization",bearer(organizer.accessToken()))).andExpect(status().isOk()).andReturn();
+        String organizerId=field(profile,ID);
+        MvcResult application=mvc.perform(post("/api/v1/tournaments/organizer-applications").header("Authorization",bearer(organizer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"organizationName\":\"Holalkere Sports Club\",\"experience\":\"Local competitions\",\"contactNumber\":\"8296022107\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING")).andReturn();
+        String applicationId=field(application,ID);
+        mvc.perform(patch("/api/v1/admin/tournaments/organizer-applications/{id}",applicationId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"APPROVED\",\"reviewNote\":\"Verified\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("APPROVED"));
+        java.time.LocalDate opens=java.time.LocalDate.now().minusDays(1),closes=java.time.LocalDate.now().plusDays(7),starts=closes.plusDays(1),ends=starts.plusDays(2);
+        String code="TOUR_"+UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        MvcResult tournament=mvc.perform(post("/api/v1/admin/tournaments").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\""+code+"\",\"name\":\"Jnapanam Cup\",\"sportCode\":\"CRICKET\",\"organizerUserId\":\""+organizerId+"\",\"format\":\"SINGLE_ELIMINATION\",\"registrationOpens\":\""+opens+"\",\"registrationCloses\":\""+closes+"\",\"startDate\":\""+starts+"\",\"endDate\":\""+ends+"\",\"teamSize\":2,\"maxTeams\":4,\"entryFee\":500.00}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("DRAFT")).andReturn();
+        String tournamentId=field(tournament,ID);
+        mvc.perform(patch("/api/v1/admin/tournaments/{id}/status",tournamentId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"REGISTRATION_OPEN\"}"))
+                .andExpect(status().isOk());
+        TokenPair captain1=register(uniqueEmail("captain-one"));TokenPair captain2=register(uniqueEmail("captain-two"));
+        mvc.perform(post("/api/v1/tournaments/{id}/teams",tournamentId).header("Authorization",bearer(captain1.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"teamName\":\"Warriors\",\"members\":[{\"name\":\"Player One\"},{\"name\":\"Player Two\"}]}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.members",hasSize(2)));
+        mvc.perform(post("/api/v1/tournaments/{id}/teams",tournamentId).header("Authorization",bearer(captain2.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"teamName\":\"Challengers\",\"members\":[{\"name\":\"Player Three\"},{\"name\":\"Player Four\"}]}"))
+                .andExpect(status().isCreated());
+        MvcResult generated=mvc.perform(post("/api/v1/admin/tournaments/{id}/fixtures/generate",tournamentId).header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$",hasSize(1))).andReturn();
+        String fixtureId=field(generated,ID);
+        mvc.perform(patch("/api/v1/admin/tournaments/fixtures/{id}/result",fixtureId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"homeScore\":120,\"awayScore\":110}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED")).andExpect(jsonPath("$.winner").value("Warriors"));
+        mvc.perform(get("/api/v1/public/tournaments/{id}/fixtures",tournamentId)).andExpect(status().isOk()).andExpect(jsonPath("$[0].homeScore").value(120));
+    }
+
     private TokenPair register(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(registerBody(email)))
                 .andExpect(status().isCreated()).andReturn();
