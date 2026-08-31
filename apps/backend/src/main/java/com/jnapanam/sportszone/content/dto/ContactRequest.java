@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.content.dto;import jakarta.validation.constraints.*;public record ContactRequest(@NotBlank@Size(max=120)String name,@NotBlank@Email@Size(max=180)String email,@Pattern(regexp="^$|^[0-9+ -]{8,20}$")String mobile,@NotBlank@Size(max=180)String subject,@NotBlank@Size(max=4000)String message){}

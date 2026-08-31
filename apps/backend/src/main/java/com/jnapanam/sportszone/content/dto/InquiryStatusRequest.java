@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.content.dto;import com.jnapanam.sportszone.content.model.InquiryStatus;import jakarta.validation.constraints.*;public record InquiryStatusRequest(@NotNull InquiryStatus status,@Size(max=500)String adminNote){}

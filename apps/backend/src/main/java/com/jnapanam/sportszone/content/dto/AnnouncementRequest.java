@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.content.dto;import jakarta.validation.constraints.*;import java.time.Instant;public record AnnouncementRequest(@NotBlank@Size(max=180)String title,@NotBlank String body,@Min(0)int priority,@NotNull Instant publishFrom,Instant publishUntil){}

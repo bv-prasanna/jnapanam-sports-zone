@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.content.dto;import com.jnapanam.sportszone.content.model.ContentStatus;import jakarta.validation.constraints.*;public record PageRequest(@NotBlank@Pattern(regexp="^[a-zA-Z0-9-]{2,80}$")String slug,@NotBlank@Size(max=180)String title,@Size(max=500)String summary,@NotBlank String body,@NotNull ContentStatus status){}

@@ -334,6 +334,37 @@ class ModuleRegressionIntegrationTest {
         mvc.perform(get("/api/v1/admin/dashboard").header("Authorization",bearer(customer.accessToken()))).andExpect(status().isForbidden());
     }
 
+    @Test
+    void adminPublishesWebsiteContentAndHandlesContactInquiry() throws Exception {
+        String adminEmail=uniqueEmail("content-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String slug="summer-camp-"+UUID.randomUUID().toString().substring(0,8);
+        java.time.Instant start=java.time.Instant.now().plusSeconds(86400),end=start.plusSeconds(7200);
+        MvcResult event=mvc.perform(post("/api/v1/admin/content/events").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"slug\":\""+slug+"\",\"title\":\"Summer Cricket Camp\",\"description\":\"Coaching camp for young players\",\"eventType\":\"CAMP\",\"sportCode\":\"CRICKET\",\"startsAt\":\""+start+"\",\"endsAt\":\""+end+"\",\"imageUrl\":\"https://example.com/cricket.jpg\",\"featured\":true,\"displayOrder\":1}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("DRAFT")).andReturn();
+        String eventId=field(event,ID);
+        mvc.perform(patch("/api/v1/admin/content/events/{id}/status",eventId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk());
+        MvcResult announcement=mvc.perform(post("/api/v1/admin/content/announcements").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Registration Open\",\"body\":\"Summer registrations are now open.\",\"priority\":10,\"publishFrom\":\""+java.time.Instant.now().minusSeconds(60)+"\"}"))
+                .andExpect(status().isCreated()).andReturn();
+        mvc.perform(patch("/api/v1/admin/content/announcements/{id}/status",field(announcement,ID)).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/v1/admin/content/gallery").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Cricket Training\",\"mediaType\":\"IMAGE\",\"mediaUrl\":\"https://example.com/gallery.jpg\",\"altText\":\"Children training in cricket\",\"sportCode\":\"CRICKET\",\"published\":true,\"displayOrder\":1}"))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/public/content/events")).andExpect(status().isOk()).andExpect(jsonPath("$[*].slug",hasItem(slug)));
+        mvc.perform(get("/api/v1/public/content/announcements")).andExpect(status().isOk()).andExpect(jsonPath("$[*].title",hasItem("Registration Open")));
+        mvc.perform(get("/api/v1/public/content/gallery")).andExpect(status().isOk()).andExpect(jsonPath("$[*].title",hasItem("Cricket Training")));
+        mvc.perform(get("/api/v1/public/content/pages/about-us")).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PUBLISHED"));
+        MvcResult inquiry=mvc.perform(post("/api/v1/public/content/contact").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Website Visitor\",\"email\":\"visitor@example.com\",\"mobile\":\"8296022107\",\"subject\":\"Swimming enquiry\",\"message\":\"Please share membership details.\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("NEW")).andReturn();
+        mvc.perform(patch("/api/v1/admin/content/inquiries/{id}/status",field(inquiry,ID)).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"RESOLVED\",\"adminNote\":\"Customer contacted\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.resolvedAt").isNotEmpty());
+    }
+
     private TokenPair register(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(registerBody(email)))
                 .andExpect(status().isCreated()).andReturn();

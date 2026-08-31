@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.content.dto;import com.jnapanam.sportszone.content.model.ContentStatus;import jakarta.validation.constraints.NotNull;public record ContentStatusRequest(@NotNull ContentStatus status){}
