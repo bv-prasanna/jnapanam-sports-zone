@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.usermanagement.dto;import java.util.*;public record AdminUserDetailResponse(AdminUserResponse user,Set<String>tags,List<UserNoteResponse>notes,CustomerActivitySummary activity){}

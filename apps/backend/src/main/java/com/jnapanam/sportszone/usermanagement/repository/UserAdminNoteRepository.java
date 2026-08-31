@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.usermanagement.repository;import com.jnapanam.sportszone.usermanagement.model.UserAdminNote;import java.util.*;import org.springframework.data.jpa.repository.JpaRepository;public interface UserAdminNoteRepository extends JpaRepository<UserAdminNote,UUID>{List<UserAdminNote>findByUserIdOrderByCreatedAtDesc(UUID id);}

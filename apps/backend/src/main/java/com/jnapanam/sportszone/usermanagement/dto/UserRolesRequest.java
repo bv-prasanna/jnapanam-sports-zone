@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.usermanagement.dto;import com.jnapanam.sportszone.identity.model.RoleName;import jakarta.validation.constraints.NotEmpty;import java.util.Set;public record UserRolesRequest(@NotEmpty Set<RoleName> roles){}

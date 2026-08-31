@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.usermanagement.dto;import com.jnapanam.sportszone.identity.model.UserStatus;import jakarta.validation.constraints.NotNull;public record UserStatusRequest(@NotNull UserStatus status){}

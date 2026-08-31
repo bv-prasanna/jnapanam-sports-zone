@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.usermanagement.dto;import jakarta.validation.constraints.*;public record AdminCreateUserRequest(@NotBlank@Size(max=120)String fullName,@NotBlank@Email@Size(max=180)String email,@Pattern(regexp="^$|^[0-9+ -]{8,20}$")String mobile,@NotBlank@Size(min=10,max=100)String temporaryPassword){}

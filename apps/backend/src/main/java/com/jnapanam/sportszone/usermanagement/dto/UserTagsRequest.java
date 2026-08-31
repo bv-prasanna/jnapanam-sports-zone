@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.usermanagement.dto;import jakarta.validation.constraints.*;import java.util.Set;public record UserTagsRequest(@Size(max=20)Set<@Pattern(regexp="^[A-Za-z0-9_-]{1,50}$")String> tags){}

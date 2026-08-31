@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.usermanagement.dto;public record CustomerActivitySummary(long bookings,long checkedIns,long memberships,long trainingEnrollments,long tournamentTeams,long payments,long paidAmountPaise,long refundsPaise){}

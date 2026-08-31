@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.*;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +14,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class) ResponseEntity<ProblemDetail> badRequest(BadRequestException ex) { return problem(HttpStatus.BAD_REQUEST, ex.getMessage()); }
     @ExceptionHandler(ConflictException.class) ResponseEntity<ProblemDetail> conflict(ConflictException ex) { return problem(HttpStatus.CONFLICT, ex.getMessage()); }
     @ExceptionHandler(NotFoundException.class) ResponseEntity<ProblemDetail> notFound(NotFoundException ex) { return problem(HttpStatus.NOT_FOUND, ex.getMessage()); }
-    @ExceptionHandler({UnauthorizedException.class, BadCredentialsException.class}) ResponseEntity<ProblemDetail> unauthorized(RuntimeException ex) { return problem(HttpStatus.UNAUTHORIZED, "Invalid credentials or token"); }
+    @ExceptionHandler({UnauthorizedException.class, AuthenticationException.class}) ResponseEntity<ProblemDetail> unauthorized(RuntimeException ex) { return problem(HttpStatus.UNAUTHORIZED, "Invalid credentials or token"); }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ProblemDetail> validation(MethodArgumentNotValidException ex) {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request validation failed");

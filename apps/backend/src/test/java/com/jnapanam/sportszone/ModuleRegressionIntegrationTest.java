@@ -365,6 +365,47 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.resolvedAt").isNotEmpty());
     }
 
+    @Test
+    void adminsManageCustomersRolesPasswordsStatusNotesAndTags() throws Exception {
+        String adminEmail=uniqueEmail("users-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String superEmail=uniqueEmail("users-super");register(superEmail);promote(superEmail,"SUPER_ADMIN");String superToken=login(superEmail,"Test@12345").accessToken();
+        MvcResult superProfile=mvc.perform(get("/api/v1/profile/me").header("Authorization",bearer(superToken))).andExpect(status().isOk()).andReturn();String superId=field(superProfile,ID);
+        String customerEmail=uniqueEmail("managed-customer");
+        MvcResult created=mvc.perform(post("/api/v1/admin/users").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"fullName\":\"Managed Customer\",\"email\":\""+customerEmail+"\",\"mobile\":\"8296022199\",\"temporaryPassword\":\"Temporary@123\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.forcePasswordChange").value(true)).andExpect(jsonPath("$.roles",hasItem("CUSTOMER"))).andReturn();
+        String userId=field(created,ID);
+        mvc.perform(put("/api/v1/admin/users/{id}",userId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"fullName\":\"Managed Customer Updated\",\"email\":\""+customerEmail+"\",\"mobile\":\"8296022199\",\"addressLine\":\"Main Road\",\"city\":\"Holalkere\",\"state\":\"Karnataka\",\"postalCode\":\"577526\",\"emergencyContactName\":\"Family Contact\",\"emergencyContactMobile\":\"8296022107\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.city").value("Holalkere"));
+        mvc.perform(put("/api/v1/admin/users/{id}/roles",userId).header("Authorization",bearer(superToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"roles\":[\"CUSTOMER\",\"COACH\"]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.roles",hasItems("CUSTOMER","COACH")));
+        mvc.perform(put("/api/v1/admin/users/{id}/tags",userId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"tags\":[\"VIP\",\"SWIMMING\"]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$",hasItems("VIP","SWIMMING")));
+        mvc.perform(post("/api/v1/admin/users/{id}/notes",userId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"note\":\"Interested in family membership\"}"))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/admin/users/{id}",userId).header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.tags",hasItems("VIP","SWIMMING"))).andExpect(jsonPath("$.notes[0].note").value("Interested in family membership")).andExpect(jsonPath("$.activity.bookings").value(0));
+        mvc.perform(post("/api/v1/admin/users/{id}/password-reset",userId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"temporaryPassword\":\"ResetPassword@123\"}"))
+                .andExpect(status().isNoContent());
+        TokenPair temporary=login(customerEmail,"ResetPassword@123");
+        mvc.perform(post("/api/v1/profile/password").header("Authorization",bearer(temporary.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"currentPassword\":\"ResetPassword@123\",\"newPassword\":\"CustomerNew@123\"}"))
+                .andExpect(status().isNoContent());
+        login(customerEmail,"CustomerNew@123");
+        mvc.perform(get("/api/v1/admin/users").param("q","Managed Customer").header("Authorization",bearer(adminToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[*].id",hasItem(userId)));
+        mvc.perform(patch("/api/v1/admin/users/{id}/status",userId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"SUSPENDED\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUSPENDED"));
+        mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody(customerEmail,"CustomerNew@123"))).andExpect(status().isUnauthorized());
+        mvc.perform(put("/api/v1/admin/users/{id}/roles",superId).header("Authorization",bearer(superToken)).contentType(MediaType.APPLICATION_JSON).content("{\"roles\":[\"CUSTOMER\"]}"))
+                .andExpect(status().isConflict());
+    }
+
     private TokenPair register(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(registerBody(email)))
                 .andExpect(status().isCreated()).andReturn();
