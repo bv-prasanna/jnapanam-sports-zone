@@ -25,6 +25,12 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 app:
+  payment:
+    provider: ${PAYMENT_PROVIDER:mock}
+    key-id: ${RAZORPAY_KEY_ID:}
+    key-secret: ${RAZORPAY_KEY_SECRET:}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
+    currency: INR
   booking:
     hold-minutes: ${BOOKING_HOLD_MINUTES:10}
   cors:

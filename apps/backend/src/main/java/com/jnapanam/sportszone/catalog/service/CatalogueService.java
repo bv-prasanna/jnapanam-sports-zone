@@ -94,7 +94,7 @@ public class CatalogueService {
     public FacilityResponse createFacility(FacilityRequest request) {
         if (facilities.existsByCodeIgnoreCase(request.code())) throw new ConflictException("Facility code already exists");
         Sport sport = requireSport(request.sportCode());
-        Facility facility = new Facility(sport, request.code(), request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity());
+        Facility facility = new Facility(sport, request.code(), request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
         return FacilityResponse.from(facilities.save(facility));
     }
 
@@ -102,7 +102,7 @@ public class CatalogueService {
     public FacilityResponse updateFacility(UUID id, FacilityRequest request) {
         Facility facility = requireFacility(id);
         if (!facility.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Facility code cannot be changed");
-        facility.update(requireSport(request.sportCode()), request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity());
+        facility.update(requireSport(request.sportCode()), request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
         return FacilityResponse.from(facility);
     }
 

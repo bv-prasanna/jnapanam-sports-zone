@@ -12,6 +12,9 @@ spring:
     enabled: true
 
 app:
+  payment:
+    provider: mock
+    currency: INR
   booking:
     hold-minutes: 10
   security:

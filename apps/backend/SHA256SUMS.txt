@@ -125,7 +125,7 @@ dce85c27c5d6154425d9a1f8a244334de5a376180a3887a9f196ab4cc24eb253  ./src/main/res
 e199594e587f7b0c2eff7c1f200f05ce3167d22351772a38b5c36f017f56c27c  ./src/main/resources/db/migration/V4__booking_schema.sql
 68f0d7604a050b5dc8432b5b2e6b2e68c6160728b0fa35834c5fb9bf1cd90c84  ./src/main/resources/db/migration/V5__membership_schema.sql
 d87e66400164c660d60e18a0a4e3ce5ca48ca6d198c8aaaa4dddc78c87e1f8d7  ./src/main/resources/db/migration/V6__training_coaching_schema.sql
-5361ae4f84945798791861864b03cccefb4cfeb01dae5cb5b03004af150187e9  ./src/test/java/com/jnapanam/sportszone/ModuleRegressionIntegrationTest.java
+1e9b2bd2f3938ff6c741a43638755ad96abe14186d67f30fb79163be4fa80d99  ./src/test/java/com/jnapanam/sportszone/ModuleRegressionIntegrationTest.java
 631c9c7f882149c11acc2cff0def0c6ab3952baa26cd17fd00dd3b653237d12f  ./src/test/java/com/jnapanam/sportszone/catalog/CatalogConfigurationTest.java
 c598cc9640ec972453be8da67da9f7d0313d9d83a7e039d8f1b1457c44f78e6d  ./src/test/java/com/jnapanam/sportszone/security/TokenServiceTest.java
 b48dbb5ca7ecdb997cda771c96a0cd6b40efd170f62ab5ef534c13b9f744694d  ./src/test/resources/application-test.yml

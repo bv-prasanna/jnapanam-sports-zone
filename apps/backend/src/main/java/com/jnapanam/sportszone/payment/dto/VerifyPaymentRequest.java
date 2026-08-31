@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.payment.dto;import jakarta.validation.constraints.NotBlank;import jakarta.validation.constraints.NotNull;import java.util.UUID;public record VerifyPaymentRequest(@NotNull UUID paymentOrderId,@NotBlank String providerPaymentId,@NotBlank String signature){}

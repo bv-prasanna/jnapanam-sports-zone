@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.payment.repository;import com.jnapanam.sportszone.payment.model.PaymentRefund;import java.util.*;import org.springframework.data.jpa.repository.JpaRepository;public interface PaymentRefundRepository extends JpaRepository<PaymentRefund,UUID>{List<PaymentRefund>findByPaymentOrderId(UUID id);}

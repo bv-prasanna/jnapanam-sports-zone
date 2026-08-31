@@ -231,6 +231,34 @@ class ModuleRegressionIntegrationTest {
         mvc.perform(get("/api/v1/public/training/batches")).andExpect(status().isOk()).andExpect(jsonPath("$[*].id",hasItem(batchId))).andExpect(jsonPath("$[0].available").value(1));
     }
 
+    @Test
+    void customerPaysMembershipWithIdempotencyAndAdminRefunds() throws Exception {
+        String adminEmail=uniqueEmail("payment-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String code="PAY_"+UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        mvc.perform(post("/api/v1/admin/memberships/plans").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\""+code+"\",\"name\":\"Payment Plan\",\"durationDays\":30,\"price\":1250.00,\"sportCodes\":[\"GYM\"]}"))
+                .andExpect(status().isCreated());
+        TokenPair customer=register(uniqueEmail("payer"));
+        MvcResult membership=mvc.perform(post("/api/v1/memberships").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"planCode\":\""+code+"\"}"))
+                .andExpect(status().isCreated()).andReturn();
+        String membershipId=field(membership,ID);String idempotency="pay-"+UUID.randomUUID();
+        String createBody="{\"purpose\":\"MEMBERSHIP\",\"referenceId\":\""+membershipId+"\"}";
+        MvcResult created=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken())).header("Idempotency-Key",idempotency).contentType(MediaType.APPLICATION_JSON).content(createBody))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.amountPaise").value(125000)).andExpect(jsonPath("$.provider").value("MOCK")).andReturn();
+        String paymentId=field(created,ID);String providerOrderId=field(created,Pattern.compile("\\\"providerOrderId\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""));
+        mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken())).header("Idempotency-Key",idempotency).contentType(MediaType.APPLICATION_JSON).content(createBody))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.id").value(paymentId));
+        mvc.perform(post("/api/v1/payments/verify").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentOrderId\":\""+paymentId+"\",\"providerPaymentId\":\"pay_mock_123\",\"signature\":\"mock-signature\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.providerOrderId").value(providerOrderId)).andExpect(jsonPath("$.status").value("PAID"));
+        mvc.perform(get("/api/v1/memberships/me").header("Authorization",bearer(customer.accessToken())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("ACTIVE"));
+        mvc.perform(post("/api/v1/admin/payments/{id}/refunds",paymentId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Automation refund\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.amountPaise").value(125000)).andExpect(jsonPath("$.status").value("PROCESSED"));
+    }
+
     private TokenPair register(String email) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/auth/register").contentType(MediaType.APPLICATION_JSON).content(registerBody(email)))
                 .andExpect(status().isCreated()).andReturn();

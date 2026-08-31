@@ -3,6 +3,7 @@ package com.jnapanam.sportszone.catalog.model;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
@@ -16,6 +17,7 @@ public class Facility {
     @Column(name = "location_label", length = 160) private String locationLabel;
     @Column(name = "slot_duration_minutes", nullable = false) private int slotDurationMinutes;
     @Column(nullable = false) private int capacity;
+    @Column(name = "booking_price", nullable = false, precision = 12, scale = 2) private BigDecimal bookingPrice;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) private CatalogueStatus status;
     @Column(name = "suspended_from") private LocalDate suspendedFrom;
     @Column(name = "suspended_until") private LocalDate suspendedUntil;
@@ -26,6 +28,10 @@ public class Facility {
     protected Facility() {}
 
     public Facility(Sport sport, String code, String name, String description, String locationLabel, int slotDurationMinutes, int capacity) {
+        this(sport, code, name, description, locationLabel, slotDurationMinutes, capacity, BigDecimal.ZERO);
+    }
+
+    public Facility(Sport sport, String code, String name, String description, String locationLabel, int slotDurationMinutes, int capacity, BigDecimal bookingPrice) {
         this.id = UUID.randomUUID();
         this.sport = sport;
         this.code = code.trim().toUpperCase(java.util.Locale.ROOT);
@@ -34,18 +40,20 @@ public class Facility {
         this.locationLabel = trimToNull(locationLabel);
         this.slotDurationMinutes = slotDurationMinutes;
         this.capacity = capacity;
+        this.bookingPrice = bookingPrice == null ? BigDecimal.ZERO : bookingPrice;
         this.status = CatalogueStatus.ACTIVE;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
 
-    public void update(Sport sport, String name, String description, String locationLabel, int slotDurationMinutes, int capacity) {
+    public void update(Sport sport, String name, String description, String locationLabel, int slotDurationMinutes, int capacity, BigDecimal bookingPrice) {
         this.sport = sport;
         this.name = name.trim();
         this.description = trimToNull(description);
         this.locationLabel = trimToNull(locationLabel);
         this.slotDurationMinutes = slotDurationMinutes;
         this.capacity = capacity;
+        this.bookingPrice = bookingPrice == null ? BigDecimal.ZERO : bookingPrice;
         this.updatedAt = Instant.now();
     }
 
@@ -65,6 +73,7 @@ public class Facility {
     public String getLocationLabel() { return locationLabel; }
     public int getSlotDurationMinutes() { return slotDurationMinutes; }
     public int getCapacity() { return capacity; }
+    public BigDecimal getBookingPrice() { return bookingPrice; }
     public CatalogueStatus getStatus() { return status; }
     public LocalDate getSuspendedFrom() { return suspendedFrom; }
     public LocalDate getSuspendedUntil() { return suspendedUntil; }
@@ -78,4 +87,3 @@ public class Facility {
 
     private static String trimToNull(String value) { return value == null || value.isBlank() ? null : value.trim(); }
 }
-

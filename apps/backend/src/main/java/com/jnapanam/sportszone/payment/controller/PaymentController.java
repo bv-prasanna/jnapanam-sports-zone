@@ -1,0 +1,6 @@
+package com.jnapanam.sportszone.payment.controller;
+import com.jnapanam.sportszone.payment.dto.*;import com.jnapanam.sportszone.payment.service.PaymentService;import jakarta.validation.Valid;import java.util.*;import org.springframework.http.*;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/api/v1/payments") public class PaymentController{private final PaymentService service;public PaymentController(PaymentService s){service=s;}
+ @PostMapping("/orders")@ResponseStatus(HttpStatus.CREATED)public PaymentResponse create(Authentication a,@RequestHeader("Idempotency-Key")String key,@Valid@RequestBody CreatePaymentRequest r){return service.create(user(a),key,r);}
+ @PostMapping("/verify")public PaymentResponse verify(Authentication a,@Valid@RequestBody VerifyPaymentRequest r){return service.verify(user(a),r);}
+ @GetMapping("/me")public List<PaymentResponse>mine(Authentication a){return service.mine(user(a));}@GetMapping("/{id}/receipt")public PaymentResponse receipt(Authentication a,@PathVariable UUID id){return service.one(user(a),id);}private static UUID user(Authentication a){return UUID.fromString(a.getName());}}

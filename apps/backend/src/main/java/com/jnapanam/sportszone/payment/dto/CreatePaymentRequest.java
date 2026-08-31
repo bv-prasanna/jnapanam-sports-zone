@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.payment.dto;import com.jnapanam.sportszone.payment.model.PaymentPurpose;import jakarta.validation.constraints.NotNull;import java.util.UUID;public record CreatePaymentRequest(@NotNull PaymentPurpose purpose,@NotNull UUID referenceId){}

@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.payment.repository;import com.jnapanam.sportszone.payment.model.PaymentWebhookEvent;import java.util.UUID;import org.springframework.data.jpa.repository.JpaRepository;public interface PaymentWebhookEventRepository extends JpaRepository<PaymentWebhookEvent,UUID>{boolean existsByProviderEventId(String id);}
