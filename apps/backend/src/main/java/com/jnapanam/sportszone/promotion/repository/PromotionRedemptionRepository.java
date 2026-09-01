@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.promotion.repository;import com.jnapanam.sportszone.promotion.model.PromotionRedemption;import java.util.UUID;import org.springframework.data.jpa.repository.JpaRepository;public interface PromotionRedemptionRepository extends JpaRepository<PromotionRedemption,UUID>{long countByPromotionIdAndUserId(UUID promotionId,UUID userId);}

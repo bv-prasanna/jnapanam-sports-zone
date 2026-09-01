@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.loyalty.dto;import java.time.Instant;import java.util.List;public record LoyaltyResponse(long pointsBalance,long lifetimeEarned,long lifetimeRedeemed,long pointValuePaise,Instant updatedAt,List<Entry>transactions){public record Entry(String type,long points,String description,Instant createdAt){}}

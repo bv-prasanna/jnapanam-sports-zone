@@ -495,6 +495,35 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isConflict());
     }
 
+    @Test
+    void adminCreatesCouponAndCustomerRedeemsLoyaltyPoints() throws Exception {
+        String adminEmail=uniqueEmail("rewards-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        TokenPair customer=register(uniqueEmail("rewards-customer"));
+        MvcResult profile=mvc.perform(get("/api/v1/profile/me").header("Authorization",bearer(customer.accessToken()))).andExpect(status().isOk()).andReturn();String customerId=field(profile,ID);
+        mvc.perform(post("/api/v1/admin/loyalty/{id}/adjust",customerId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"points\":100,\"reason\":\"Welcome points\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.pointsBalance").value(100));
+        String coupon="SAVE10_"+UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        String starts=java.time.Instant.now().minusSeconds(60).toString();String ends=java.time.Instant.now().plusSeconds(86400).toString();
+        mvc.perform(post("/api/v1/admin/promotions").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\""+coupon+"\",\"name\":\"Ten percent online offer\",\"discountType\":\"PERCENTAGE\",\"discountValue\":10,\"minOrderPaise\":10000,\"purpose\":\"MEMBERSHIP\",\"automatic\":false,\"onlineOnly\":true,\"startsAt\":\""+starts+"\",\"endsAt\":\""+ends+"\",\"perUserLimit\":1,\"active\":true}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.code").value(coupon));
+        String plan="REWARD_"+UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        mvc.perform(post("/api/v1/admin/memberships/plans").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\""+plan+"\",\"name\":\"Rewards Plan\",\"durationDays\":30,\"price\":1000.00,\"sportCodes\":[\"GYM\"]}"))
+                .andExpect(status().isCreated());
+        MvcResult membership=mvc.perform(post("/api/v1/memberships").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"planCode\":\""+plan+"\"}"))
+                .andExpect(status().isCreated()).andReturn();
+        MvcResult payment=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken())).header("Idempotency-Key","reward-"+UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"purpose\":\"MEMBERSHIP\",\"referenceId\":\""+field(membership,ID)+"\",\"couponCode\":\""+coupon+"\",\"loyaltyPoints\":50}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.originalAmountPaise").value(100000)).andExpect(jsonPath("$.discountPaise").value(10000)).andExpect(jsonPath("$.loyaltyPointsUsed").value(50)).andExpect(jsonPath("$.amountPaise").value(85000)).andReturn();
+        mvc.perform(post("/api/v1/payments/verify").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentOrderId\":\""+field(payment,ID)+"\",\"providerPaymentId\":\"pay_reward_"+UUID.randomUUID()+"\",\"signature\":\"mock-signature\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.loyaltyPointsEarned").value(8));
+        mvc.perform(get("/api/v1/loyalty/me").header("Authorization",bearer(customer.accessToken())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.pointsBalance").value(58)).andExpect(jsonPath("$.transactions",hasSize(3)));
+    }
+
     private void payMock(TokenPair customer,String referenceId,String purpose,String prefix)throws Exception{
         MvcResult payment=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken())).header("Idempotency-Key",prefix+UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON).content("{\"purpose\":\""+purpose+"\",\"referenceId\":\""+referenceId+"\"}"))
                 .andExpect(status().isCreated()).andReturn();
