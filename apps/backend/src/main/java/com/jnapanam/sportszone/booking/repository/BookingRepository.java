@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 public interface BookingRepository extends JpaRepository<Booking,UUID>{
  List<Booking> findByUserIdOrderByConfirmedAtDesc(UUID userId);
  Optional<Booking> findByBookingNumberIgnoreCase(String bookingNumber);
- @Query("select b from Booking b where (:date is null or b.slot.date=:date) order by b.confirmedAt desc") List<Booking> adminList(@Param("date") LocalDate date);
+ List<Booking> findAllByOrderByConfirmedAtDesc();
+List<Booking> findBySlot_DateOrderByConfirmedAtDesc(LocalDate date);
  List<Booking> findByStatusAndPaymentExpiresAtLessThanEqual(BookingStatus status,Instant expiresAt);
 }
