@@ -24,6 +24,7 @@ public class User {
     @Column(name="emergency_contact_name",length=120) private String emergencyContactName;
     @Column(name="emergency_contact_mobile",length=20) private String emergencyContactMobile;
     @Column(name="force_password_change",nullable=false) private boolean forcePasswordChange;
+    @Column(name="requires_upfront_payment",nullable=false) private boolean requiresUpfrontPayment;
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
@@ -46,6 +47,7 @@ public class User {
     public void status(UserStatus value){status=value;updatedAt=Instant.now();}
     public void replaceRoles(Set<Role> value){roles.clear();roles.addAll(value);updatedAt=Instant.now();}
     public void password(String hash,boolean force){passwordHash=hash;forcePasswordChange=force;updatedAt=Instant.now();}
-    public String getAddressLine(){return addressLine;}public String getCity(){return city;}public String getState(){return state;}public String getPostalCode(){return postalCode;}public String getEmergencyContactName(){return emergencyContactName;}public String getEmergencyContactMobile(){return emergencyContactMobile;}public boolean isForcePasswordChange(){return forcePasswordChange;}
+    public void paymentPolicy(boolean value){requiresUpfrontPayment=value;updatedAt=Instant.now();}
+    public String getAddressLine(){return addressLine;}public String getCity(){return city;}public String getState(){return state;}public String getPostalCode(){return postalCode;}public String getEmergencyContactName(){return emergencyContactName;}public String getEmergencyContactMobile(){return emergencyContactMobile;}public boolean isForcePasswordChange(){return forcePasswordChange;}public boolean isRequiresUpfrontPayment(){return requiresUpfrontPayment;}
     private static String clean(String v){return v==null||v.isBlank()?null:v.trim();}
 }

@@ -10,6 +10,6 @@ public interface BookingRepository extends JpaRepository<Booking,UUID>{
  List<Booking> findByUserIdOrderByConfirmedAtDesc(UUID userId);
  Optional<Booking> findByBookingNumberIgnoreCase(String bookingNumber);
  List<Booking> findAllByOrderByConfirmedAtDesc();
-List<Booking> findBySlot_DateOrderByConfirmedAtDesc(LocalDate date);
+ List<Booking> findBySlot_DateOrderByConfirmedAtDesc(LocalDate date);
  List<Booking> findByStatusAndPaymentExpiresAtLessThanEqual(BookingStatus status,Instant expiresAt);
 }

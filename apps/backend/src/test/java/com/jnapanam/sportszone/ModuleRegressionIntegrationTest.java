@@ -457,6 +457,44 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isAccepted()).andExpect(jsonPath("$.developmentResetToken").doesNotExist());
     }
 
+    @Test
+    void customerPaysAtVenueUnlessAdminRequiresUpfrontPayment() throws Exception {
+        String adminEmail=uniqueEmail("venue-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String suffix=UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        MvcResult facility=mvc.perform(post("/api/v1/admin/catalog/facilities").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\"VENUE_"+suffix+"\",\"sportCode\":\"BADMINTON\",\"name\":\"Pay At Venue Court\",\"slotDurationMinutes\":60,\"capacity\":2,\"bookingPrice\":300.00}"))
+                .andExpect(status().isCreated()).andReturn();String facilityId=field(facility,ID);
+        java.time.LocalDate date=java.time.LocalDate.now().plusDays(14);while(date.getDayOfWeek()!=java.time.DayOfWeek.MONDAY)date=date.plusDays(1);
+        mvc.perform(put("/api/v1/admin/catalog/facilities/{id}/operating-hours",facilityId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"dayOfWeek\":\"MONDAY\",\"openTime\":\"06:00:00\",\"closeTime\":\"08:00:00\",\"closed\":false}"))
+                .andExpect(status().isOk());
+        MvcResult slots=mvc.perform(get("/api/v1/public/facilities/{id}/slots",facilityId).param("date",date.toString())).andExpect(status().isOk()).andReturn();
+        TokenPair customer=register(uniqueEmail("venue-customer"));MvcResult profile=mvc.perform(get("/api/v1/profile/me").header("Authorization",bearer(customer.accessToken()))).andReturn();String customerId=field(profile,ID);
+        String slotId=field(slots,ID);
+        MvcResult hold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"slotId\":\""+slotId+"\",\"quantity\":1}"))
+                .andExpect(status().isCreated()).andReturn();
+        MvcResult booking=mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CONFIRMED")).andExpect(jsonPath("$.paymentStatus").value("UNPAID")).andReturn();
+        String bookingId=field(booking,ID);String number=field(booking,Pattern.compile("\\\"bookingNumber\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""));
+        mvc.perform(post("/api/v1/operations/bookings/{number}/check-in",number).header("Authorization",bearer(adminToken))).andExpect(status().isConflict());
+        mvc.perform(post("/api/v1/operations/bookings/{id}/collect-payment",bookingId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentMethod\":\"UPI\",\"reference\":\"upi-test-"+suffix+"\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.provider").value("ONSITE")).andExpect(jsonPath("$.status").value("PAID"));
+        mvc.perform(get("/api/v1/bookings/me").header("Authorization",bearer(customer.accessToken())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].paymentStatus").value("PAID")).andExpect(jsonPath("$[0].onsitePaymentMethod").value("UPI"));
+        mvc.perform(post("/api/v1/operations/bookings/{number}/check-in",number).header("Authorization",bearer(adminToken))).andExpect(status().isOk());
+        mvc.perform(patch("/api/v1/admin/users/{id}/payment-policy",customerId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"requiresUpfrontPayment\":true}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiresUpfrontPayment").value(true));
+        String secondSlot=field(slots.getResponse().getContentAsString().substring(slots.getResponse().getContentAsString().indexOf("},{")+2),ID);
+        MvcResult secondHold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"slotId\":\""+secondSlot+"\",\"quantity\":1}"))
+                .andExpect(status().isCreated()).andReturn();
+        mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"holdId\":\""+field(secondHold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\"}"))
+                .andExpect(status().isConflict());
+    }
+
     private void payMock(TokenPair customer,String referenceId,String purpose,String prefix)throws Exception{
         MvcResult payment=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken())).header("Idempotency-Key",prefix+UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON).content("{\"purpose\":\""+purpose+"\",\"referenceId\":\""+referenceId+"\"}"))
                 .andExpect(status().isCreated()).andReturn();
