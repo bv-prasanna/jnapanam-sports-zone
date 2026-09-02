@@ -73,3 +73,8 @@
 /* Consistent top navigation typography */
 .main-nav a,.nav-actions>a:not(.btn),.nav-actions .header-link,.mobile-actions a,.mobile-actions button{font-family:Arial,"Noto Sans Kannada","Nirmala UI",sans-serif;font-size:14px;font-weight:400;line-height:1.25;letter-spacing:0}
 .nav-actions .header-link{padding:0;margin:0}
+
+.training-dialog h2{font-size:clamp(1.4rem,3vw,1.85rem);line-height:1.2}
+.portal-dialog label small{color:#68715f;font-size:.78rem;font-weight:400;line-height:1.35}
+.dialog-error{border:1px solid #dc6b52;border-radius:.65rem;background:#fff0ec;color:#8f260e;padding:.75rem .85rem;font-size:.9rem;font-weight:650;line-height:1.4}
+.portal-dialog input[aria-invalid="true"]{border-color:#c83a0a}
