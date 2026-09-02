@@ -53,3 +53,11 @@
 .dialog-close{position:absolute;top:1rem;right:1rem;width:2.5rem;height:2.5rem;border:0;border-radius:50%;background:#f5eee2;color:#394132;font-size:1.6rem;line-height:1;cursor:pointer}
 .dialog-close:hover{background:#eadcc7}.dialog-actions{display:flex;justify-content:flex-end;gap:.75rem;margin-top:.5rem}.dialog-actions .btn{min-width:8rem}
 @media(max-width:520px){.portal-dialog{padding:1.4rem}.dialog-actions{display:grid;grid-template-columns:1fr 1fr}.dialog-actions .btn{min-width:0}}
+
+/* Customer record readability and dashboard logo clearance */
+@media(min-width:901px){.portal-nav{padding-top:92px}}
+.record-list article{position:relative;align-items:flex-start}
+.record-list article>div{flex:1 1 145px}
+.record-list .receipt-button{align-self:center;margin-left:auto;border-color:#c93a0b;background:#c93a0b;color:#fff;font-weight:700;padding:.7rem 1rem}
+.record-list .receipt-button:hover{background:#a92f08}
+.form-note[role="alert"]{white-space:normal;line-height:1.45}
