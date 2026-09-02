@@ -103,3 +103,11 @@
 /* Render the brand mark independently of framework image sizing. */
 .brand-logo{display:block;width:96px;height:96px;flex:none;background:url('/images/jnapanam-logo.png?v=20260902') center/contain no-repeat}
 @media(max-width:780px){.brand-logo{width:74px;height:74px}}
+
+
+/* Facility operating hours and closure management */
+.facility-schedule-dialog{width:min(96vw,850px);max-height:92vh;overflow:auto}
+.facility-schedule-dialog>p{max-width:720px}.schedule-section{display:grid;gap:1rem;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #e3d6c0}.schedule-title{display:flex;align-items:center;justify-content:space-between;gap:1rem}.schedule-section h3{margin:0;font:700 1.15rem Arial,sans-serif}
+.weekly-hours{display:grid;gap:.55rem}.hour-row{display:grid;grid-template-columns:120px 105px 1fr 1fr;align-items:end;gap:.7rem;border:1px solid #e3d6c0;border-radius:.7rem;background:#fffaf2;padding:.7rem}.hour-row>strong{align-self:center}.hour-row label{font-size:.78rem}.hour-row input[type=time]{min-height:2.5rem}.hour-row.is-closed{background:#f1f1ed;color:#777}.closed-toggle{display:flex!important;align-items:center;align-self:center;grid-template-columns:auto 1fr!important}.closed-toggle input{width:1rem!important;min-height:1rem!important;accent-color:#c83a0a}
+.closure-form{display:grid!important;grid-template-columns:180px 1fr auto;align-items:end;gap:.7rem!important}.closure-form input{min-height:2.75rem}.closure-list{display:grid;gap:.55rem}.closure-list article{display:flex;align-items:center;justify-content:space-between;gap:1rem;border:1px solid #e3d6c0;border-radius:.65rem;padding:.75rem .9rem}.closure-list article>div{display:grid;gap:.2rem}.closure-list article span{color:#68715f}.closure-list article button{border:1px solid #d9816a;border-radius:.45rem;background:#fff2ee;color:#a92f08;padding:.45rem .65rem;cursor:pointer}
+@media(max-width:680px){.schedule-title{align-items:stretch;flex-direction:column}.hour-row{grid-template-columns:1fr 1fr}.hour-row>strong{grid-column:1/-1}.closure-form{grid-template-columns:1fr!important}}
