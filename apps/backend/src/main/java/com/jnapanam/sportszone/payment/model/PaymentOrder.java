@@ -24,7 +24,7 @@ public class PaymentOrder {
  @Column(name="provider_payment_id",unique=true,length=120) private String providerPaymentId;
  @Enumerated(EnumType.STRING) @Column(nullable=false,length=30) private PaymentStatus status;
  @Column(name="idempotency_key",nullable=false,length=100) private String idempotencyKey;
- @Column(name="paid_at") private Instant paidAt;
+ @Column(name="paid_at") private Instant paidAt;\n @Column(name="voided_at") private Instant voidedAt;\n @Column(name="void_reason",length=300) private String voidReason;
  @Column(name="created_at",nullable=false) private Instant createdAt;
  @Column(name="updated_at",nullable=false) private Instant updatedAt;
  @Version private long version;
@@ -38,10 +38,10 @@ public class PaymentOrder {
  public void loyaltyEarned(long value){loyaltyPointsEarned=value;updatedAt=Instant.now();}
  public void providerOrder(String value){providerOrderId=value;updatedAt=Instant.now();}
  public void paid(String paymentId){providerPaymentId=paymentId;status=PaymentStatus.PAID;paidAt=Instant.now();updatedAt=paidAt;}
- public void refundStatus(long refunded){status=refunded>=amountPaise?PaymentStatus.REFUNDED:PaymentStatus.PARTIALLY_REFUNDED;updatedAt=Instant.now();}
+ public void voidOrder(String reason){if(status!=PaymentStatus.CREATED)throw new IllegalStateException("Only created payments can be voided");status=PaymentStatus.VOIDED;voidedAt=Instant.now();voidReason=reason.trim();updatedAt=voidedAt;}\n public void refundStatus(long refunded){status=refunded>=amountPaise?PaymentStatus.REFUNDED:PaymentStatus.PARTIALLY_REFUNDED;updatedAt=Instant.now();}
  public UUID getId(){return id;} public User getUser(){return user;} public PaymentPurpose getPurpose(){return purpose;} public UUID getReferenceId(){return referenceId;}
  public String getReceiptNumber(){return receiptNumber;} public long getAmountPaise(){return amountPaise;} public String getCurrency(){return currency;} public String getProvider(){return provider;}
  public String getProviderOrderId(){return providerOrderId;} public String getProviderPaymentId(){return providerPaymentId;} public PaymentStatus getStatus(){return status;}
- public String getIdempotencyKey(){return idempotencyKey;} public Instant getPaidAt(){return paidAt;} public Instant getCreatedAt(){return createdAt;}
+ public String getIdempotencyKey(){return idempotencyKey;} public Instant getPaidAt(){return paidAt;} public Instant getVoidedAt(){return voidedAt;} public String getVoidReason(){return voidReason;} public Instant getCreatedAt(){return createdAt;}
  public long getOriginalAmountPaise(){return originalAmountPaise;}public long getDiscountPaise(){return discountPaise;}public String getPromotionCode(){return promotionCode;}public long getLoyaltyPointsUsed(){return loyaltyPointsUsed;}public long getLoyaltyPointsEarned(){return loyaltyPointsEarned;}
 }
