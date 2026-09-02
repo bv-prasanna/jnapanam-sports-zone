@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useApp } from "@/components/app-provider";
 
 const links = [
   ["Home", "/"],
@@ -18,12 +19,13 @@ const links = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const { language, setLanguage, user, signOut, t } = useApp();
   return (
     <>
       <div className="utility-bar">
         <div className="container utility-inner">
           <span>⌖ Holalkere, Karnataka</span>
-          <div><a href="tel:+918296022107">☎ +91 82960 22107</a><span className="utility-sep">|</span><button type="button">English</button><span>|</span><button type="button">ಕನ್ನಡ</button></div>
+          <div><a href="tel:+918296022107">☎ +91 82960 22107</a><span className="utility-sep">|</span><button className={language==="en"?"active-language":""} onClick={()=>setLanguage("en")} type="button">English</button><span>|</span><button className={language==="kn"?"active-language":""} onClick={()=>setLanguage("kn")} type="button">ಕನ್ನಡ</button></div>
         </div>
       </div>
       <header className="site-header">
@@ -33,9 +35,9 @@ export function SiteHeader() {
           </Link>
           <nav className={open ? "main-nav open" : "main-nav"} aria-label="Main navigation">
             {links.map(([label, href]) => <Link key={href} href={href} onClick={() => setOpen(false)}>{label}</Link>)}
-            <div className="mobile-actions"><Link href="/login">Login</Link><Link className="btn primary" href="/register">Register Now</Link></div>
+            <div className="mobile-actions">{user?<><Link href="/dashboard">{t("dashboard")}</Link><button onClick={()=>void signOut()}>{t("logout")}</button></>:<><Link href="/login">{t("login")}</Link><Link className="btn primary" href="/register">{t("register")}</Link></>}</div>
           </nav>
-          <div className="nav-actions"><Link href="/login">Login</Link><Link className="btn primary" href="/register">Register Now</Link></div>
+          <div className="nav-actions">{user?<><Link href="/dashboard">{t("dashboard")}</Link><button className="header-link" onClick={()=>void signOut()}>{t("logout")}</button></>:<><Link href="/login">{t("login")}</Link><Link className="btn primary" href="/register">{t("register")}</Link></>}</div>
           <button className="menu-button" type="button" onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
         </div>
       </header>

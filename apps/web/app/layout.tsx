@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AppProvider } from "@/components/app-provider";
 
 export const metadata: Metadata = {
   title: { default: "Jnapanam Sports Zone | Holalkere", template: "%s | Jnapanam Sports Zone" },
@@ -20,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased"><AppProvider>{children}</AppProvider></body>
     </html>
   );
 }
