@@ -15,6 +15,11 @@ import com.jnapanam.sportszone.identity.model.User;import jakarta.persistence.*;
  protected Booking(){}
  public Booking(User user,BookingSlot slot,int quantity,boolean priced,PaymentOption option,boolean paymentRequired,Instant paymentExpiry){id=UUID.randomUUID();bookingNumber="JNZ-"+UUID.randomUUID().toString().substring(0,8).toUpperCase();this.user=user;this.slot=slot;this.quantity=quantity;confirmedAt=Instant.now();paymentOption=priced?option:null;paymentStatus=priced?BookingPaymentStatus.UNPAID:BookingPaymentStatus.NOT_REQUIRED;status=paymentRequired?BookingStatus.PENDING_PAYMENT:BookingStatus.CONFIRMED;paymentExpiresAt=paymentRequired?paymentExpiry:null;}
  public void paid(){if(paymentStatus==BookingPaymentStatus.UNPAID&&(status==BookingStatus.PENDING_PAYMENT||status==BookingStatus.CONFIRMED)){status=BookingStatus.CONFIRMED;paymentStatus=BookingPaymentStatus.PAID;paymentCompletedAt=Instant.now();paymentExpiresAt=null;}}
+ public void refunded() {
+    if (paymentStatus == BookingPaymentStatus.PAID) {
+        paymentStatus = BookingPaymentStatus.REFUNDED;
+    }
+}
  public void collectOnsite(User operator,OnsitePaymentMethod method,String reference){if(status==BookingStatus.CONFIRMED&&paymentStatus==BookingPaymentStatus.UNPAID){paymentStatus=BookingPaymentStatus.PAID;paymentCompletedAt=Instant.now();onsitePaidAt=paymentCompletedAt;onsiteCollectedBy=operator;onsitePaymentMethod=method;onsitePaymentReference=reference==null||reference.isBlank()?null:reference.trim();}}
  public void expirePayment(){if(status==BookingStatus.PENDING_PAYMENT){status=BookingStatus.PAYMENT_EXPIRED;statusReason="Payment window expired";}}
  public void cancel(String reason){status=BookingStatus.CANCELLED;cancelledAt=Instant.now();statusReason=reason;}public void checkIn(User operator){if(checkedInAt==null){checkedInAt=Instant.now();checkedInBy=operator;}}public void undoCheckIn(){checkedInAt=null;checkedInBy=null;}public void noShow(String reason){if(status==BookingStatus.CONFIRMED){status=BookingStatus.NO_SHOW;statusReason=reason;}}
