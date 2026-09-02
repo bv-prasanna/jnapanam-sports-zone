@@ -65,3 +65,7 @@
 @media(max-width:1180px) and (min-width:781px){.brand{flex-basis:125px;width:125px}.brand img{width:118px}.main-nav{gap:11px;font-size:12px}.nav-actions{gap:10px;margin-left:12px;font-size:12px}.nav-actions .btn{padding:10px 12px}}
 
 .offer-grid .btn:disabled,.portal-dialog .btn:disabled{cursor:not-allowed;background:#a9ad9f;color:#f7f7f3;opacity:.8}
+
+.test-mode-note{margin:-.25rem 0 1.25rem;border:1px solid #e2b961;border-radius:.75rem;background:#fff4d8;color:#70500d;padding:.85rem 1rem;font-weight:600;line-height:1.45}
+.record-list .record-pay-button{align-self:center;margin-left:auto;border-color:#c93a0b;background:#c93a0b;color:#fff;font-weight:700;padding:.7rem 1.15rem}
+.record-list .record-pay-button:hover{background:#a92f08}.record-list .record-pay-button:disabled{cursor:wait;opacity:.65}
