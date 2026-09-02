@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { BookSlotLink } from "@/components/book-slot-link";
 import { sports, values } from "@/lib/site-data";
 
 export default function Home() {
@@ -12,7 +13,7 @@ export default function Home() {
       <div className="hero-shade"/><div className="container hero-content">
         <span className="eyebrow gold">Welcome to Jnapanam Sports Zone</span><h1>Where Champions <em>Begin.</em></h1>
         <h2>Play <b>&bull;</b> Train <b>&bull;</b> Compete <b>&bull;</b> Grow</h2><p>Sports, fitness and community for every age in Holalkere.</p>
-        <div className="button-row"><Link className="btn primary large" href="/register">Book a Slot <ArrowRight/></Link><Link className="btn outline light large" href="/sports">Explore Facilities <ArrowRight/></Link></div>
+        <div className="button-row"><BookSlotLink/><Link className="btn outline light large" href="/sports">Explore Facilities <ArrowRight/></Link></div>
         <div className="video-label"><Pause size={18}/><span>Watch Jnapanam in Action</span></div>
       </div>
     </section>
