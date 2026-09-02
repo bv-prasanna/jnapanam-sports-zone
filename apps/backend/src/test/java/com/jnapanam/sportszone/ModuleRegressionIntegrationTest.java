@@ -267,6 +267,7 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.amountPaise").value(125000)).andExpect(jsonPath("$.status").value("PROCESSED"));
         mvc.perform(get("/api/v1/notifications/me").header("Authorization",bearer(customer.accessToken())))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[*].category",hasItems("PAYMENT","REFUND")));
+        removeRole(adminEmail,"SUPER_ADMIN");
     }
 
     @Test
@@ -529,6 +530,7 @@ class ModuleRegressionIntegrationTest {
         mvc.perform(post("/api/v1/payments/verify").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"paymentOrderId\":\""+paymentId+"\",\"providerPaymentId\":\"pay_late\",\"signature\":\"mock-signature\"}"))
                 .andExpect(status().isConflict());
+        removeRole(superEmail,"SUPER_ADMIN");
     }
 
     @Test
@@ -577,6 +579,10 @@ class ModuleRegressionIntegrationTest {
         MvcResult result = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody(email, password)))
                 .andExpect(status().isOk()).andReturn();
         return tokens(result);
+    }
+
+    private void removeRole(String email,String role) {
+        jdbc.update("DELETE FROM user_roles ur USING users u,roles r WHERE ur.user_id=u.id AND ur.role_id=r.id AND u.email=? AND r.name=?",email,role);
     }
 
     private void promote(String email, String role) {
