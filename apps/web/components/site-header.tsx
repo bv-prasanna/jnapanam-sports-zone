@@ -1,7 +1,6 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useApp } from "@/components/app-provider";
@@ -32,7 +31,7 @@ export function SiteHeader() {
       <header className="site-header">
         <div className="container nav-wrap">
           <Link className="brand" href="/" aria-label="Jnapanam Sports Zone home">
-            <Image unoptimized src="/images/jnapanam-logo.png" alt="Jnapanam Sports Zone" width={150} height={76} priority />
+            <span className="brand-logo" aria-hidden="true"/>
           </Link>
           <nav className={open ? "main-nav open" : "main-nav"} aria-label="Main navigation">
             {links.map(([key, href]) => <Link key={href} href={href} onClick={() => setOpen(false)}>{t(key)}</Link>)}
