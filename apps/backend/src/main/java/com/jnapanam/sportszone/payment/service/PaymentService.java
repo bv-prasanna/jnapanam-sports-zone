@@ -96,6 +96,8 @@ public class PaymentService {
         PaymentOrder order = own(userId, request.paymentOrderId());
         if (order.getStatus() == PaymentStatus.PAID)
             return response(order);
+        if (order.getStatus() != PaymentStatus.CREATED)
+            throw new ConflictException("Only a pending payment can be completed");
         resolveAmount(userId, order.getPurpose(), order.getReferenceId());
         if (!gateway.verifyPayment(order.getProviderOrderId(), request.providerPaymentId(), request.signature()))
             throw new BadRequestException("Invalid payment signature");
@@ -103,6 +105,23 @@ public class PaymentService {
         fulfil(order);
         loyaltyService.earn(order.getUser(), order);
         notificationService.payment(userId, order.getReceiptNumber(), order.getAmountPaise());
+        return response(order);
+    }
+
+    @Transactional
+    public PaymentResponse voidPayment(UUID id, VoidPaymentRequest request) {
+        PaymentOrder order = orders.findById(id).orElseThrow(() -> new NotFoundException("Payment not found"));
+        if (order.getStatus() != PaymentStatus.CREATED)
+            throw new ConflictException("Only a pending payment can be voided");
+        if (order.getPurpose() != PaymentPurpose.BOOKING)
+            throw new ConflictException("Only booking payments can be voided");
+        Booking booking = bookings.findById(order.getReferenceId())
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
+        if (booking.getStatus() != BookingStatus.NO_SHOW && !booking.getSlot().getDate().isAfter(LocalDate.now()))
+            throw new ConflictException("Void is available only for no-show or future bookings");
+        promotionService.reverseRedemption(order);
+        loyaltyService.reverseRedemption(order.getUser(), order);
+        order.voidOrder(request.reason().trim());
         return response(order);
     }
 
@@ -190,7 +209,7 @@ public class PaymentService {
             String orderId = payment.path("order_id").asText();
             String paymentId = payment.path("id").asText();
             orders.findByProviderOrderId(orderId).ifPresent(o -> {
-                if (o.getStatus() != PaymentStatus.PAID) {
+                if (o.getStatus() == PaymentStatus.CREATED) {
                     resolveAmount(o.getUser().getId(), o.getPurpose(), o.getReferenceId());
                     o.paid(paymentId);
                     fulfil(o);
@@ -274,7 +293,7 @@ public class PaymentService {
                 o.getOriginalAmountPaise(), o.getDiscountPaise(), o.getPromotionCode(), o.getLoyaltyPointsUsed(),
                 o.getAmountPaise(), o.getCurrency(), o.getProvider(), o.getProviderOrderId(), o.getProviderPaymentId(),
                 o.getStatus(), "ONSITE".equals(o.getProvider()) ? null : gateway.publicKey(),
-                o.getLoyaltyPointsEarned(), o.getPaidAt(), o.getCreatedAt());
+                o.getLoyaltyPointsEarned(), o.getPaidAt(), o.getVoidedAt(), o.getVoidReason(), o.getCreatedAt());
     }
 
     private RefundResponse refundResponse(PaymentRefund r) {
