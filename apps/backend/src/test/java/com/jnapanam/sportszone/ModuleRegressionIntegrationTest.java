@@ -241,7 +241,7 @@ class ModuleRegressionIntegrationTest {
 
     @Test
     void customerPaysMembershipWithIdempotencyAndAdminRefunds() throws Exception {
-        String adminEmail=uniqueEmail("payment-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String adminEmail=uniqueEmail("payment-admin");register(adminEmail);promote(adminEmail,"SUPER_ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
         String code="PAY_"+UUID.randomUUID().toString().substring(0,8).toUpperCase();
         mvc.perform(post("/api/v1/admin/memberships/plans").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"code\":\""+code+"\",\"name\":\"Payment Plan\",\"durationDays\":30,\"price\":1250.00,\"sportCodes\":[\"GYM\"]}"))
@@ -492,6 +492,42 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isCreated()).andReturn();
         mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"holdId\":\""+field(secondHold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\"}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void superAdminVoidsFutureBookingPaymentAndAdminIsForbidden() throws Exception {
+        String adminEmail=uniqueEmail("void-admin");register(adminEmail);promote(adminEmail,"ADMIN");
+        String adminToken=login(adminEmail,"Test@12345").accessToken();
+        String superEmail=uniqueEmail("void-super");register(superEmail);promote(superEmail,"SUPER_ADMIN");
+        String superToken=login(superEmail,"Test@12345").accessToken();
+        String suffix=UUID.randomUUID().toString().substring(0,8).toUpperCase();
+        MvcResult facility=mvc.perform(post("/api/v1/admin/catalog/facilities").header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\"VOID_"+suffix+"\",\"sportCode\":\"BADMINTON\",\"name\":\"Void Test Court\",\"slotDurationMinutes\":60,\"capacity\":2,\"bookingPrice\":200.00}"))
+                .andExpect(status().isCreated()).andReturn();
+        String facilityId=field(facility,ID);
+        java.time.LocalDate date=java.time.LocalDate.now().plusDays(14);while(date.getDayOfWeek()!=java.time.DayOfWeek.MONDAY)date=date.plusDays(1);
+        mvc.perform(put("/api/v1/admin/catalog/facilities/{id}/operating-hours",facilityId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"dayOfWeek\":\"MONDAY\",\"openTime\":\"06:00:00\",\"closeTime\":\"07:00:00\",\"closed\":false}")).andExpect(status().isOk());
+        MvcResult slots=mvc.perform(get("/api/v1/public/facilities/{id}/slots",facilityId).param("date",date.toString())).andExpect(status().isOk()).andReturn();
+        TokenPair customer=register(uniqueEmail("void-customer"));
+        MvcResult hold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"slotId\":\""+field(slots,ID)+"\",\"quantity\":1}")).andExpect(status().isCreated()).andReturn();
+        MvcResult booking=mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_NOW\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING_PAYMENT")).andReturn();
+        MvcResult payment=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken()))
+                .header("Idempotency-Key","void-"+UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"purpose\":\"BOOKING\",\"referenceId\":\""+field(booking,ID)+"\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CREATED")).andReturn();
+        String paymentId=field(payment,ID);
+        mvc.perform(post("/api/v1/admin/payments/{id}/void",paymentId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Not allowed for admin\"}")).andExpect(status().isForbidden());
+        mvc.perform(post("/api/v1/admin/payments/{id}/void",paymentId).header("Authorization",bearer(superToken)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Customer changed plans\"}")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("VOIDED")).andExpect(jsonPath("$.voidedAt").isNotEmpty());
+        mvc.perform(post("/api/v1/payments/verify").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"paymentOrderId\":\""+paymentId+"\",\"providerPaymentId\":\"pay_late\",\"signature\":\"mock-signature\"}"))
                 .andExpect(status().isConflict());
     }
 
