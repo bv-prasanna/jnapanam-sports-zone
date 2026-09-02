@@ -10,6 +10,7 @@ function translateNode(node:Text,language:Language){
   let source=originalText.get(node);
   if(language==="kn"){
     const current=node.nodeValue||"";
+    if(/[\u0C80-\u0CFF]/.test(current))return;
     if(source===undefined||current!==translateText("kn",source)){source=current;originalText.set(node,source)}
     const next=translateText("kn",source);
     if(current!==next)node.nodeValue=next;
