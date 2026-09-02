@@ -46,7 +46,11 @@ public LoyaltyWallet(User u) {
         updatedAt = Instant.now();
     }
 
-    public void restoreRedemption(long p) {\n        if (p > 0) { pointsBalance += p; lifetimeRedeemed = Math.max(0, lifetimeRedeemed - p); updatedAt = Instant.now(); }\n    }\n\n    public void adjust(long p) {
+    public void restoreRedemption(long p) {
+        if (p > 0) { pointsBalance += p; lifetimeRedeemed = Math.max(0, lifetimeRedeemed - p); updatedAt = Instant.now(); }
+    }
+
+    public void adjust(long p) {
         if (pointsBalance + p < 0)
             throw new ConflictException("Adjustment would make loyalty balance negative");
         pointsBalance += p;
