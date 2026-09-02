@@ -63,3 +63,5 @@
 .form-note[role="alert"]{white-space:normal;line-height:1.45}
 
 @media(max-width:1180px) and (min-width:781px){.brand{flex-basis:125px;width:125px}.brand img{width:118px}.main-nav{gap:11px;font-size:12px}.nav-actions{gap:10px;margin-left:12px;font-size:12px}.nav-actions .btn{padding:10px 12px}}
+
+.offer-grid .btn:disabled,.portal-dialog .btn:disabled{cursor:not-allowed;background:#a9ad9f;color:#f7f7f3;opacity:.8}
