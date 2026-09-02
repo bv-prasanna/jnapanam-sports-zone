@@ -78,3 +78,5 @@
 .portal-dialog label small{color:#68715f;font-size:.78rem;font-weight:400;line-height:1.35}
 .dialog-error{border:1px solid #dc6b52;border-radius:.65rem;background:#fff0ec;color:#8f260e;padding:.75rem .85rem;font-size:.9rem;font-weight:650;line-height:1.4}
 .portal-dialog input[aria-invalid="true"]{border-color:#c83a0a}
+
+.record-list article>div span{white-space:normal;overflow-wrap:anywhere;line-height:1.4}
