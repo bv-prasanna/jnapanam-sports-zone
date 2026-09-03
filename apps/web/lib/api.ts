@@ -1,7 +1,7 @@
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "");
 
 export type TokenResponse = { tokenType: string; accessToken: string; accessTokenExpiresAt: string; refreshToken: string };
-export type User = { id: string; fullName: string; email: string; mobile?: string; status: string; roles: string[]; requiresUpfrontPayment: boolean };
+export type User = { id: string; fullName: string; displayName?: string; profilePhotoUrl?: string; email: string; mobile?: string; status: string; roles: string[]; requiresUpfrontPayment: boolean };
 
 const REFRESH_KEY = "jnapanam.refresh-token";
 let accessToken: string | null = null;
