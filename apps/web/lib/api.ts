@@ -1,7 +1,7 @@
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "");
 
 export type TokenResponse = { tokenType: string; accessToken: string; accessTokenExpiresAt: string; refreshToken: string };
-export type User = { id: string; fullName: string; email: string; mobile?: string; status: string; roles: string[]; requiresUpfrontPayment: boolean };
+export type User = { id: string; fullName: string; displayName?: string; profilePhotoUrl?: string; email: string; mobile?: string; status: string; roles: string[]; requiresUpfrontPayment: boolean };
 
 const REFRESH_KEY = "jnapanam.refresh-token";
 let accessToken: string | null = null;
@@ -44,7 +44,8 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   }
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new ApiError(response.status, body?.detail || body?.message || body?.error || `Request failed (${response.status})`, body);
+    const fieldErrors=body?.errors&&typeof body.errors==="object"?Object.entries(body.errors).map(([field,value])=>`${field.replace(/([A-Z])/g," $1").replace(/^./,letter=>letter.toUpperCase())}: ${String(value)}`).join(" · "):"";
+    throw new ApiError(response.status, fieldErrors || body?.detail || body?.message || body?.error || `Request failed (${response.status})`, body);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

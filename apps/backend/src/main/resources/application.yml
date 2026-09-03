@@ -35,6 +35,7 @@ app:
     cleanup-delay-ms: ${PAYMENT_CLEANUP_DELAY_MS:60000}
   booking:
     hold-minutes: ${BOOKING_HOLD_MINUTES:10}
+    no-show-grace-minutes: ${BOOKING_NO_SHOW_GRACE_MINUTES:15}
   loyalty:
     earn-per-100-rupees: ${LOYALTY_EARN_PER_100_RUPEES:1}
     point-value-paise: ${LOYALTY_POINT_VALUE_PAISE:100}

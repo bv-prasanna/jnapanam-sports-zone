@@ -17,6 +17,8 @@ public class User {
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) private UserStatus status;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "updated_at", nullable = false) private Instant updatedAt;
+    @Column(name="display_name",length=60) private String displayName;
+    @Column(name="profile_photo_url",length=500) private String profilePhotoUrl;
     @Column(name="address_line",length=250) private String addressLine;
     @Column(length=100) private String city;
     @Column(length=100) private String state;
@@ -48,6 +50,7 @@ public class User {
     public void replaceRoles(Set<Role> value){roles.clear();roles.addAll(value);updatedAt=Instant.now();}
     public void password(String hash,boolean force){passwordHash=hash;forcePasswordChange=force;updatedAt=Instant.now();}
     public void paymentPolicy(boolean value){requiresUpfrontPayment=value;updatedAt=Instant.now();}
-    public String getAddressLine(){return addressLine;}public String getCity(){return city;}public String getState(){return state;}public String getPostalCode(){return postalCode;}public String getEmergencyContactName(){return emergencyContactName;}public String getEmergencyContactMobile(){return emergencyContactMobile;}public boolean isForcePasswordChange(){return forcePasswordChange;}public boolean isRequiresUpfrontPayment(){return requiresUpfrontPayment;}
+    public void profile(String displayName,String profilePhotoUrl){this.displayName=clean(displayName);this.profilePhotoUrl=clean(profilePhotoUrl);updatedAt=Instant.now();}
+    public String getDisplayName(){return displayName;}public String getProfilePhotoUrl(){return profilePhotoUrl;}public String getAddressLine(){return addressLine;}public String getCity(){return city;}public String getState(){return state;}public String getPostalCode(){return postalCode;}public String getEmergencyContactName(){return emergencyContactName;}public String getEmergencyContactMobile(){return emergencyContactMobile;}public boolean isForcePasswordChange(){return forcePasswordChange;}public boolean isRequiresUpfrontPayment(){return requiresUpfrontPayment;}
     private static String clean(String v){return v==null||v.isBlank()?null:v.trim();}
 }

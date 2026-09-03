@@ -17,9 +17,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({UnauthorizedException.class, AuthenticationException.class}) ResponseEntity<ProblemDetail> unauthorized(RuntimeException ex) { return problem(HttpStatus.UNAUTHORIZED, "Invalid credentials or token"); }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ProblemDetail> validation(MethodArgumentNotValidException ex) {
-        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request validation failed");
-        detail.setType(URI.create("https://jnapanamsportszone.in/problems/validation"));
         Map<String,String> errors = ex.getBindingResult().getFieldErrors().stream().collect(Collectors.toMap(e -> e.getField(), e -> e.getDefaultMessage() == null ? "invalid" : e.getDefaultMessage(), (a,b) -> a));
+        String summary = errors.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining("; "));
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, summary.isBlank() ? "Please correct the highlighted fields" : summary);
+        detail.setType(URI.create("https://jnapanamsportszone.in/problems/validation"));
         detail.setProperty("errors", errors); return ResponseEntity.badRequest().body(detail);
     }
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String message) {
