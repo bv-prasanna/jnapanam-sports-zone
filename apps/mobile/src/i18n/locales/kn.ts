@@ -1,52 +1,31 @@
 const kn = {
-  common: {
-    appName: 'ಜ್ಞಾಪನಂ ಸ್ಪೋರ್ಟ್ಸ್ ಝೋನ್',
-    location: 'ಹೊಳಲ್ಕೆರೆ, ಚಿತ್ರದುರ್ಗ',
-    viewAll: 'ಎಲ್ಲವನ್ನೂ ನೋಡಿ',
+  common: { appName: 'ಜ್ಞಾಪನಂ ಸ್ಪೋರ್ಟ್ಸ್ ಝೋನ್', location: 'ಹೊಳಲ್ಕೆರೆ, ಚಿತ್ರದುರ್ಗ', viewAll: 'ಎಲ್ಲವನ್ನೂ ನೋಡಿ', tryAgain: 'ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.' },
+  navigation: { home: 'ಮುಖಪುಟ', bookings: 'ಬುಕಿಂಗ್‌ಗಳು', training: 'ತರಬೇತಿ', tournaments: 'ಪಂದ್ಯಾವಳಿಗಳು', profile: 'ಪ್ರೊಫೈಲ್' },
+  auth: {
+    welcomeBack: 'ಮತ್ತೆ ಸ್ವಾಗತ', login: 'ಲಾಗಿನ್', logout: 'ಲಾಗ್ ಔಟ್', loginDescription: 'ಸೌಲಭ್ಯಗಳನ್ನು ಬುಕ್ ಮಾಡಲು ಮತ್ತು ಚಟುವಟಿಕೆಗಳನ್ನು ನಿರ್ವಹಿಸಲು ಲಾಗಿನ್ ಮಾಡಿ.',
+    email: 'ಇಮೇಲ್', password: 'ಪಾಸ್‌ವರ್ಡ್', fullName: 'ಪೂರ್ಣ ಹೆಸರು', mobile: 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ', confirmPassword: 'ಪಾಸ್‌ವರ್ಡ್ ದೃಢೀಕರಿಸಿ',
+    needAccount: 'ಹೊಸ ಬಳಕೆದಾರರೇ? ಖಾತೆ ತೆರೆಯಿರಿ', haveAccount: 'ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಿದ್ದೀರಾ? ಲಾಗಿನ್ ಮಾಡಿ', joinCommunity: 'ನಮ್ಮ ಸಮುದಾಯಕ್ಕೆ ಸೇರಿ',
+    createAccount: 'ಖಾತೆ ತೆರೆಯಿರಿ', registerDescription: 'ಸೌಲಭ್ಯ ಬುಕ್ ಮಾಡಲು ಮತ್ತು ಕಾರ್ಯಕ್ರಮಗಳಿಗೆ ಸೇರಲು ಒಮ್ಮೆ ನೋಂದಾಯಿಸಿ.',
+    loginRequired: 'ಲಾಗಿನ್ ಅಗತ್ಯ', validCredentials: 'ಸರಿಯಾದ ಇಮೇಲ್ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ.', validName: 'ಅಕ್ಷರಗಳನ್ನು ಬಳಸಿ ಸರಿಯಾದ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.',
+    validEmail: 'ಸರಿಯಾದ ಇಮೇಲ್ ವಿಳಾಸ ನಮೂದಿಸಿ.', validMobile: 'ಸರಿಯಾದ 10 ರಿಂದ 20 ಅಕ್ಷರದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ.',
+    passwordLength: 'ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು.', passwordMismatch: 'ಪಾಸ್‌ವರ್ಡ್‌ಗಳು ಹೊಂದಿಕೆಯಾಗುತ್ತಿಲ್ಲ.',
   },
-
-  navigation: {
-    home: 'ಮುಖಪುಟ',
-    bookings: 'ಬುಕಿಂಗ್‌ಗಳು',
-    training: 'ತರಬೇತಿ',
-    tournaments: 'ಪಂದ್ಯಾವಳಿಗಳು',
-    profile: 'ಪ್ರೊಫೈಲ್',
-  },
-
   home: {
-    destination: 'ನಿಮ್ಮ ಕ್ರೀಡಾ ತಾಣ',
-    headline: 'ಆಡಿ. ತರಬೇತಿ ಪಡೆಯಿರಿ. ಸ್ಪರ್ಧಿಸಿ.',
-    description:
-      'ಕ್ರೀಡಾ ಸೌಲಭ್ಯಗಳನ್ನು ಬುಕ್ ಮಾಡಿ, ತರಬೇತಿ ಕಾರ್ಯಕ್ರಮಗಳಿಗೆ ಸೇರಿ ಮತ್ತು ಸ್ಥಳೀಯ ಪಂದ್ಯಾವಳಿಗಳಲ್ಲಿ ಭಾಗವಹಿಸಿ.',
-    bookSlot: 'ಕ್ರೀಡಾ ಸಮಯವನ್ನು ಬುಕ್ ಮಾಡಿ',
-    chooseSport: 'ನಿಮ್ಮ ಕ್ರೀಡೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
-
-    swimming: 'ಈಜು',
-    swimmingDescription: 'ಈಜುಕೊಳದ ಅವಧಿಗಳು ಮತ್ತು ತರಬೇತಿ',
-
-    cricket: 'ಕ್ರಿಕೆಟ್',
-    cricketDescription: 'ನೆಟ್ ಮತ್ತು ಮೈದಾನ ಬುಕಿಂಗ್',
-
-    badminton: 'ಬ್ಯಾಡ್ಮಿಂಟನ್',
-    badmintonDescription: 'ಕೋರ್ಟ್ ಬುಕಿಂಗ್ ಮತ್ತು ತರಬೇತಿ',
-
-    football: 'ಫುಟ್‌ಬಾಲ್',
-    footballDescription: 'ಮೈದಾನ ಬುಕಿಂಗ್ ಮತ್ತು ತರಬೇತಿ',
-    exploreMore: 'ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ',
-
-    memberships: 'ಸದಸ್ಯತ್ವಗಳು',
-    membershipsDescription: 'ಮಾಸಿಕ ಮತ್ತು ತ್ರೈಮಾಸಿಕ ಯೋಜನೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ',
-
-    trainingCamps: 'ತರಬೇತಿ ಶಿಬಿರಗಳು',
-    trainingCampsDescription: 'ತರಬೇತಿ ಬ್ಯಾಚ್‌ಗಳು ಮತ್ತು ಶಿಬಿರಗಳಿಗೆ ಸೇರಿ',
-
-    tournaments: 'ಪಂದ್ಯಾವಳಿಗಳು',
-    tournamentsDescription: 'ಮುಂಬರುವ ಸ್ಪರ್ಧೆಗಳಿಗೆ ನೋಂದಾಯಿಸಿ',
-
-    upcomingEvent: 'ಮುಂಬರುವ ಕಾರ್ಯಕ್ರಮ',
-    championship: 'ಜ್ಞಾಪನಂ ಬ್ಯಾಡ್ಮಿಂಟನ್ ಚಾಂಪಿಯನ್‌ಶಿಪ್',
-    registrationsOpeningSoon: 'ನೋಂದಣಿ ಶೀಘ್ರದಲ್ಲೇ ಆರಂಭವಾಗಲಿದೆ',
+    destination: 'ನಿಮ್ಮ ಕ್ರೀಡಾ ತಾಣ', headline: 'ಆಡಿ. ತರಬೇತಿ ಪಡೆಯಿರಿ. ಸ್ಪರ್ಧಿಸಿ.',
+    description: 'ಕ್ರೀಡಾ ಸೌಲಭ್ಯಗಳನ್ನು ಬುಕ್ ಮಾಡಿ, ತರಬೇತಿ ಕಾರ್ಯಕ್ರಮಗಳಿಗೆ ಸೇರಿ ಮತ್ತು ಸ್ಥಳೀಯ ಪಂದ್ಯಾವಳಿಗಳಲ್ಲಿ ಭಾಗವಹಿಸಿ.',
+    bookSlot: 'ಕ್ರೀಡಾ ಸಮಯವನ್ನು ಬುಕ್ ಮಾಡಿ', chooseSport: 'ನಿಮ್ಮ ಕ್ರೀಡೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ',
+    swimming: 'ಈಜು', swimmingDescription: 'ಈಜುಕೊಳದ ಅವಧಿಗಳು ಮತ್ತು ತರಬೇತಿ',
+    cricket: 'ಕ್ರಿಕೆಟ್', cricketDescription: 'ನೆಟ್ ಮತ್ತು ಮೈದಾನ ಬುಕಿಂಗ್',
+    badminton: 'ಬ್ಯಾಡ್ಮಿಂಟನ್', badmintonDescription: 'ಕೋರ್ಟ್ ಬುಕಿಂಗ್ ಮತ್ತು ತರಬೇತಿ',
+    football: 'ಫುಟ್‌ಬಾಲ್', footballDescription: 'ಮೈದಾನ ಬುಕಿಂಗ್ ಮತ್ತು ತರಬೇತಿ',
+    exploreMore: 'ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ', memberships: 'ಸದಸ್ಯತ್ವಗಳು', membershipsDescription: 'ಮಾಸಿಕ ಮತ್ತು ತ್ರೈಮಾಸಿಕ ಯೋಜನೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ',
+    trainingCamps: 'ತರಬೇತಿ ಶಿಬಿರಗಳು', trainingCampsDescription: 'ತರಬೇತಿ ಬ್ಯಾಚ್‌ಗಳು ಮತ್ತು ಶಿಬಿರಗಳಿಗೆ ಸೇರಿ',
+    tournaments: 'ಪಂದ್ಯಾವಳಿಗಳು', tournamentsDescription: 'ಮುಂಬರುವ ಸ್ಪರ್ಧೆಗಳಿಗೆ ನೋಂದಾಯಿಸಿ',
+    upcomingEvent: 'ಮುಂಬರುವ ಕಾರ್ಯಕ್ರಮ', championship: 'ಜ್ಞಾಪನಂ ಬ್ಯಾಡ್ಮಿಂಟನ್ ಚಾಂಪಿಯನ್‌ಶಿಪ್', registrationsOpeningSoon: 'ನೋಂದಣಿ ಶೀಘ್ರದಲ್ಲೇ ಆರಂಭವಾಗಲಿದೆ',
   },
+  bookings: { loginDescription: 'ನಿಮ್ಮ ಬುಕಿಂಗ್‌ಗಳನ್ನು ನೋಡಲು ಮತ್ತು ರಚಿಸಲು ಲಾಗಿನ್ ಮಾಡಿ.', emptyTitle: 'ಇನ್ನೂ ಬುಕಿಂಗ್‌ಗಳಿಲ್ಲ', emptyDescription: 'ಬ್ಯಾಕೆಂಡ್ ಸಂಪರ್ಕಗೊಂಡ ನಂತರ ಸೌಲಭ್ಯಗಳು ಮತ್ತು ಬುಕಿಂಗ್ ಇತಿಹಾಸ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ.' },
+  training: { emptyTitle: 'ತರಬೇತಿ ಕಾರ್ಯಕ್ರಮಗಳು', emptyDescription: 'ಲಭ್ಯವಿರುವ ಬ್ಯಾಚ್‌ಗಳು ಮತ್ತು ನಿಮ್ಮ ದಾಖಲಾತಿಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.' },
+  tournaments: { emptyTitle: 'ಪಂದ್ಯಾವಳಿಗಳು', emptyDescription: 'ಮುಂಬರುವ ಸ್ಪರ್ಧೆಗಳು ಮತ್ತು ನಿಮ್ಮ ನೋಂದಣಿಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.' },
+  profile: { loginDescription: 'ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಮತ್ತು ಖಾತೆ ಚಟುವಟಿಕೆ ನೋಡಲು ಲಾಗಿನ್ ಮಾಡಿ.', status: 'ಖಾತೆಯ ಸ್ಥಿತಿ' },
 };
-
 export default kn;

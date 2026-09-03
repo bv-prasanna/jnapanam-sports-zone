@@ -1,53 +1,31 @@
 const en = {
-  common: {
-    appName: 'Jnapanam Sports Zone',
-    location: 'Holalkere, Chitradurga',
-    viewAll: 'View all',
+  common: { appName: 'Jnapanam Sports Zone', location: 'Holalkere, Chitradurga', viewAll: 'View all', tryAgain: 'Please try again.' },
+  navigation: { home: 'Home', bookings: 'Bookings', training: 'Training', tournaments: 'Tournaments', profile: 'Profile' },
+  auth: {
+    welcomeBack: 'WELCOME BACK', login: 'Login', logout: 'Logout', loginDescription: 'Sign in to book facilities and manage your activities.',
+    email: 'Email', password: 'Password', fullName: 'Full name', mobile: 'Mobile number', confirmPassword: 'Confirm password',
+    needAccount: 'New here? Create an account', haveAccount: 'Already registered? Login', joinCommunity: 'JOIN THE COMMUNITY',
+    createAccount: 'Create Account', registerDescription: 'Register once to book facilities and join programs.',
+    loginRequired: 'Login required', validCredentials: 'Enter a valid email and password.', validName: 'Enter a proper name using letters only.',
+    validEmail: 'Enter a valid email address.', validMobile: 'Enter a valid 10 to 20 character mobile number.',
+    passwordLength: 'Password must contain at least 8 characters.', passwordMismatch: 'Passwords do not match.',
   },
-
-  navigation: {
-    home: 'Home',
-    bookings: 'Bookings',
-    training: 'Training',
-    tournaments: 'Tournaments',
-    profile: 'Profile',
-  },
-
   home: {
-    destination: 'YOUR SPORTS DESTINATION',
-    headline: 'Play. Train. Compete.',
-    description:
-      'Book sports facilities, join training programs and participate in local tournaments.',
-    bookSlot: 'Book a Sports Slot',
-    chooseSport: 'Choose your sport',
-
-    swimming: 'Swimming',
-    swimmingDescription: 'Pool sessions and coaching',
-
-    cricket: 'Cricket',
-    cricketDescription: 'Nets and ground booking',
-
-    badminton: 'Badminton',
-    badmintonDescription: 'Court booking and coaching',
-
-    football: 'Football',
-    footballDescription: 'Ground booking and training',
-
-    exploreMore: 'Explore more',
-
-    memberships: 'Memberships',
-    membershipsDescription: 'Explore monthly and quarterly plans',
-
-    trainingCamps: 'Training Camps',
-    trainingCampsDescription: 'Join coaching batches and camps',
-
-    tournaments: 'Tournaments',
-    tournamentsDescription: 'Register for upcoming competitions',
-
-    upcomingEvent: 'UPCOMING EVENT',
-    championship: 'Jnapanam Badminton Championship',
-    registrationsOpeningSoon: 'Registrations opening soon',
+    destination: 'YOUR SPORTS DESTINATION', headline: 'Play. Train. Compete.',
+    description: 'Book sports facilities, join training programs and participate in local tournaments.',
+    bookSlot: 'Book a Sports Slot', chooseSport: 'Choose your sport',
+    swimming: 'Swimming', swimmingDescription: 'Pool sessions and coaching',
+    cricket: 'Cricket', cricketDescription: 'Nets and ground booking',
+    badminton: 'Badminton', badmintonDescription: 'Court booking and coaching',
+    football: 'Football', footballDescription: 'Ground booking and training',
+    exploreMore: 'Explore more', memberships: 'Memberships', membershipsDescription: 'Explore monthly and quarterly plans',
+    trainingCamps: 'Training Camps', trainingCampsDescription: 'Join coaching batches and camps',
+    tournaments: 'Tournaments', tournamentsDescription: 'Register for upcoming competitions',
+    upcomingEvent: 'UPCOMING EVENT', championship: 'Jnapanam Badminton Championship', registrationsOpeningSoon: 'Registrations opening soon',
   },
+  bookings: { loginDescription: 'Sign in to view and create your bookings.', emptyTitle: 'No bookings yet', emptyDescription: 'Available facilities and booking history will appear here after the backend is connected.' },
+  training: { emptyTitle: 'Training programs', emptyDescription: 'Available batches and your enrollments will appear here.' },
+  tournaments: { emptyTitle: 'Tournaments', emptyDescription: 'Upcoming competitions and your registrations will appear here.' },
+  profile: { loginDescription: 'Sign in to view your profile and account activity.', status: 'Account status' },
 };
-
 export default en;
