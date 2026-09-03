@@ -4,7 +4,6 @@ import com.jnapanam.sportszone.common.exception.NotFoundException;
 import com.jnapanam.sportszone.identity.dto.UserResponse;
 import com.jnapanam.sportszone.identity.dto.ProfileUpdateRequest;
 import jakarta.validation.Valid;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import com.jnapanam.sportszone.identity.repository.UserRepository;
 import java.util.UUID;
 import org.springframework.security.oauth2.jwt.Jwt;
