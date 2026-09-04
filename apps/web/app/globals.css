@@ -52,6 +52,15 @@
 @media(max-width:1200px){.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-date-filter label{flex:1 1 180px}}
 @media(max-width:480px){.metric-grid{grid-template-columns:1fr}.dashboard-date-filter>*{width:100%}}
+
+.organizer-application-card{margin:0 0 28px;padding:24px;display:flex;align-items:center;justify-content:space-between;gap:24px;background:linear-gradient(135deg,#fff 0%,#f7efe0 100%);border:1px solid var(--line);border-radius:16px}
+.organizer-application-card h2{margin:8px 0;font-size:28px}
+.organizer-application-card p{margin:0;color:var(--muted);max-width:720px}
+.organizer-application-card .btn{flex:0 0 auto}
+.organizer-admin-panel{margin-bottom:28px}
+.admin-section-divider{display:flex;align-items:center;gap:14px;margin:30px 0 18px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-size:12px}
+.admin-section-divider:before,.admin-section-divider:after{content:"";height:1px;background:var(--line);flex:1}
+@media(max-width:650px){.organizer-application-card{align-items:flex-start;flex-direction:column}.organizer-application-card .btn{width:100%}}
 @media(max-width:900px){.portal,.admin-shell{grid-template-columns:1fr}.portal-nav,.admin-nav{flex-direction:row;overflow:auto;padding:12px}.portal-nav>div,.admin-brand{display:none}.portal-nav button,.admin-nav button{white-space:nowrap}.portal-content,.admin-content{padding:25px 16px}.quick-grid,.offer-grid,.metric-grid{grid-template-columns:1fr 1fr}.slot-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.quick-grid,.offer-grid,.metric-grid,.slot-grid,.booking-search,.inline-action{grid-template-columns:1fr}.portal-heading h1,.admin-content h1{font-size:31px}.workbench form{grid-template-columns:1fr}.auth-links{flex-direction:column}}
 .scrollbar-thin{scrollbar-width:thin}.scrollbar-none{scrollbar-width:none}.scrollbar-stable{scrollbar-gutter:stable}.scroll-fade-reveal-b{mask-image:linear-gradient(to bottom,transparent,#000 12%,#000)}.tw-shimmer{animation:tw-shimmer 1.5s linear infinite}@keyframes tw-shimmer{to{background-position:200% 0}}@media(prefers-reduced-motion:reduce){.tw-shimmer{animation:none}}
