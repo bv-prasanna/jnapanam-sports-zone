@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -22,10 +23,13 @@ type Facility = {
   id: string;
   code: string;
   name: string;
+  sportCode: string;
   sportName: string;
   locationLabel?: string;
   bookingPrice: number;
 };
+
+type Sport = { code: string; name: string };
 
 type Slot = {
   id: string;
@@ -64,11 +68,79 @@ function idempotencyKey() {
   return `mobile-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+type SelectOption = { value: string; label: string; subtitle?: string };
+
+function SelectField({
+  label,
+  placeholder,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  options: SelectOption[];
+  onChange(value: string): void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value);
+  return (
+    <>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Pressable
+        disabled={disabled}
+        onPress={() => setOpen(true)}
+        style={[styles.selectField, disabled && styles.disabled]}
+      >
+        <View style={styles.selectCopy}>
+          <Text style={[styles.selectValue, !selected && styles.placeholder]}>
+            {selected?.label || placeholder}
+          </Text>
+          {!!selected?.subtitle && <Text style={styles.selectSubtitle}>{selected.subtitle}</Text>}
+        </View>
+        <MaterialCommunityIcons name="chevron-down" size={24} color={BrandColors.primary} />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setOpen(false)}>
+          <View style={styles.optionSheet}>
+            <Text style={styles.optionTitle}>{label}</Text>
+            <ScrollView>
+              {options.map((option) => (
+                <Pressable
+                  key={option.value}
+                  style={[styles.optionRow, option.value === value && styles.optionSelected]}
+                  onPress={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                >
+                  <View style={styles.selectCopy}>
+                    <Text style={styles.optionLabel}>{option.label}</Text>
+                    {!!option.subtitle && <Text style={styles.selectSubtitle}>{option.subtitle}</Text>}
+                  </View>
+                  {option.value === value && (
+                    <MaterialCommunityIcons name="check-circle" size={22} color={BrandColors.accent} />
+                  )}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
 export default function BookingsScreen() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const dates = useMemo(() => Array.from({ length: 7 }, (_, index) => dateValue(index + 1)), []);
   const [date, setDate] = useState(dates[0]);
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [sportCode, setSportCode] = useState('');
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [facilityId, setFacilityId] = useState('');
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -84,13 +156,15 @@ export default function BookingsScreen() {
     setLoading(true);
     setError('');
     try {
-      const [availableFacilities, myBookings] = await Promise.all([
+      const [availableSports, availableFacilities, myBookings] = await Promise.all([
+        api<Sport[]>('/api/v1/public/sports'),
         api<Facility[]>('/api/v1/public/facilities'),
         api<Booking[]>('/api/v1/bookings/me'),
       ]);
+      setSports(availableSports);
       setFacilities(availableFacilities);
       setBookings(myBookings);
-      setFacilityId((current) => current || availableFacilities[0]?.id || '');
+      setSportCode((current) => current || availableSports[0]?.code || availableFacilities[0]?.sportCode || '');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('common.tryAgain'));
     } finally {
@@ -101,6 +175,18 @@ export default function BookingsScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const filteredFacilities = useMemo(
+    () => facilities.filter((facility) => facility.sportCode === sportCode),
+    [facilities, sportCode],
+  );
+
+  useEffect(() => {
+    if (!filteredFacilities.some((facility) => facility.id === facilityId)) {
+      setFacilityId(filteredFacilities[0]?.id || '');
+      setSlots([]);
+    }
+  }, [facilityId, filteredFacilities]);
 
   async function findSlots() {
     if (!facilityId) {
@@ -225,29 +311,41 @@ export default function BookingsScreen() {
         {!!error && <Text style={styles.error}>{error}</Text>}
         {!!message && <Text style={styles.message}>{message}</Text>}
 
-        <Text style={styles.sectionTitle}>{t('bookings.chooseFacility')}</Text>
-        {loading && !facilities.length ? (
+        <Text style={styles.sectionTitle}>{t('bookings.bookFacility')}</Text>
+        {loading && !sports.length ? (
           <ActivityIndicator color={BrandColors.accent} />
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontal}>
-            {facilities.map((facility) => (
-              <Pressable
-                key={facility.id}
-                onPress={() => {
-                  setFacilityId(facility.id);
-                  setSlots([]);
-                }}
-                style={[styles.facilityCard, facilityId === facility.id && styles.selectedCard]}
-              >
-                <Text style={styles.sportLabel}>{facility.sportName}</Text>
-                <Text style={styles.facilityName}>{facility.name}</Text>
-                <Text style={styles.facilityMeta}>
-                  ₹{Number(facility.bookingPrice).toLocaleString('en-IN')}
-                  {facility.locationLabel ? ` · ${facility.locationLabel}` : ''}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <>
+            <SelectField
+              label={t('bookings.chooseSport')}
+              placeholder={t('bookings.sportPlaceholder')}
+              value={sportCode}
+              options={sports.map((sport) => ({ value: sport.code, label: sport.name }))}
+              onChange={(value) => {
+                setSportCode(value);
+                setFacilityId('');
+                setSlots([]);
+              }}
+            />
+            <SelectField
+              label={t('bookings.chooseFacility')}
+              placeholder={t('bookings.facilityPlaceholder')}
+              value={facilityId}
+              disabled={!sportCode}
+              options={filteredFacilities.map((facility) => ({
+                value: facility.id,
+                label: facility.name,
+                subtitle: `₹${Number(facility.bookingPrice).toLocaleString('en-IN')}${facility.locationLabel ? ` · ${facility.locationLabel}` : ''}`,
+              }))}
+              onChange={(value) => {
+                setFacilityId(value);
+                setSlots([]);
+              }}
+            />
+            {!!sportCode && !filteredFacilities.length && (
+              <Text style={styles.inlineNotice}>{t('bookings.noFacilities')}</Text>
+            )}
+          </>
         )}
 
         <Text style={styles.sectionTitle}>{t('bookings.chooseDate')}</Text>
@@ -379,6 +477,54 @@ export default function BookingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  fieldLabel: {
+    color: BrandColors.textPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+    marginTop: 12,
+    marginBottom: 7,
+  },
+  selectField: {
+    minHeight: 58,
+    backgroundColor: BrandColors.surface,
+    borderWidth: 1,
+    borderColor: BrandColors.border,
+    borderRadius: 14,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selectCopy: { flex: 1 },
+  selectValue: { color: BrandColors.textPrimary, fontSize: 16, fontWeight: '800' },
+  placeholder: { color: BrandColors.textSecondary, fontWeight: '600' },
+  selectSubtitle: { color: BrandColors.textSecondary, fontSize: 12, marginTop: 3 },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(20, 28, 13, 0.55)',
+  },
+  optionSheet: {
+    maxHeight: '65%',
+    backgroundColor: BrandColors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 34,
+  },
+  optionTitle: { color: BrandColors.textPrimary, fontSize: 20, fontWeight: '900', marginBottom: 12 },
+  optionRow: {
+    minHeight: 58,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.border,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  optionSelected: { backgroundColor: '#FFF0E7', borderRadius: 10 },
+  optionLabel: { color: BrandColors.textPrimary, fontSize: 16, fontWeight: '800' },
+  inlineNotice: { color: BrandColors.textSecondary, marginTop: 10 },
   sectionTitle: {
     color: BrandColors.textPrimary,
     fontSize: 18,
