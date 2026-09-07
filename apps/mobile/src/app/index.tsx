@@ -48,7 +48,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
           <Image
-            source={require('@/assets/images/jnapanam-logo-current.png')}
+            source={require('@/assets/images/jnapanam-logo-mobile.jpg')}
             style={styles.logo}
             resizeMode="contain"
             accessibilityLabel={t('common.appName')}
