@@ -1,0 +1,10 @@
+package com.jnapanam.sportszone.commerce.controller;
+import static com.jnapanam.sportszone.commerce.dto.CommerceDtos.*;import com.jnapanam.sportszone.commerce.service.CommerceAdminService;import jakarta.validation.Valid;import java.util.*;import org.springframework.http.*;import org.springframework.security.access.prepost.PreAuthorize;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;
+@RestController@RequestMapping("/api/v1/admin/commerce")@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERATIONS')")public class CommerceAdminController{private final CommerceAdminService service;public CommerceAdminController(CommerceAdminService service){this.service=service;}
+ @GetMapping("/orders")public List<Map<String,Object>> orders(){return service.orders();}
+ @PostMapping("/categories")@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")public ResponseEntity<Map<String,UUID>> category(@Valid@RequestBody CategoryRequest r){return ResponseEntity.status(201).body(Map.of("id",service.category(r)));}
+ @PostMapping("/products")@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")public ResponseEntity<Map<String,UUID>> product(@Valid@RequestBody ProductRequest r){return ResponseEntity.status(201).body(Map.of("id",service.product(r)));}
+ @PostMapping("/products/{id}/variants")@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")public ResponseEntity<Map<String,UUID>> variant(@PathVariable UUID id,@Valid@RequestBody VariantRequest r){return ResponseEntity.status(201).body(Map.of("id",service.variant(id,r)));}
+ @PostMapping("/variants/{id}/stock")@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")public ResponseEntity<Void> stock(Authentication a,@PathVariable UUID id,@Valid@RequestBody StockRequest r){service.stock(UUID.fromString(a.getName()),id,r);return ResponseEntity.noContent().build();}
+ @PatchMapping("/orders/{id}/status")public ResponseEntity<Void> status(@PathVariable UUID id,@Valid@RequestBody StatusRequest r){service.orderStatus(id,r.status());return ResponseEntity.noContent().build();}
+}
