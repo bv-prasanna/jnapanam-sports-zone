@@ -3,182 +3,78 @@ import { StyleSheet } from 'react-native';
 import { BrandColors } from '@/constants/brand';
 
 export const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
+  screen: { flex: 1, backgroundColor: BrandColors.background },
+  content: { flexGrow: 1, paddingBottom: 96 },
+  topBar: {
+    minHeight: 118,
+    paddingTop: 46,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    backgroundColor: BrandColors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.border,
   },
-
-  content: {
-    flexGrow: 1,
-  },
-
-  header: {
+  logo: { width: 132, height: 62 },
+  hero: {
     backgroundColor: BrandColors.primary,
     paddingHorizontal: 24,
-    paddingTop: 54,
-    paddingBottom: 34,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingTop: 34,
+    paddingBottom: 38,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
-
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-
-  logoContainer: {
-    width: 250,
-    height: 105,
-    maxWidth: '78%',
-    borderRadius: 16,
-    backgroundColor: BrandColors.white,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    overflow: 'hidden',
-  },
-
-  brandLogo: {
-    width: '100%',
-    height: '100%',
-  },
-
-  locationLabel: {
-    color: '#B8D8EA',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginTop: 18,
-  },
-
-  location: {
-    color: '#D7EAF4',
-    fontSize: 14,
-    marginTop: 3,
-  },
-
-  profileButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  heroContent: {
-    marginTop: 28,
-  },
-
-  heroTitle: {
-    color: BrandColors.white,
-    fontSize: 34,
-    fontWeight: '900',
-  },
-
-  heroDescription: {
-    color: '#D7EAF4',
-    fontSize: 15,
-    lineHeight: 22,
-    maxWidth: 510,
-    marginTop: 9,
-  },
-
+  eyebrow: { color: '#F2B466', fontSize: 11, fontWeight: '900', letterSpacing: 1.7 },
+  greeting: { color: '#E3E7D8', fontSize: 14, fontWeight: '700', marginTop: 12 },
+  heroTitle: { color: BrandColors.surface, fontSize: 38, lineHeight: 43, fontWeight: '900', marginTop: 8 },
+  heroDescription: { color: '#E3E7D8', fontSize: 15, lineHeight: 23, marginTop: 10, maxWidth: 520 },
   primaryButton: {
-    backgroundColor: BrandColors.white,
+    backgroundColor: BrandColors.accent,
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    paddingHorizontal: 19,
-    paddingVertical: 13,
-    borderRadius: 14,
-    marginTop: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 13,
+    marginTop: 23,
   },
-
-  primaryButtonText: {
-    color: BrandColors.primary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-
-  body: {
-    width: '100%',
-    maxWidth: 900,
-    alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 27,
-    paddingBottom: 50,
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  sectionTitle: {
-    color: BrandColors.textPrimary,
-    fontSize: 21,
-    fontWeight: '800',
-  },
-
-  linkText: {
-    color: BrandColors.secondary,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  sportsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 13,
-    marginTop: 16,
-  },
-
+  primaryButtonText: { color: BrandColors.surface, fontSize: 15, fontWeight: '900' },
+  body: { width: '100%', maxWidth: 900, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 28 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  sectionEyebrow: { color: BrandColors.accent, fontSize: 10, fontWeight: '900', letterSpacing: 1.3, marginBottom: 4 },
+  sectionTitle: { color: BrandColors.textPrimary, fontSize: 22, fontWeight: '900' },
+  linkText: { color: BrandColors.accent, fontSize: 13, fontWeight: '900' },
+  loader: { marginVertical: 35 },
+  sportsScroller: { marginHorizontal: -2, marginTop: 16 },
   sportCard: {
+    width: 190,
+    minHeight: 205,
     backgroundColor: BrandColors.surface,
-    width: '48%',
-    minWidth: 155,
-    flexGrow: 1,
-    padding: 17,
-    borderRadius: 18,
     borderWidth: 1,
     borderColor: BrandColors.border,
+    borderRadius: 18,
+    padding: 17,
+    marginRight: 12,
   },
-
   sportIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 51,
+    height: 51,
+    borderRadius: 15,
+    backgroundColor: '#FFF0E7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  sportName: {
-    color: BrandColors.textPrimary,
-    fontSize: 17,
-    fontWeight: '800',
-    marginTop: 14,
-  },
-
-  sportSubtitle: {
-    color: BrandColors.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-  },
-
-  servicesTitle: {
-    marginTop: 31,
-  },
-
-  servicesList: {
-    gap: 11,
-    marginTop: 15,
-  },
-
+  sportName: { color: BrandColors.textPrimary, fontSize: 17, fontWeight: '900', marginTop: 14 },
+  sportSubtitle: { color: BrandColors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 5, minHeight: 36 },
+  cardLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 'auto', paddingTop: 10 },
+  cardLinkText: { color: BrandColors.accent, fontSize: 12, fontWeight: '900' },
+  mutedText: { color: BrandColors.textSecondary, marginTop: 18 },
+  servicesTitle: { marginTop: 32 },
+  servicesList: { gap: 11, marginTop: 15 },
   serviceCard: {
     backgroundColor: BrandColors.surface,
     flexDirection: 'row',
@@ -188,75 +84,26 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BrandColors.border,
   },
-
   serviceIcon: {
-    width: 49,
-    height: 49,
-    borderRadius: 15,
-    backgroundColor: '#E8F2F8',
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#ECEEDE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  serviceContent: {
-    flex: 1,
-    paddingHorizontal: 13,
-  },
-
-  serviceTitle: {
-    color: BrandColors.textPrimary,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-
-  serviceDescription: {
-    color: BrandColors.textSecondary,
-    fontSize: 13,
-    marginTop: 3,
-  },
-
-  upcomingCard: {
-    backgroundColor: BrandColors.warningBackground,
+  serviceContent: { flex: 1, paddingHorizontal: 13 },
+  serviceTitle: { color: BrandColors.textPrimary, fontSize: 16, fontWeight: '900' },
+  serviceDescription: { color: BrandColors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 3 },
+  profileCard: {
+    backgroundColor: BrandColors.secondary,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 17,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: BrandColors.warningBorder,
-    marginTop: 28,
+    marginTop: 25,
   },
-
-  upcomingIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: BrandColors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  upcomingContent: {
-    flex: 1,
-    marginLeft: 14,
-  },
-
-  upcomingLabel: {
-    color: BrandColors.warningText,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-
-  upcomingTitle: {
-    color: BrandColors.textPrimary,
-    fontSize: 16,
-    fontWeight: '800',
-    marginTop: 4,
-  },
-
-  upcomingDescription: {
-    color: BrandColors.textSecondary,
-    fontSize: 13,
-    marginTop: 3,
-  },
+  profileCopy: { flex: 1, marginHorizontal: 13 },
+  profileTitle: { color: BrandColors.surface, fontSize: 16, fontWeight: '900' },
+  profileDescription: { color: '#E2E6D7', fontSize: 12, marginTop: 3 },
 });

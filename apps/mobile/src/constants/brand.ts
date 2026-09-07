@@ -1,18 +1,16 @@
 export const BrandColors = {
-  primary: '#063B63',
-  secondary: '#0877B9',
-  accent: '#F47A20',
-  success: '#42A846',
-
-  background: '#F4F8FA',
-  surface: '#FFFFFF',
-
-  textPrimary: '#102A3A',
-  textSecondary: '#61727D',
-  border: '#DCE6EB',
-
+  primary: '#263712',
+  secondary: '#415126',
+  accent: '#D23808',
+  accentSoft: '#FFF0E7',
+  success: '#4D7A35',
+  background: '#F5F1E8',
+  surface: '#FFFCF6',
+  textPrimary: '#202619',
+  textSecondary: '#68705F',
+  border: '#E2D5BE',
   white: '#FFFFFF',
-  warningBackground: '#FFF6E8',
-  warningBorder: '#F5D39C',
-  warningText: '#8A5700',
+  warningBackground: '#FFF4DF',
+  warningBorder: '#EDC47B',
+  warningText: '#86520A',
 } as const;
