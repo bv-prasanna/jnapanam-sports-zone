@@ -18,7 +18,7 @@ const en = {
     passwordLength: 'Password must contain at least 8 characters.', passwordMismatch: 'Passwords do not match.',
   },
   home: {
-    destination: 'YOUR SPORTS DESTINATION', headline: 'Play. Train. Compete.',
+    destination: 'YOUR SPORTS DESTINATION', welcome: 'Welcome, {{name}}', welcomeGuest: 'Welcome to Jnapanam', atJnapanam: 'AT JNAPANAM', bookNow: 'Book now', sportsUnavailable: 'Sports will appear when the backend is available.', headline: 'Play. Train. Compete.',
     description: 'Book sports facilities, join training programs and participate in local tournaments.',
     bookSlot: 'Book a Sports Slot', chooseSport: 'Choose your sport',
     swimming: 'Swimming', swimmingDescription: 'Pool sessions and coaching',

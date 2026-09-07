@@ -21,14 +21,23 @@ export default function AppTabs() {
   return (
     <Tabs screenOptions={({ route }) => ({
       headerShown: false,
-      tabBarActiveTintColor: '#C7350A',
+      tabBarActiveTintColor: BrandColors.accent,
       tabBarInactiveTintColor: BrandColors.textSecondary,
-      tabBarStyle: { height: 68, paddingTop: 7, paddingBottom: 8, backgroundColor: '#FFFCF6', borderTopColor: '#E6DAC5' },
-      tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
-      tabBarIcon: ({ color, size }) => {
-        const name = icons[route.name as keyof typeof icons] || 'circle-outline';
-        return <MaterialCommunityIcons name={name} size={size} color={color} />;
+      tabBarStyle: {
+        height: 70,
+        paddingTop: 7,
+        paddingBottom: 9,
+        backgroundColor: BrandColors.surface,
+        borderTopColor: BrandColors.border,
       },
+      tabBarLabelStyle: { fontSize: 11, fontWeight: '800' },
+      tabBarIcon: ({ color, size }) => (
+        <MaterialCommunityIcons
+          name={icons[route.name as keyof typeof icons] || 'circle-outline'}
+          size={size}
+          color={color}
+        />
+      ),
     })}>
       <Tabs.Screen name="index" options={{ title: t('navigation.home') }} />
       <Tabs.Screen name="bookings" options={{ title: t('navigation.bookings') }} />
