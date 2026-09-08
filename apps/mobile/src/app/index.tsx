@@ -25,7 +25,7 @@ const sportIcons: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> =
 };
 
 const services = [
-  { titleKey: 'home.memberships', descriptionKey: 'home.membershipsDescription', icon: 'card-account-details-outline', route: '/profile' },
+  { titleKey: 'home.memberships', descriptionKey: 'home.membershipsDescription', icon: 'card-account-details-outline', route: '/memberships' },
   { titleKey: 'home.trainingCamps', descriptionKey: 'home.trainingCampsDescription', icon: 'whistle-outline', route: '/training' },
   { titleKey: 'home.tournaments', descriptionKey: 'home.tournamentsDescription', icon: 'trophy-outline', route: '/tournaments' },
 ] as const;
@@ -48,7 +48,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
           <Image
-            source={require('@/assets/images/jnapanam-logo-mobile.jpg')}
+            source={require('@/assets/images/jnapanam-logo-current.png')}
             style={styles.logo}
             resizeMode="contain"
             accessibilityLabel={t('common.appName')}
