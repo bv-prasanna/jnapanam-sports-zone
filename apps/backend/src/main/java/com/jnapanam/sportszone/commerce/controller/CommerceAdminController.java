@@ -78,14 +78,14 @@ public class CommerceAdminController {
 
     @PostMapping("/products/{id}/variants")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-    public ResponseEntity<Map<String, UUID>> variant(@PathVariable UUID id,
+    public ResponseEntity<Map<String, UUID>> createVariant(@PathVariable UUID id,
             @Valid @RequestBody VariantRequest request) {
         return ResponseEntity.status(201).body(Map.of("id", service.variant(id, request)));
     }
 
     @PutMapping("/variants/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-    public ResponseEntity<Void> variant(@PathVariable UUID id,
+    public ResponseEntity<Void> updateVariant(@PathVariable UUID id,
             @Valid @RequestBody VariantRequest request) {
         service.updateVariant(id, request);
         return ResponseEntity.noContent().build();
