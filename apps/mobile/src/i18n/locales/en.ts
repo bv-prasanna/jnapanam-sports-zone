@@ -7,7 +7,7 @@ const en = {
     keep: 'Keep booking',
     cancelBooking: 'Cancel booking',
   },
-  navigation: { home: 'Home', bookings: 'Bookings', training: 'Training', tournaments: 'Tournaments', profile: 'Profile' },
+  navigation: { home: 'Home', bookings: 'Bookings', memberships: 'Memberships', shop: 'Shop', training: 'Training', tournaments: 'Tournaments', profile: 'Profile' },
   auth: {
     welcomeBack: 'WELCOME BACK', login: 'Login', logout: 'Logout', loginDescription: 'Sign in to book facilities and manage your activities.',
     email: 'Email', password: 'Password', fullName: 'Full name', mobile: 'Mobile number', confirmPassword: 'Confirm password',
