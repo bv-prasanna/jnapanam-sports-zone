@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ApiError, api } from "@/lib/api";
 import { useApp } from "@/components/app-provider";
 import styles from "./commerce.module.css";
+import { CatalogueImport } from "./catalogue-import";
 
 type Settings = {
   enabled:boolean; shopName:string; shopNameKn?:string; heroTitle:string; heroTitleKn?:string;
@@ -13,11 +14,11 @@ type Settings = {
   loyaltyMaxPercent:number; loyaltyPointValuePaise:number; deliveryEnabled:boolean;
   deliveryFeePaise:number; payAtFacilityEnabled:boolean; contactPhone?:string; contactEmail?:string;
 };
-type Category = {id:string;code:string;name:string;nameKn?:string;status:string;displayOrder:number;loyaltyMaxPercent?:number};
+type Category = {id:string;code:string;name:string;nameKn?:string;description?:string;imageUrl?:string;status:string;displayOrder:number;loyaltyMaxPercent?:number};
 type Variant = {id:string;sku:string;label:string;pricePaise:number;stockQuantity:number;lowStockThreshold:number;status:string};
 type Product = {id:string;categoryId:string;categoryCode:string;sku:string;name:string;nameKn?:string;description?:string;descriptionKn?:string;imageUrl?:string;taxPercent:number;status:string;loyaltyMaxPercent?:number;variants:Variant[]};
 type Order = {id:string;order_number:string;status:string;fulfilment_type:string;total_paise:number;recipient_name:string;created_at:string};
-type Tab = "branding"|"categories"|"products"|"inventory"|"orders";
+type Tab = "branding"|"categories"|"products"|"import"|"inventory"|"orders";
 const emptyCategory={code:"",name:"",nameKn:"",description:"",imageUrl:"",displayOrder:0,loyaltyMaxPercent:"",status:"ACTIVE"};
 const emptyProduct={categoryId:"",sku:"",name:"",nameKn:"",description:"",descriptionKn:"",imageUrl:"",taxPercent:0,loyaltyMaxPercent:"",status:"DRAFT"};
 
@@ -32,6 +33,8 @@ export default function CommerceAdminPage(){
   const [product,setProduct]=useState({...emptyProduct});
   const [variant,setVariant]=useState({productId:"",sku:"",label:"",price:"",stock:"0",lowStock:"5",status:"ACTIVE"});
   const [stock,setStock]=useState({variantId:"",quantity:"",reason:"Stock count adjustment"});
+  const [editingCategoryId,setEditingCategoryId]=useState<string|null>(null);
+  const [editingProductId,setEditingProductId]=useState<string|null>(null);
   const [message,setMessage]=useState(""); const [busy,setBusy]=useState(false);
   const isAdmin=!!user?.roles.some(r=>["SUPER_ADMIN","ADMIN"].includes(r));
   const isSuper=!!user?.roles.includes("SUPER_ADMIN");
@@ -60,12 +63,17 @@ export default function CommerceAdminPage(){
   }
   async function saveSettings(e:FormEvent){e.preventDefault();if(!settings)return;await run(
     ()=>api("/api/v1/admin/commerce/settings",{method:"PUT",body:JSON.stringify(settings)}),"Shop settings saved.")}
-  async function addCategory(e:FormEvent){e.preventDefault();await run(
-    ()=>api("/api/v1/admin/commerce/categories",{method:"POST",body:JSON.stringify({...category,loyaltyMaxPercent:numberOrNull(category.loyaltyMaxPercent)})}),
-    "Category added.");setCategory({...emptyCategory})}
-  async function addProduct(e:FormEvent){e.preventDefault();await run(
-    ()=>api("/api/v1/admin/commerce/products",{method:"POST",body:JSON.stringify({...product,loyaltyMaxPercent:numberOrNull(product.loyaltyMaxPercent)})}),
-    "Product added.");setProduct({...emptyProduct,categoryId:categories[0]?.id||""})}
+  async function addCategory(e:FormEvent){e.preventDefault();const body=JSON.stringify({...category,loyaltyMaxPercent:numberOrNull(category.loyaltyMaxPercent)});await run(
+    ()=>api(editingCategoryId?"/api/v1/admin/commerce/categories/"+editingCategoryId:"/api/v1/admin/commerce/categories",{method:editingCategoryId?"PUT":"POST",body}),
+    editingCategoryId?"Category updated.":"Category added.");setCategory({...emptyCategory});setEditingCategoryId(null)}
+  async function addProduct(e:FormEvent){e.preventDefault();const body=JSON.stringify({...product,loyaltyMaxPercent:numberOrNull(product.loyaltyMaxPercent)});await run(
+    ()=>api(editingProductId?"/api/v1/admin/commerce/products/"+editingProductId:"/api/v1/admin/commerce/products",{method:editingProductId?"PUT":"POST",body}),
+    editingProductId?"Product updated.":"Product added.");setProduct({...emptyProduct,categoryId:categories[0]?.id||""});setEditingProductId(null)}
+  function editCategory(c:Category){setCategory({code:c.code,name:c.name,nameKn:c.nameKn||"",description:c.description||"",imageUrl:c.imageUrl||"",displayOrder:c.displayOrder,loyaltyMaxPercent:c.loyaltyMaxPercent??"",status:c.status});setEditingCategoryId(c.id);setTab("categories");window.scrollTo({top:0,behavior:"smooth"})}
+  function editProduct(p:Product){setProduct({categoryId:p.categoryId,sku:p.sku,name:p.name,nameKn:p.nameKn||"",description:p.description||"",descriptionKn:p.descriptionKn||"",imageUrl:p.imageUrl||"",taxPercent:p.taxPercent,loyaltyMaxPercent:p.loyaltyMaxPercent??"",status:p.status});setEditingProductId(p.id);setTab("products");window.scrollTo({top:0,behavior:"smooth"})}
+  async function toggleCategory(c:Category){await run(()=>api("/api/v1/admin/commerce/categories/"+c.id,{method:"PUT",body:JSON.stringify({code:c.code,name:c.name,nameKn:c.nameKn||null,description:c.description||null,imageUrl:c.imageUrl||null,displayOrder:c.displayOrder,loyaltyMaxPercent:c.loyaltyMaxPercent??null,status:c.status==="ACTIVE"?"INACTIVE":"ACTIVE"})}),c.status==="ACTIVE"?"Category deactivated.":"Category activated.")}
+  async function toggleProduct(p:Product){await run(()=>api("/api/v1/admin/commerce/products/"+p.id,{method:"PUT",body:JSON.stringify({categoryId:p.categoryId,sku:p.sku,name:p.name,nameKn:p.nameKn||null,description:p.description||null,descriptionKn:p.descriptionKn||null,imageUrl:p.imageUrl||null,taxPercent:p.taxPercent,loyaltyMaxPercent:p.loyaltyMaxPercent??null,status:p.status==="ACTIVE"?"INACTIVE":"ACTIVE"})}),p.status==="ACTIVE"?"Product unpublished.":"Product published.")}
+  function uploadLogo(file?:File){if(!file)return;if(file.size>1500000){setMessage("Logo must be smaller than 1.5 MB.");return}const reader=new FileReader();reader.onload=()=>setSettings(s=>s?{...s,logoUrl:String(reader.result)}:s);reader.onerror=()=>setMessage("Unable to read logo image.");reader.readAsDataURL(file)}
   async function addVariant(e:FormEvent){e.preventDefault();await run(
     ()=>api("/api/v1/admin/commerce/products/"+variant.productId+"/variants",{method:"POST",body:JSON.stringify({sku:variant.sku,label:variant.label,pricePaise:Math.round(Number(variant.price)*100),stockQuantity:Number(variant.stock),lowStockThreshold:Number(variant.lowStock),status:variant.status})}),
     "Variant and opening inventory added.")}
@@ -77,7 +85,7 @@ export default function CommerceAdminPage(){
 
   return <main className={styles.page}>
     <header className={styles.header}><div><span>ADMIN COMMERCE</span><h1>Shop management</h1><p>Branding, catalogue, pricing, inventory, loyalty and orders.</p></div><Link className={styles.back} href="/admin">← Admin console</Link></header>
-    <nav className={styles.tabs}>{(["branding","categories","products","inventory","orders"] as Tab[]).map(x=><button key={x} className={tab===x?styles.active:""} onClick={()=>setTab(x)}>{title(x)}</button>)}</nav>
+    <nav className={styles.tabs}>{(["branding","categories","products","import","inventory","orders"] as Tab[]).map(x=><button key={x} className={tab===x?styles.active:""} onClick={()=>setTab(x)}>{title(x)}</button>)}</nav>
     {message&&<div className={styles.message}>{message}</div>}
 
     {tab==="branding"&&settings&&<form className={styles.form} onSubmit={saveSettings}>
@@ -89,6 +97,7 @@ export default function CommerceAdminPage(){
         <Field label="Hero subtitle"><input value={settings.heroSubtitle||""} onChange={e=>setSettings({...settings,heroSubtitle:e.target.value})}/></Field>
         <Field label="Kannada hero subtitle"><input value={settings.heroSubtitleKn||""} onChange={e=>setSettings({...settings,heroSubtitleKn:e.target.value})}/></Field>
         <Field label="Logo URL"><input value={settings.logoUrl||""} onChange={e=>setSettings({...settings,logoUrl:e.target.value})} placeholder="/images/jnapanam-logo.png"/></Field>
+        <Field label="Upload logo image"><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={e=>uploadLogo(e.target.files?.[0])}/>{settings.logoUrl&&<img className={styles.logoPreview} src={settings.logoUrl} alt="Shop logo preview"/>}</Field>
       </Section>
       <Section title="Theme colours">
         {(["primaryColor","secondaryColor","accentColor","backgroundColor","textColor"] as const).map(k=><Field label={title(k)} key={k}><div className={styles.color}><input type="color" value={settings[k]} onChange={e=>setSettings({...settings,[k]:e.target.value})}/><input value={settings[k]} pattern="^#[0-9A-Fa-f]{6}$" onChange={e=>setSettings({...settings,[k]:e.target.value})}/></div></Field>)}
@@ -106,15 +115,15 @@ export default function CommerceAdminPage(){
       <button className={styles.primary} disabled={busy||!isSuper}>{isSuper?"Save shop settings":"Only Super Admin can change shop settings"}</button>
     </form>}
 
-    {tab==="categories"&&<div className={styles.twoColumn}><form className={styles.form} onSubmit={addCategory}><h2>Add category</h2>
+    {tab==="categories"&&<div className={styles.twoColumn}><form className={styles.form} onSubmit={addCategory}><h2>{editingCategoryId?"Edit category":"Add category"}</h2>
       <Field label="Code"><input value={category.code} onChange={e=>setCategory({...category,code:e.target.value})} required/></Field>
       <Field label="Name"><input value={category.name} onChange={e=>setCategory({...category,name:e.target.value})} required/></Field>
       <Field label="Kannada name"><input value={category.nameKn} onChange={e=>setCategory({...category,nameKn:e.target.value})}/></Field>
       <Field label="Category loyalty limit % (blank uses shop default)"><input type="number" min="0" max="100" value={category.loyaltyMaxPercent} onChange={e=>setCategory({...category,loyaltyMaxPercent:e.target.value})}/></Field>
-      <button className={styles.primary} disabled={busy}>Add category</button></form>
-      <List title="Categories">{categories.map(c=><article key={c.id}><b>{c.name}</b><span>{c.code} · {c.status} · Loyalty {c.loyaltyMaxPercent??"shop default"}%</span></article>)}</List></div>}
+      <button className={styles.primary} disabled={busy}>{editingCategoryId?"Save category":"Add category"}</button>{editingCategoryId&&<button type="button" className={styles.secondary} onClick={()=>{setEditingCategoryId(null);setCategory({...emptyCategory})}}>Cancel edit</button>}</form>
+      <List title="Categories">{categories.map(c=><article key={c.id}><b>{c.name}</b><span>{c.code} · {c.status} · Loyalty {c.loyaltyMaxPercent??"shop default"}%</span><div className={styles.actions}><button onClick={()=>editCategory(c)}>Edit</button><button onClick={()=>void toggleCategory(c)}>{c.status==="ACTIVE"?"Deactivate":"Activate"}</button></div></article>)}</List></div>}
 
-    {tab==="products"&&<div className={styles.twoColumn}><form className={styles.form} onSubmit={addProduct}><h2>Add product</h2>
+    {tab==="products"&&<div className={styles.twoColumn}><form className={styles.form} onSubmit={addProduct}><h2>{editingProductId?"Edit product":"Add product"}</h2>
       <Field label="Category"><select value={product.categoryId} onChange={e=>setProduct({...product,categoryId:e.target.value})}>{categories.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select></Field>
       <Field label="SKU"><input value={product.sku} onChange={e=>setProduct({...product,sku:e.target.value})} required/></Field>
       <Field label="Name"><input value={product.name} onChange={e=>setProduct({...product,name:e.target.value})} required/></Field>
@@ -124,8 +133,10 @@ export default function CommerceAdminPage(){
       <Field label="Tax %"><input type="number" min="0" max="100" step=".01" value={product.taxPercent} onChange={e=>setProduct({...product,taxPercent:Number(e.target.value)})}/></Field>
       <Field label="Product loyalty limit % (blank uses category/shop)"><input type="number" min="0" max="100" value={product.loyaltyMaxPercent} onChange={e=>setProduct({...product,loyaltyMaxPercent:e.target.value})}/></Field>
       <Field label="Status"><select value={product.status} onChange={e=>setProduct({...product,status:e.target.value})}><option>DRAFT</option><option>ACTIVE</option><option>INACTIVE</option></select></Field>
-      <button className={styles.primary} disabled={busy||!categories.length}>Add product</button></form>
-      <List title="Products">{products.map(p=><article key={p.id}><b>{p.name}</b><span>{p.sku} · {p.categoryCode} · {p.status} · Loyalty {p.loyaltyMaxPercent??"inherited"}%</span></article>)}</List></div>}
+      <button className={styles.primary} disabled={busy||!categories.length}>{editingProductId?"Save product":"Add product"}</button>{editingProductId&&<button type="button" className={styles.secondary} onClick={()=>{setEditingProductId(null);setProduct({...emptyProduct,categoryId:categories[0]?.id||""})}}>Cancel edit</button>}</form>
+      <List title="Products">{products.map(p=><article key={p.id}><b>{p.name}</b><span>{p.sku} · {p.categoryCode} · {p.status} · Loyalty {p.loyaltyMaxPercent??"inherited"}%</span><div className={styles.actions}><button onClick={()=>editProduct(p)}>Edit</button><button onClick={()=>void toggleProduct(p)}>{p.status==="ACTIVE"?"Unpublish":"Publish"}</button></div></article>)}</List></div>}
+
+    {tab==="import"&&<CatalogueImport onComplete={load}/>}
 
     {tab==="inventory"&&<div className={styles.twoColumn}><div><form className={styles.form} onSubmit={addVariant}><h2>Add priced variant</h2>
       <Field label="Product"><select value={variant.productId} onChange={e=>setVariant({...variant,productId:e.target.value})}>{products.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></Field>

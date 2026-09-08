@@ -3,6 +3,8 @@
 import { CSSProperties, useCallback, useEffect, useState } from "react";
 import { ApiError, api } from "@/lib/api";
 import { useApp } from "@/components/app-provider";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import styles from "./shop.module.css";
 
 type Settings={enabled:boolean;shopName:string;shopNameKn?:string;heroTitle:string;heroTitleKn?:string;heroSubtitle?:string;heroSubtitleKn?:string;logoUrl?:string;primaryColor:string;secondaryColor:string;accentColor:string;backgroundColor:string;textColor:string;loyaltyMaxPercent:number;loyaltyPointValuePaise:number;deliveryEnabled:boolean;deliveryFeePaise:number;payAtFacilityEnabled:boolean};
@@ -28,14 +30,14 @@ export default function Shop(){
  const vars={"--shop-primary":settings.primaryColor,"--shop-secondary":settings.secondaryColor,"--shop-accent":settings.accentColor,"--shop-bg":settings.backgroundColor,"--shop-text":settings.textColor} as CSSProperties;
  const shopName=language==="kn"&&settings.shopNameKn?settings.shopNameKn:settings.shopName;const hero=language==="kn"&&settings.heroTitleKn?settings.heroTitleKn:settings.heroTitle;const subtitle=language==="kn"&&settings.heroSubtitleKn?settings.heroSubtitleKn:settings.heroSubtitle;
  if(!settings.enabled)return <main className={styles.page} style={vars}><section className={styles.unavailable}>{settings.logoUrl&&<img src={settings.logoUrl} alt={shopName}/>}<h1>{shopName}</h1><p>The shop is currently unavailable. Please check again later.</p></section></main>;
- return <main className={styles.page} style={vars}><section className={styles.hero}><div>{settings.logoUrl&&<img src={settings.logoUrl} alt={shopName}/>}<span>{shopName}</span><h1>{hero}</h1><p>{subtitle}</p></div><div className={styles.heroMark}>SHOP</div></section>
+ return <><SiteHeader/><main className={styles.page} style={vars}><section className={styles.hero}><div>{settings.logoUrl&&<img src={settings.logoUrl} alt={shopName}/>}<span>{shopName}</span><h1>{hero}</h1><p>{subtitle}</p></div><div className={styles.heroMark}>SHOP</div></section>
  <nav className={styles.tabs}>{["shop","cart","orders"].map(x=><button key={x} className={tab===x?styles.active:""} onClick={()=>setTab(x)}>{x==="cart"?`Cart (${cart.items.length})`:x==="orders"?"My orders":"Shop"}</button>)}</nav>
  {message&&<p className={styles.message} role="status">{message}</p>}
  {tab==="shop"&&<section className={styles.grid}>{products.map(p=><article className={styles.card} key={p.id}>{p.imageUrl?<img className={styles.productImage} src={p.imageUrl} alt={p.name}/>:<div className={styles.placeholder}>{shopName}</div>}<small>{p.categoryCode}</small><h2>{language==="kn"&&p.nameKn?p.nameKn:p.name}</h2><p>{language==="kn"&&p.descriptionKn?p.descriptionKn:p.description}</p>{p.variants.map(v=><button className={styles.variant} disabled={!v.stockQuantity} onClick={()=>void add(v.id)} key={v.id}><span>{v.label}</span><b>{money(v.pricePaise)}</b><small>{v.stockQuantity?"Add":"Out of stock"}</small></button>)}</article>)}</section>}
  {tab==="shop"&&!products.length&&!loading&&<p className={styles.empty}>No merchandise is available yet.</p>}
  {tab==="cart"&&<section className={styles.panel}><h2>Your cart</h2>{cart.items.map(i=><div className={styles.row} key={i.variantId}><div><b>{i.productName}</b><span>{i.variantLabel+" · Qty "+i.quantity}</span></div><b>{money(i.lineTotalPaise)}</b><button onClick={()=>void remove(i.variantId)}>Remove</button></div>)}{cart.items.length?<><div className={styles.total}><span>Subtotal</span><b>{money(cart.subtotalPaise)}</b></div>{quote&&quote.maximumRedeemablePoints>0&&<label className={styles.loyalty}><span>Use loyalty points</span><input type="number" min="0" max={quote.maximumRedeemablePoints} value={points} onChange={e=>setPoints(Math.min(quote.maximumRedeemablePoints,Math.max(0,Number(e.target.value))))}/><small>Balance: {quote.balancePoints} · Maximum for this cart: {quote.maximumRedeemablePoints} · Discount: {money(points*quote.pointValuePaise)}</small></label>}<div className={styles.payable}><span>Payable</span><b>{money(cart.subtotalPaise-points*(quote?.pointValuePaise||0))}</b></div><button className={styles.primary} disabled={!settings.payAtFacilityEnabled} onClick={()=>void checkout()}>{settings.payAtFacilityEnabled?"Collect & pay at facility":"Pay at facility unavailable"}</button></>:<p>Your cart is empty.</p>}</section>}
  {tab==="orders"&&<section className={styles.panel}><h2>My orders</h2>{orders.map(o=><div className={styles.row} key={o.id}><div><b>{o.orderNumber}</b><span>{o.fulfilmentType}{o.loyaltyPointsUsed?` · ${o.loyaltyPointsUsed} points used`:""}</span></div><b>{money(o.totalPaise)}</b><em>{o.status}</em></div>)}{!orders.length&&<p>No orders yet.</p>}</section>}
- </main>
+ </main><SiteFooter/></>
 }
 function errorText(e:unknown){return e instanceof ApiError?e.message:"Unable to complete this action."}
 

@@ -7,7 +7,7 @@ const kn = {
     keep: 'ಬುಕಿಂಗ್ ಉಳಿಸಿ',
     cancelBooking: 'ಬುಕಿಂಗ್ ರದ್ದುಮಾಡಿ',
   },
-  navigation: { home: 'ಮುಖಪುಟ', bookings: 'ಬುಕಿಂಗ್‌ಗಳು', training: 'ತರಬೇತಿ', tournaments: 'ಪಂದ್ಯಾವಳಿಗಳು', profile: 'ಪ್ರೊಫೈಲ್' },
+  navigation: { home: 'ಮುಖಪುಟ', bookings: 'ಬುಕಿಂಗ್‌ಗಳು', memberships: 'ಸದಸ್ಯತ್ವಗಳು', shop: 'ಅಂಗಡಿ', training: 'ತರಬೇತಿ', tournaments: 'ಪಂದ್ಯಾವಳಿಗಳು', profile: 'ಪ್ರೊಫೈಲ್' },
   auth: {
     welcomeBack: 'ಮತ್ತೆ ಸ್ವಾಗತ', login: 'ಲಾಗಿನ್', logout: 'ಲಾಗ್ ಔಟ್', loginDescription: 'ಸೌಲಭ್ಯಗಳನ್ನು ಬುಕ್ ಮಾಡಲು ಮತ್ತು ಚಟುವಟಿಕೆಗಳನ್ನು ನಿರ್ವಹಿಸಲು ಲಾಗಿನ್ ಮಾಡಿ.',
     email: 'ಇಮೇಲ್', password: 'ಪಾಸ್‌ವರ್ಡ್', fullName: 'ಪೂರ್ಣ ಹೆಸರು', mobile: 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ', confirmPassword: 'ಪಾಸ್‌ವರ್ಡ್ ದೃಢೀಕರಿಸಿ',
