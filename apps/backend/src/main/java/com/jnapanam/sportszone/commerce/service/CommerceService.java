@@ -177,7 +177,7 @@ public class CommerceService {
                 + "payment_method,payment_status,subtotal_paise,tax_paise,delivery_fee_paise,"
                 + "original_total_paise,loyalty_points_used,loyalty_discount_paise,total_paise,"
                 + "recipient_name,mobile,address_line,city,state,postal_code) "
-                + "values(?,?,?,'PLACED',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "values(?,?,?,'PLACED',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         jdbc.update(orderSql, id, number, user, fulfil, method, paymentStatus, subtotal, tax, delivery,
                 originalTotal, requestedPoints, loyaltyDiscount, total,
                 r.recipientName(), r.mobile(), r.addressLine(), r.city(), r.state(), r.postalCode());
