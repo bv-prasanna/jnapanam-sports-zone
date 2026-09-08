@@ -17,13 +17,13 @@ create table commerce_variants (
  constraint commerce_stock_valid check(stock_quantity>=0)
 );
 create table commerce_cart_items (
- id uuid primary key default gen_random_uuid(), user_id uuid not null references app_users(id),
+ id uuid primary key default gen_random_uuid(), user_id uuid not null references users(id),
  variant_id uuid not null references commerce_variants(id), quantity integer not null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
  unique(user_id,variant_id), constraint commerce_cart_quantity_valid check(quantity between 1 and 99)
 );
 create table commerce_orders (
- id uuid primary key default gen_random_uuid(), order_number varchar(30) not null unique, user_id uuid not null references app_users(id),
+ id uuid primary key default gen_random_uuid(), order_number varchar(30) not null unique, user_id uuid not null references users(id),
  status varchar(30) not null default 'PLACED', fulfilment_type varchar(20) not null, payment_method varchar(30) not null,
  payment_status varchar(20) not null default 'PENDING', subtotal_paise bigint not null, tax_paise bigint not null,
  delivery_fee_paise bigint not null default 0, total_paise bigint not null, recipient_name varchar(150) not null,
@@ -38,7 +38,7 @@ create table commerce_order_items (
 );
 create table commerce_stock_movements (
  id uuid primary key default gen_random_uuid(), variant_id uuid not null references commerce_variants(id),
- quantity_delta integer not null, reason varchar(40) not null, reference_id uuid, actor_id uuid references app_users(id),
+ quantity_delta integer not null, reason varchar(40) not null, reference_id uuid, actor_id uuid references users(id),
  created_at timestamptz not null default now()
 );
 create index commerce_product_catalog_idx on commerce_products(category_id,status);
