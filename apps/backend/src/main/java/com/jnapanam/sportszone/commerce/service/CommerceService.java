@@ -26,7 +26,23 @@ public class CommerceService {
                 (r, n) -> new Category(
                         r.getObject("id", UUID.class), r.getString("code"), r.getString("name"),
                         r.getString("name_kn"), r.getString("description"), r.getString("image_url"),
-                        r.getInt("display_order"), r.getString("status")));
+                        r.getInt("display_order"), r.getString("status"),
+                        nullableDouble(r, "loyalty_max_percent")));
+    }
+
+    public ShopSettings settings() {
+        return jdbc.queryForObject("select * from commerce_shop_settings where singleton_id=true",
+                (r, n) -> new ShopSettings(
+                        r.getBoolean("enabled"), r.getString("shop_name"), r.getString("shop_name_kn"),
+                        r.getString("hero_title"), r.getString("hero_title_kn"),
+                        r.getString("hero_subtitle"), r.getString("hero_subtitle_kn"),
+                        r.getString("logo_url"), r.getString("primary_color"),
+                        r.getString("secondary_color"), r.getString("accent_color"),
+                        r.getString("background_color"), r.getString("text_color"),
+                        r.getDouble("loyalty_max_percent"), r.getLong("loyalty_point_value_paise"),
+                        r.getBoolean("delivery_enabled"), r.getLong("delivery_fee_paise"),
+                        r.getBoolean("pay_at_facility_enabled"), r.getString("contact_phone"),
+                        r.getString("contact_email")));
     }
 
     public List<Product> products(String category) {
@@ -51,10 +67,13 @@ public class CommerceService {
                 "select * from commerce_variants where product_id=? and status='ACTIVE' order by price_paise",
                 (v, n) -> new Variant(v.getObject("id", UUID.class), v.getString("sku"),
                         v.getString("label"), v.getLong("price_paise"), v.getInt("stock_quantity"),
+                        v.getInt("low_stock_threshold"),
                         v.getString("status")), id);
-        return new Product(id, r.getString("category_code"), r.getString("sku"), r.getString("name"),
+        return new Product(id, r.getObject("category_id", UUID.class), r.getString("category_code"),
+                r.getString("sku"), r.getString("name"),
                 r.getString("name_kn"), r.getString("description"), r.getString("description_kn"),
-                r.getString("image_url"), r.getDouble("tax_percent"), r.getString("status"), variants);
+                r.getString("image_url"), r.getDouble("tax_percent"), r.getString("status"),
+                nullableDouble(r, "loyalty_max_percent"), variants);
     }
 
     public Cart cart(UUID user) {
@@ -90,6 +109,16 @@ public class CommerceService {
         return cart(user);
     }
 
+    public LoyaltyQuote loyaltyQuote(UUID user) {
+        List<Map<String, Object>> rows = checkoutRows(user, false);
+        ShopSettings settings = settings();
+        long maximumDiscount = maximumLoyaltyDiscount(rows, settings.loyaltyMaxPercent());
+        long balance = loyaltyBalance(user);
+        long maximumPoints = Math.min(balance, maximumDiscount / settings.loyaltyPointValuePaise());
+        return new LoyaltyQuote(balance, maximumPoints, settings.loyaltyPointValuePaise(),
+                maximumPoints * settings.loyaltyPointValuePaise());
+    }
+
     @Transactional
     public Order checkout(UUID user, CheckoutRequest r) {
         String fulfil = r.fulfilmentType().toUpperCase();
@@ -101,12 +130,7 @@ public class CommerceService {
             throw new IllegalArgumentException("Delivery address, city, state and postal code are required");
         }
 
-        String cartSql = "select ci.variant_id,ci.quantity,v.stock_quantity,v.price_paise,v.sku,v.label,"
-                + "p.id product_id,p.name,p.tax_percent from commerce_cart_items ci "
-                + "join commerce_variants v on v.id=ci.variant_id "
-                + "join commerce_products p on p.id=v.product_id "
-                + "where ci.user_id=? order by ci.created_at for update of v";
-        List<Map<String, Object>> rows = jdbc.queryForList(cartSql, user);
+        List<Map<String, Object>> rows = checkoutRows(user, true);
         if (rows.isEmpty()) {
             throw new IllegalArgumentException("Cart is empty");
         }
@@ -124,18 +148,52 @@ public class CommerceService {
             tax += Math.round(line * ((Number) row.get("tax_percent")).doubleValue() / 100d);
         }
 
-        long delivery = fulfil.equals("DELIVERY") ? 5000 : 0;
-        long total = subtotal + tax + delivery;
+        ShopSettings settings = settings();
+        if (!settings.enabled()) {
+            throw new IllegalArgumentException("The shop is currently unavailable");
+        }
+        if (fulfil.equals("DELIVERY") && !settings.deliveryEnabled()) {
+            throw new IllegalArgumentException("Delivery is currently unavailable");
+        }
+        if (r.paymentMethod().equalsIgnoreCase("PAY_AT_PICKUP") && !settings.payAtFacilityEnabled()) {
+            throw new IllegalArgumentException("Pay at facility is currently unavailable");
+        }
+        long delivery = fulfil.equals("DELIVERY") ? settings.deliveryFeePaise() : 0;
+        long originalTotal = subtotal + tax + delivery;
+        long requestedPoints = r.loyaltyPoints() == null ? 0 : r.loyaltyPoints();
+        long balance = loyaltyBalance(user);
+        long maximumDiscount = maximumLoyaltyDiscount(rows, settings.loyaltyMaxPercent());
+        long maximumPoints = Math.min(balance, maximumDiscount / settings.loyaltyPointValuePaise());
+        if (requestedPoints > maximumPoints) {
+            throw new IllegalArgumentException("You can use a maximum of " + maximumPoints + " loyalty points");
+        }
+        long loyaltyDiscount = requestedPoints * settings.loyaltyPointValuePaise();
+        long total = originalTotal - loyaltyDiscount;
         UUID id = UUID.randomUUID();
         String number = "JNZ-SHOP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String method = r.paymentMethod().toUpperCase();
         String paymentStatus = "PENDING";
         String orderSql = "insert into commerce_orders(id,order_number,user_id,status,fulfilment_type,"
-                + "payment_method,payment_status,subtotal_paise,tax_paise,delivery_fee_paise,total_paise,"
+                + "payment_method,payment_status,subtotal_paise,tax_paise,delivery_fee_paise,"
+                + "original_total_paise,loyalty_points_used,loyalty_discount_paise,total_paise,"
                 + "recipient_name,mobile,address_line,city,state,postal_code) "
-                + "values(?,?,?,'PLACED',?,?,?,?,?,?,?,?,?,?,?,?,?)";
-        jdbc.update(orderSql, id, number, user, fulfil, method, paymentStatus, subtotal, tax, delivery, total,
+                + "values(?,?,?,'PLACED',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        jdbc.update(orderSql, id, number, user, fulfil, method, paymentStatus, subtotal, tax, delivery,
+                originalTotal, requestedPoints, loyaltyDiscount, total,
                 r.recipientName(), r.mobile(), r.addressLine(), r.city(), r.state(), r.postalCode());
+
+        if (requestedPoints > 0) {
+            int changed = jdbc.update("update loyalty_wallets set points_balance=points_balance-?,"
+                            + "lifetime_redeemed=lifetime_redeemed+?,updated_at=now(),version=version+1 "
+                            + "where user_id=? and points_balance>=?",
+                    requestedPoints, requestedPoints, user, requestedPoints);
+            if (changed != 1) {
+                throw new IllegalArgumentException("Insufficient loyalty points");
+            }
+            jdbc.update("insert into loyalty_transactions(id,user_id,transaction_type,points,description,created_at) "
+                            + "values(?,?,'REDEEM',?,?,now())",
+                    UUID.randomUUID(), user, requestedPoints, "Redeemed on shop order " + number);
+        }
 
         for (Map<String, Object> row : rows) {
             int quantity = (Integer) row.get("quantity");
@@ -176,7 +234,9 @@ public class CommerceService {
         return new Order(id, r.getString("order_number"), r.getString("status"),
                 r.getString("fulfilment_type"), r.getString("payment_method"), r.getString("payment_status"),
                 r.getLong("subtotal_paise"), r.getLong("tax_paise"), r.getLong("delivery_fee_paise"),
-                r.getLong("total_paise"), r.getString("recipient_name"), r.getString("mobile"),
+                r.getLong("original_total_paise"), r.getLong("loyalty_points_used"),
+                r.getLong("loyalty_discount_paise"), r.getLong("total_paise"),
+                r.getString("recipient_name"), r.getString("mobile"),
                 r.getString("address_line"), r.getString("city"), r.getString("state"),
                 r.getString("postal_code"), r.getTimestamp("created_at").toInstant(), items);
     }
@@ -204,5 +264,41 @@ public class CommerceService {
 
     private boolean blank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private List<Map<String, Object>> checkoutRows(UUID user, boolean lock) {
+        String sql = "select ci.variant_id,ci.quantity,v.stock_quantity,v.price_paise,v.sku,v.label,"
+                + "p.id product_id,p.name,p.tax_percent,p.loyalty_max_percent product_loyalty_percent,"
+                + "c.loyalty_max_percent category_loyalty_percent from commerce_cart_items ci "
+                + "join commerce_variants v on v.id=ci.variant_id "
+                + "join commerce_products p on p.id=v.product_id "
+                + "join commerce_categories c on c.id=p.category_id "
+                + "where ci.user_id=? order by ci.created_at" + (lock ? " for update of v" : "");
+        return jdbc.queryForList(sql, user);
+    }
+
+    private long loyaltyBalance(UUID user) {
+        Long value = jdbc.queryForObject(
+                "select coalesce((select points_balance from loyalty_wallets where user_id=?),0)",
+                Long.class, user);
+        return value == null ? 0 : value;
+    }
+
+    private long maximumLoyaltyDiscount(List<Map<String, Object>> rows, double shopPercent) {
+        long maximum = 0;
+        for (Map<String, Object> row : rows) {
+            Number productPercent = (Number) row.get("product_loyalty_percent");
+            Number categoryPercent = (Number) row.get("category_loyalty_percent");
+            double percent = productPercent != null ? productPercent.doubleValue()
+                    : categoryPercent != null ? categoryPercent.doubleValue() : shopPercent;
+            long line = ((Number) row.get("price_paise")).longValue() * (Integer) row.get("quantity");
+            maximum += (long) Math.floor(line * percent / 100d);
+        }
+        return maximum;
+    }
+
+    private Double nullableDouble(ResultSet resultSet, String column) throws SQLException {
+        double value = resultSet.getDouble(column);
+        return resultSet.wasNull() ? null : value;
     }
 }
