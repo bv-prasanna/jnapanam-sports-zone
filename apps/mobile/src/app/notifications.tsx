@@ -16,7 +16,7 @@ export default function NotificationsScreen(){
  useEffect(()=>{void load()},[load]);
  async function read(id:string){try{await api('/api/v1/notifications/'+id+'/read',{method:'PATCH'});setItems(current=>current.map(item=>item.id===id?{...item,readAt:new Date().toISOString()}:item))}catch(cause){setError(cause instanceof ApiError?cause.message:'Unable to mark notification as read.')}}
  async function preference(key:keyof Preferences,value:boolean){const next={...prefs,[key]:value};setPrefs(next);try{setPrefs(await api<Preferences>('/api/v1/notifications/preferences',{method:'PUT',body:JSON.stringify(next)}))}catch(cause){setPrefs(prefs);setError(cause instanceof ApiError?cause.message:'Unable to update notification preferences.')}}
- if(!user)return <View style={styles.center}><EmptyState icon="bell-lock-outline" title="Login required" description="Login to see booking, payment and account messages."/></View>;
+ if(!user)return <View style={styles.center}><EmptyState icon="bell-outline" title="Login required" description="Login to see booking, payment and account messages."/></View>;
  return <ScrollView style={styles.screen} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);void load()}}/>}>
   <Text style={styles.eyebrow}>MESSAGE CENTRE</Text><Text style={styles.title}>Notifications</Text>
   <Text style={styles.subtitle}>Account, booking, payment, membership, training, tournament and shop updates.</Text>
