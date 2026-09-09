@@ -159,6 +159,7 @@ public class PaymentService {
         order.paid("onsite_" + bookingId + "_" + reference);
         booking.collectOnsite(operator, request.paymentMethod(), request.reference());
         loyaltyService.earn(booking.getUser(), order);
+        notificationService.payment(booking.getUser().getId(), order.getReceiptNumber(), order.getAmountPaise());
         return response(order);
     }
 
