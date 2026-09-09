@@ -22,6 +22,13 @@ jobs:
           cache: maven
       - name: Run backend integration tests
         run: mvn --batch-mode verify
+      - name: Upload backend coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-report
+          path: apps/backend/target/site/jacoco
+          if-no-files-found: warn
 
   web:
     runs-on: ubuntu-latest
