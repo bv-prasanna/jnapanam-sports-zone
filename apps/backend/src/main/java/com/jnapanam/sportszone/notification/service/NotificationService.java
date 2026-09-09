@@ -1,6 +1,7 @@
 package com.jnapanam.sportszone.notification.service;
 
 import com.jnapanam.sportszone.common.exception.NotFoundException;
+import com.jnapanam.sportszone.common.exception.BadRequestException;
 import com.jnapanam.sportszone.common.exception.ConflictException;
 import com.jnapanam.sportszone.common.exception.UnauthorizedException;
 import com.jnapanam.sportszone.identity.model.User;
@@ -117,7 +118,7 @@ public class NotificationService {
         NotificationTemplate template = templates.findById(id)
                 .orElseThrow(() -> new NotFoundException("Template not found"));
         if (!template.getCode().equalsIgnoreCase(request.code()))
-            throw new IllegalArgumentException("Template code cannot be changed");
+            throw new BadRequestException("Template code cannot be changed");
         template.update(request.channel(), request.subject(), request.body(), request.active());
         return TemplateResponse.from(template);
     }
