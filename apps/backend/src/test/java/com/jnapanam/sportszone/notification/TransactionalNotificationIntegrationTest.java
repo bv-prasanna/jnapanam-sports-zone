@@ -40,10 +40,10 @@ class TransactionalNotificationIntegrationTest {
                 .andExpect(jsonPath("$[*].category", hasItem("ACCOUNT")))
                 .andExpect(jsonPath("$[*].subject", hasItem("Welcome to Jnapanam Sports Zone")));
 
-        mvc.perform(post("/api/v1/auth/forgot-password")
+        mvc.perform(post("/api/v1/auth/password/forgot")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + email + "\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isAccepted());
 
         mvc.perform(get("/api/v1/notifications/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
