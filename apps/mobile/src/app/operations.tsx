@@ -66,7 +66,9 @@ export default function OperationsScreen() {
         .some((field) => field?.toLowerCase().includes(value)));
   }, [bookings, query]);
 
-  async function run(booking: Booking, action: 'check-in' | 'check-out' | 'no-show' | 'cancel') {
+  type OperationAction = 'check-in' | 'check-out' | 'check-in/reverse' | 'no-show' | 'cancel' | 'cancel-and-refund';
+
+  async function run(booking: Booking, action: OperationAction) {
     try {
       setBusy(booking.id + action);
       setError('');
@@ -75,30 +77,55 @@ export default function OperationsScreen() {
         : `/api/v1/operations/bookings/${booking.id}/${action}`;
       const body = action === 'check-in'
         ? { identityVerified: true, verificationNote: 'Identity verified by operations mobile app' }
-        : action === 'no-show'
-          ? { reason: 'Customer did not arrive within the permitted grace period' }
-          : action === 'cancel'
-            ? { reason: 'Cancelled by operations user' }
-            : undefined;
+        : ['no-show', 'cancel', 'cancel-and-refund'].includes(action)
+          ? { reason: action === 'no-show' ? 'Customer did not arrive within the permitted grace period' : 'Cancelled by operations user' }
+          : undefined;
       await api(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
       await load();
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : `Unable to ${action.replace('-', ' ')} booking.`);
+      setError(cause instanceof ApiError ? cause.message : `Unable to ${action.replaceAll('-', ' ')} booking.`);
     } finally {
       setBusy('');
     }
   }
 
-  function confirm(booking: Booking, action: 'check-in' | 'check-out' | 'no-show' | 'cancel') {
-    const messages = {
+  async function collectPayment(booking: Booking, paymentMethod: 'CASH' | 'UPI' | 'CARD') {
+    try {
+      setBusy(booking.id + 'payment');
+      setError('');
+      await api(`/api/v1/operations/bookings/${booking.id}/collect-payment`, {
+        method: 'POST',
+        body: JSON.stringify({ paymentMethod, reference: `${paymentMethod} collected by operations mobile` }),
+      });
+      await load();
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Unable to collect onsite payment.');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  function askPayment(booking: Booking) {
+    Alert.alert('Collect onsite payment', 'Choose the payment method only after receiving and verifying payment.', [
+      { text: 'Cash', onPress: () => void collectPayment(booking, 'CASH') },
+      { text: 'UPI', onPress: () => void collectPayment(booking, 'UPI') },
+      { text: 'Card', onPress: () => void collectPayment(booking, 'CARD') },
+      { text: 'Back', style: 'cancel' },
+    ]);
+  }
+
+  function confirm(booking: Booking, action: OperationAction) {
+    const messages: Record<OperationAction, string> = {
       'check-in': 'Confirm that you verified the booked customer using an acceptable ID.',
       'check-out': 'Confirm that the customer has completed the facility session.',
+      'check-in/reverse': 'Reverse this check-in? Use this only to correct an operator mistake.',
       'no-show': 'Mark this customer as no-show? Use this only after the configured grace period.',
-      cancel: 'Cancel this booking? Its history will be retained.',
+      'cancel': 'Cancel this unpaid booking? Its history will be retained.',
+      'cancel-and-refund': 'Cancel this paid booking and initiate its refund?',
     };
-    Alert.alert(action.replace('-', ' ').toUpperCase(), messages[action], [
+    Alert.alert(action.replaceAll('-', ' ').replace('/', ' ').toUpperCase(), messages[action], [
       { text: 'Back', style: 'cancel' },
-      { text: 'Confirm', style: action === 'cancel' || action === 'no-show' ? 'destructive' : 'default',
+      { text: 'Confirm', style: ['cancel', 'cancel-and-refund', 'no-show'].includes(action) ? 'destructive' : 'default',
         onPress: () => void run(booking, action) },
     ]);
   }
@@ -131,10 +158,14 @@ export default function OperationsScreen() {
           <Text style={styles.customer}>{booking.customerName || booking.customerEmail || 'Customer'} {booking.customerMobile ? `· ${booking.customerMobile}` : ''}</Text>
           <Text style={styles.detail}>Payment: {booking.paymentStatus || '—'}</Text>
           <View style={styles.actions}>
-            {active && !checkedIn && <Action label="Verify & check in" icon="account-check-outline" busy={busy === booking.id + 'check-in'} onPress={() => confirm(booking, 'check-in')} />}
+            {active && booking.paymentStatus !== 'PAID' && <Action label="Collect payment" icon="cash-check" busy={busy === booking.id + 'payment'} onPress={() => askPayment(booking)} />}
+            {active && !checkedIn && booking.paymentStatus === 'PAID' && <Action label="Verify & check in" icon="account-check-outline" busy={busy === booking.id + 'check-in'} onPress={() => confirm(booking, 'check-in')} />}
             {active && checkedIn && !checkedOut && <Action label="Check out" icon="logout-variant" busy={busy === booking.id + 'check-out'} onPress={() => confirm(booking, 'check-out')} />}
+            {active && checkedIn && !checkedOut && <Action label="Reverse check-in" icon="undo-variant" busy={busy === booking.id + 'check-in/reverse'} onPress={() => confirm(booking, 'check-in/reverse')} />}
             {active && !checkedIn && <Action label="No-show" icon="account-off-outline" danger busy={busy === booking.id + 'no-show'} onPress={() => confirm(booking, 'no-show')} />}
-            {active && <Action label="Cancel" icon="calendar-remove-outline" danger busy={busy === booking.id + 'cancel'} onPress={() => confirm(booking, 'cancel')} />}
+            {active && booking.paymentStatus === 'PAID'
+              ? <Action label="Cancel & refund" icon="cash-refund" danger busy={busy === booking.id + 'cancel-and-refund'} onPress={() => confirm(booking, 'cancel-and-refund')} />
+              : <Action label="Cancel" icon="calendar-remove-outline" danger busy={busy === booking.id + 'cancel'} onPress={() => confirm(booking, 'cancel')} />}
           </View>
         </View>;
       })}
