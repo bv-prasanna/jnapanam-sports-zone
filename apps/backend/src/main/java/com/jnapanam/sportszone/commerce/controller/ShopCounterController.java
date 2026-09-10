@@ -2,6 +2,8 @@ package com.jnapanam.sportszone.commerce.controller;
 
 import static com.jnapanam.sportszone.commerce.dto.ShopCounterDtos.*;
 
+import com.jnapanam.sportszone.commerce.dto.CommerceDtos.Product;
+import com.jnapanam.sportszone.commerce.service.CommerceAdminService;
 import com.jnapanam.sportszone.commerce.service.ShopCounterService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -17,10 +19,27 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','SHOP_KEEPER')")
 public class ShopCounterController {
     private final ShopCounterService service;
+    private final CommerceAdminService commerce;
 
-    public ShopCounterController(ShopCounterService service) {
+    public ShopCounterController(ShopCounterService service, CommerceAdminService commerce) {
         this.service = service;
+        this.commerce = commerce;
     }
+
+    @GetMapping("/orders")
+    public List<Map<String, Object>> orders() { return commerce.orders(); }
+
+    @GetMapping("/products")
+    public List<Product> products() { return commerce.products(); }
+
+    @GetMapping("/sales")
+    public List<Map<String, Object>> sales() { return service.sales(); }
+
+    @GetMapping("/orders/{id}/items")
+    public List<Map<String, Object>> orderItems(@PathVariable UUID id) { return service.orderItems(id); }
+
+    @GetMapping("/sales/{id}/items")
+    public List<Map<String, Object>> saleItems(@PathVariable UUID id) { return service.saleItems(id); }
 
     @PostMapping("/sales")
     @ResponseStatus(HttpStatus.CREATED)
@@ -40,9 +59,7 @@ public class ShopCounterController {
     }
 
     @GetMapping("/returns")
-    public List<ReturnResponse> returns() {
-        return service.returns();
-    }
+    public List<ReturnResponse> returns() { return service.returns(); }
 
     @PostMapping("/returns")
     @ResponseStatus(HttpStatus.CREATED)
@@ -68,7 +85,5 @@ public class ShopCounterController {
         return service.completeRefund(actor(authentication), id);
     }
 
-    private static UUID actor(Authentication authentication) {
-        return UUID.fromString(authentication.getName());
-    }
+    private static UUID actor(Authentication authentication) { return UUID.fromString(authentication.getName()); }
 }
