@@ -26,15 +26,26 @@ export default function RegisterScreen() {
     finally{setBusy(false);}
   }
 
-  return <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS==='ios'?'padding':undefined}>
-    <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+  return <KeyboardAvoidingView
+    style={styles.screen}
+    behavior={Platform.OS==='ios'?'padding':'height'}
+    keyboardVerticalOffset={Platform.OS==='ios'?12:24}
+  >
+    <ScrollView
+      contentContainerStyle={styles.scroll}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      automaticallyAdjustKeyboardInsets={Platform.OS==='ios'}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.card}><View style={styles.top}><Text style={styles.eyebrow}>{t('auth.joinCommunity')}</Text><LanguageSwitch /></View>
       <Text style={styles.title}>{t('auth.createAccount')}</Text><Text style={styles.subtitle}>{t('auth.registerDescription')}</Text>
       {(['fullName','email','mobile','password','confirmPassword'] as const).map(key=><View key={key}>
         <Text style={styles.label}>{t(`auth.${key}`)}</Text>
         <TextInput value={form[key]} onChangeText={set(key)} autoCapitalize={key==='fullName'?'words':'none'}
           keyboardType={key==='email'?'email-address':key==='mobile'?'phone-pad':'default'}
-          secureTextEntry={key==='password'||key==='confirmPassword'} style={styles.input} />
+          secureTextEntry={key==='password'||key==='confirmPassword'} style={styles.input}
+          returnKeyType={key==='confirmPassword'?'done':'next'} />
       </View>)}
       {!!error&&<Text style={styles.error}>{error}</Text>}
       <Pressable onPress={submit} disabled={busy} style={[styles.button,busy&&styles.disabled]}>{busy?<ActivityIndicator color="#fff"/>:<Text style={styles.buttonText}>{t('auth.createAccount')}</Text>}</Pressable>
@@ -43,7 +54,7 @@ export default function RegisterScreen() {
   </KeyboardAvoidingView>;
 }
 const styles=StyleSheet.create({
-  screen:{flex:1,backgroundColor:'#263712'},scroll:{padding:20,paddingVertical:40,flexGrow:1,justifyContent:'center'},
+  screen:{flex:1,backgroundColor:'#263712'},scroll:{padding:20,paddingTop:32,paddingBottom:120,flexGrow:1,justifyContent:'center'},
   card:{backgroundColor:'#FFFCF6',borderRadius:26,padding:24,width:'100%',maxWidth:560,alignSelf:'center'},
   top:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},eyebrow:{color:BrandColors.accent,fontSize:12,fontWeight:'900',letterSpacing:1.6},
   title:{fontSize:32,fontWeight:'900',color:BrandColors.textPrimary,marginTop:12},subtitle:{color:BrandColors.textSecondary,fontSize:14,lineHeight:20,marginTop:6,marginBottom:10},
