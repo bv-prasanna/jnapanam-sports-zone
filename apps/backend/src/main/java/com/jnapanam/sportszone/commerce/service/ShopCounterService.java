@@ -90,6 +90,24 @@ public class ShopCounterService {
         return order(orderId, false);
     }
 
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> sales() {
+        return jdbc.queryForList("select id,sale_number,customer_name,mobile,payment_method,payment_status,subtotal_paise,tax_paise,total_paise,created_by,created_at from shop_counter_sales order by created_at desc");
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> orderItems(UUID orderId) {
+        order(orderId, false);
+        return jdbc.queryForList("select id,variant_id,sku,product_name,variant_label,unit_price_paise,tax_paise,quantity,line_total_paise from commerce_order_items where order_id=? order by product_name,variant_label", orderId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> saleItems(UUID saleId) {
+        List<Map<String, Object>> sale = jdbc.queryForList("select id from shop_counter_sales where id=?", saleId);
+        if (sale.isEmpty()) throw new NotFoundException("Sale not found");
+        return jdbc.queryForList("select id,variant_id,sku,product_name,variant_label,unit_price_paise,tax_paise,quantity,line_total_paise from shop_counter_sale_items where sale_id=? order by product_name,variant_label", saleId);
+    }
+
     @Transactional
     public ReturnResponse createReturn(UUID actor, ReturnRequest request) {
         String sourceType = request.sourceType().trim().toUpperCase();
@@ -98,7 +116,8 @@ public class ShopCounterService {
         if (!Set.of("EXCHANGE", "STORE_CREDIT", "REFUND").contains(resolution)) throw new ConflictException("Resolution must be EXCHANGE, STORE_CREDIT or REFUND");
 
         SourceItem source = sourceItem(sourceType, request.sourceId(), request.variantId());
-        if (request.quantity() > source.quantity()) throw new ConflictException("Return quantity exceeds purchased quantity");
+        int alreadyReturned = returnedQuantity(sourceType, request.sourceId(), request.variantId());
+        if (request.quantity() + alreadyReturned > source.quantity()) throw new ConflictException("Return quantity exceeds remaining purchased quantity");
         if (Instant.now().isAfter(source.purchasedAt().plus(source.returnWindowDays(), ChronoUnit.DAYS))) {
             throw new ConflictException("The return window for this item has expired");
         }
@@ -198,6 +217,12 @@ public class ShopCounterService {
         }, sourceId, variantId);
         if (items.isEmpty()) throw new NotFoundException("Purchased item not found");
         return items.getFirst();
+    }
+
+    private int returnedQuantity(String sourceType, UUID sourceId, UUID variantId) {
+        Integer result = jdbc.queryForObject("select coalesce(sum(quantity),0) from shop_return_requests where source_type=? and source_id=? and variant_id=? and status<>'REJECTED'",
+                Integer.class, sourceType, sourceId, variantId);
+        return result == null ? 0 : result;
     }
 
     private void restock(UUID variantId, int quantity, UUID reference, UUID actor, String reason) {
