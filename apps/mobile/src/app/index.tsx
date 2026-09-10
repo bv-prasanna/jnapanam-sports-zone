@@ -35,6 +35,8 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const [sports, setSports] = useState<Sport[]>([]);
   const [loadingSports, setLoadingSports] = useState(true);
+  const isOperations = !!user?.roles.some((role) => ['OPERATIONS', 'ADMIN', 'SUPER_ADMIN'].includes(role));
+  const isShopKeeper = !!user?.roles.some((role) => ['SHOP_KEEPER', 'ADMIN', 'SUPER_ADMIN'].includes(role));
 
   useEffect(() => {
     api<Sport[]>('/api/v1/public/sports')
@@ -70,6 +72,22 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.body}>
+          {(isOperations || isShopKeeper) && <>
+            <Text style={[styles.sectionTitle, styles.servicesTitle]}>Staff workspace</Text>
+            <View style={styles.servicesList}>
+              {isOperations && <Pressable style={styles.serviceCard} onPress={() => router.push('/operations')}>
+                <View style={styles.serviceIcon}><MaterialCommunityIcons name="clipboard-account-outline" size={25} color={BrandColors.primary} /></View>
+                <View style={styles.serviceContent}><Text style={styles.serviceTitle}>Today&apos;s Operations</Text><Text style={styles.serviceDescription}>Payment, customer verification, check-in and checkout for today&apos;s bookings.</Text></View>
+                <MaterialCommunityIcons name="chevron-right" size={24} color={BrandColors.accent} />
+              </Pressable>}
+              {isShopKeeper && <Pressable style={styles.serviceCard} onPress={() => router.push('/shop-counter')}>
+                <View style={styles.serviceIcon}><MaterialCommunityIcons name="storefront-outline" size={25} color={BrandColors.primary} /></View>
+                <View style={styles.serviceContent}><Text style={styles.serviceTitle}>Shop Counter</Text><Text style={styles.serviceDescription}>Walk-in sale, prebooked order fulfilment and shop counter operations.</Text></View>
+                <MaterialCommunityIcons name="chevron-right" size={24} color={BrandColors.accent} />
+              </Pressable>}
+            </View>
+          </>}
+
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionEyebrow}>{t('home.atJnapanam')}</Text>

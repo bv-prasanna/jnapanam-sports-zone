@@ -8,6 +8,7 @@ import com.jnapanam.sportszone.identity.model.User;
 import com.jnapanam.sportszone.identity.repository.UserRepository;
 import java.time.*;
 import java.util.*;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +37,22 @@ public class BookingService {
  public void release(UUID userId,UUID holdId){BookingHold hold=holds.findLocked(holdId).orElseThrow(()->new NotFoundException("Hold not found"));assertOwner(hold.getUser(),userId);if(hold.getStatus()!=HoldStatus.ACTIVE)throw new ConflictException("Hold is no longer active");BookingSlot slot=slots.findLocked(hold.getSlot().getId()).orElseThrow();slot.releaseHold(hold.getQuantity());hold.change(HoldStatus.RELEASED);}
  @Transactional(readOnly=true) public List<BookingResponse> mine(UUID userId){return bookings.findByUserIdOrderByConfirmedAtDesc(userId).stream().map(BookingResponse::from).toList();}
  @Transactional public BookingResponse cancel(UUID userId,UUID bookingId){Booking booking=bookings.findById(bookingId).orElseThrow(()->new NotFoundException("Booking not found"));assertOwner(booking.getUser(),userId);return cancelBooking(booking,"Cancelled by customer");}
- @Transactional(readOnly=true) public List<BookingResponse> adminList(LocalDate date){List<Booking>values=date==null?bookings.findAllByOrderByConfirmedAtDesc():bookings.findBySlot_DateOrderByConfirmedAtDesc(date);return values.stream().map(BookingResponse::from).toList();}
+ @Transactional(readOnly=true) public List<BookingResponse> adminList(LocalDate date){return adminList(date,null,null,null,null,null,null,null);}
+ @Transactional(readOnly=true) public List<BookingResponse> adminList(LocalDate date,LocalDate from,LocalDate to,String sport,UUID facilityId,String status,String paymentStatus,String query){
+  if(date!=null){from=date;to=date;}
+  if(from!=null&&to!=null&&from.isAfter(to))throw new ConflictException("From date must be on or before to date");
+  final LocalDate fromDate=from, toDate=to;
+  final String sportFilter=cleanFilter(sport), statusFilter=cleanFilter(status), paymentFilter=cleanFilter(paymentStatus), textFilter=cleanFilter(query);
+  Stream<Booking> stream=bookings.findAllByOrderByConfirmedAtDesc().stream();
+  if(fromDate!=null)stream=stream.filter(b->!b.getSlot().getDate().isBefore(fromDate));
+  if(toDate!=null)stream=stream.filter(b->!b.getSlot().getDate().isAfter(toDate));
+  if(sportFilter!=null)stream=stream.filter(b->equalsIgnoreCase(b.getSlot().getFacility().getSport().getName(),sportFilter)||equalsIgnoreCase(b.getSlot().getFacility().getSport().getCode(),sportFilter));
+  if(facilityId!=null)stream=stream.filter(b->facilityId.equals(b.getSlot().getFacility().getId()));
+  if(statusFilter!=null)stream=stream.filter(b->equalsIgnoreCase(b.getStatus().name(),statusFilter));
+  if(paymentFilter!=null)stream=stream.filter(b->equalsIgnoreCase(b.getPaymentStatus().name(),paymentFilter));
+  if(textFilter!=null){String q=textFilter.toLowerCase(Locale.ROOT);stream=stream.filter(b->{User u=b.getUser();return contains(b.getBookingNumber(),q)||contains(u.getFullName(),q)||contains(u.getEmail(),q)||contains(u.getMobile(),q)||contains(b.getSlot().getFacility().getName(),q)||contains(b.getSlot().getFacility().getSport().getName(),q);});}
+  return stream.sorted(Comparator.comparing((Booking b)->b.getSlot().getDate()).reversed().thenComparing(b->b.getSlot().getStartTime(),Comparator.reverseOrder())).map(BookingResponse::from).toList();
+ }
  @Transactional public BookingResponse checkIn(UUID operatorId,String bookingNumber,BookingCheckInRequest request){Booking booking=bookings.findByBookingNumberIgnoreCase(bookingNumber).orElseThrow(()->new NotFoundException("Booking not found"));if(booking.getStatus()!=BookingStatus.CONFIRMED)throw new ConflictException("Only confirmed bookings can be checked in");if(booking.getPaymentStatus()==BookingPaymentStatus.UNPAID)throw new ConflictException("Collect payment before check-in");if(booking.getCheckedInAt()!=null)throw new ConflictException("Booking is already checked in");booking.checkIn(requireUser(operatorId),request!=null&&request.identityVerified(),request==null?null:request.verificationNote());return BookingResponse.from(booking);}
  @Transactional public BookingResponse checkOut(UUID operatorId,UUID id){Booking b=bookings.findById(id).orElseThrow(()->new NotFoundException("Booking not found"));if(b.getCheckedInAt()==null)throw new ConflictException("Check in the customer before checkout");if(b.getCheckedOutAt()!=null)throw new ConflictException("Booking is already checked out");b.checkOut(requireUser(operatorId));return BookingResponse.from(b);}
  @Transactional public BookingResponse adminCancel(UUID id,String reason){return cancelBooking(bookings.findById(id).orElseThrow(()->new NotFoundException("Booking not found")),reason==null||reason.isBlank()?"Cancelled by operations":reason.trim());}
@@ -46,5 +62,8 @@ public class BookingService {
  @Transactional public void cleanupExpired(){for(BookingHold candidate:holds.findByStatusAndExpiresAtLessThanEqual(HoldStatus.ACTIVE,Instant.now())){BookingHold hold=holds.findLocked(candidate.getId()).orElseThrow();if(hold.getStatus()==HoldStatus.ACTIVE&&hold.expired(Instant.now())){BookingSlot slot=slots.findLocked(hold.getSlot().getId()).orElseThrow();slot.releaseHold(hold.getQuantity());hold.change(HoldStatus.EXPIRED);}}}
  private User requireUser(UUID id){return users.findById(id).orElseThrow(()->new UnauthorizedException("User not found"));}
  private BookingResponse cancelBooking(Booking booking,String reason){if(booking.getStatus()!=BookingStatus.CONFIRMED&&booking.getStatus()!=BookingStatus.PENDING_PAYMENT)throw new ConflictException("Booking cannot be cancelled");BookingSlot slot=slots.findLocked(booking.getSlot().getId()).orElseThrow();if(!LocalDateTime.of(slot.getDate(),slot.getStartTime()).isAfter(LocalDateTime.now()))throw new ConflictException("Started bookings cannot be cancelled");slot.cancel(booking.getQuantity());booking.cancel(reason);return BookingResponse.from(booking);}
+ private static String cleanFilter(String value){return value==null||value.isBlank()?null:value.trim();}
+ private static boolean equalsIgnoreCase(String left,String right){return left!=null&&left.equalsIgnoreCase(right);}
+ private static boolean contains(String value,String needle){return value!=null&&value.toLowerCase(Locale.ROOT).contains(needle);}
  private static void assertOwner(User user,UUID id){if(!user.getId().equals(id))throw new NotFoundException("Resource not found");}
 }
