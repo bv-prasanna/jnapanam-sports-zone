@@ -105,6 +105,7 @@ public class PaymentService {
         fulfil(order);
         loyaltyService.earn(order.getUser(), order);
         notificationService.payment(userId, order.getReceiptNumber(), order.getAmountPaise());
+        notifyFulfilment(order);
         return response(order);
     }
 
@@ -159,6 +160,8 @@ public class PaymentService {
         order.paid("onsite_" + bookingId + "_" + reference);
         booking.collectOnsite(operator, request.paymentMethod(), request.reference());
         loyaltyService.earn(booking.getUser(), order);
+        notificationService.payment(booking.getUser().getId(), order.getReceiptNumber(), order.getAmountPaise());
+        notificationService.booking(booking.getUser().getId(), booking.getBookingNumber(), "CONFIRMED");
         return response(order);
     }
 
@@ -215,6 +218,7 @@ public class PaymentService {
                     fulfil(o);
                     loyaltyService.earn(o.getUser(), o);
                     notificationService.payment(o.getUser().getId(), o.getReceiptNumber(), o.getAmountPaise());
+                    notifyFulfilment(o);
                 }
             });
         }
@@ -274,6 +278,19 @@ public class PaymentService {
             }
             case TRAINING -> enrollments.findById(o.getReferenceId()).orElseThrow().paid();
             case TOURNAMENT -> tournamentTeams.findById(o.getReferenceId()).orElseThrow().paid();
+        }
+    }
+
+    private void notifyFulfilment(PaymentOrder order) {
+        switch (order.getPurpose()) {
+            case BOOKING -> bookings.findById(order.getReferenceId()).ifPresent(booking ->
+                    notificationService.booking(order.getUser().getId(), booking.getBookingNumber(), "CONFIRMED"));
+            case MEMBERSHIP -> memberships.findById(order.getReferenceId()).ifPresent(membership ->
+                    notificationService.membership(order.getUser().getId(), membership.getPlan().getName(), "ACTIVE"));
+            case TRAINING -> enrollments.findById(order.getReferenceId()).ifPresent(enrollment ->
+                    notificationService.training(order.getUser().getId(), enrollment.getBatch().getName(), "ENROLLED"));
+            case TOURNAMENT -> tournamentTeams.findById(order.getReferenceId()).ifPresent(team ->
+                    notificationService.tournament(order.getUser().getId(), team.getTournament().getName(), "REGISTERED"));
         }
     }
 
