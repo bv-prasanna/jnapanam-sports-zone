@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/commerce")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','OPERATIONS')")
+@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','SHOP_KEEPER')")
 public class CommerceAdminController {
     private final CommerceAdminService service;
 
