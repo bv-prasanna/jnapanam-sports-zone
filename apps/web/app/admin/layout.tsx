@@ -23,16 +23,17 @@ export default function AdminLayout({children}:PropsWithChildren){
     router.replace("/dashboard");
   },[ready,admin,user,router]);
 
-  function routeLegacyBooking(event:MouseEvent<HTMLDivElement>){
+  function routeLegacyNavigation(event:MouseEvent<HTMLDivElement>){
     if(pathname!=="/admin")return;
     const target=event.target as HTMLElement;
     const button=target.closest("button");
     if(!button)return;
     const text=(button.textContent||"").trim().toLowerCase();
     if(text==="bookings"||text.startsWith("bookings ")||text.includes("open details")&&text.includes("booking")){
-      event.preventDefault();
-      event.stopPropagation();
-      router.push("/admin/bookings");
+      event.preventDefault();event.stopPropagation();router.push("/admin/bookings");return;
+    }
+    if(text==="users"||text.startsWith("users ")){
+      event.preventDefault();event.stopPropagation();router.push("/admin/users");
     }
   }
 
@@ -42,6 +43,7 @@ export default function AdminLayout({children}:PropsWithChildren){
       <div className={styles.identity}>{photo?<img src={photo} alt="Profile"/>:<span className={styles.avatar}>{initials||"A"}</span>}<div><strong>{user?.fullName}</strong><small>{user?.roles.join(" · ")}</small></div></div>
       <nav className={styles.links}>
         <Link href="/admin">Admin Console</Link>
+        <Link href="/admin/users">Users</Link>
         <Link href="/admin/bookings">Bookings</Link>
         <Link href="/admin/operator-assignments">Operator Assignments</Link>
         <Link href="/operations">Operations</Link>
@@ -50,6 +52,6 @@ export default function AdminLayout({children}:PropsWithChildren){
         <Link href="/dashboard?section=profile">My Profile</Link>
       </nav>
     </section>
-    <div onClickCapture={routeLegacyBooking}>{children}</div>
+    <div onClickCapture={routeLegacyNavigation}>{children}</div>
   </div>;
 }
