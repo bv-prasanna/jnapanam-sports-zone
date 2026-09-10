@@ -36,7 +36,8 @@ async function refreshAccess(): Promise<string | null> {
 
 export async function api<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(init.headers);
-  if (!headers.has("Content-Type") && init.body) headers.set("Content-Type", "application/json");
+  const multipart = typeof FormData !== "undefined" && init.body instanceof FormData;
+  if (!headers.has("Content-Type") && init.body && !multipart) headers.set("Content-Type", "application/json");
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
   let response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
   if (response.status === 401 && retry && await refreshAccess()) {
