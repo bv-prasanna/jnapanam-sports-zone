@@ -31,7 +31,7 @@ class CommerceCheckoutIntegrationTest {
     void checkoutPersistsOrderItemsUpdatesStockAndClearsCart() throws Exception {
         Fixture fixture = fixture(10, 2, 10_000, 18.0);
 
-        Order order = commerce.checkout(fixture.userId(), pickupRequest());
+        Order order = commerce.checkout(fixture.userId(), pickupRequest("ONLINE"));
 
         assertThat(order.status()).isEqualTo("PLACED");
         assertThat(order.fulfilmentType()).isEqualTo("PICKUP");
@@ -45,29 +45,38 @@ class CommerceCheckoutIntegrationTest {
 
         assertThat(count("select count(*) from commerce_orders where id=?", order.id())).isEqualTo(1);
         assertThat(count("select count(*) from commerce_order_items where order_id=?", order.id())).isEqualTo(1);
-        assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId()))
-                .isEqualTo(8);
-        assertThat(count("select count(*) from commerce_cart_items where user_id=?", fixture.userId()))
-                .isZero();
-        assertThat(count("select count(*) from commerce_stock_movements where reference_id=?", order.id()))
-                .isEqualTo(1);
+        assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId())).isEqualTo(8);
+        assertThat(count("select count(*) from commerce_cart_items where user_id=?", fixture.userId())).isZero();
+        assertThat(count("select count(*) from commerce_stock_movements where reference_id=?", order.id())).isEqualTo(1);
+    }
+
+    @Test
+    void payAtPickupCheckoutCreatesPendingCounterPaymentOrder() throws Exception {
+        Fixture fixture = fixture(5, 1, 12_500, 0.0);
+        jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true where singleton_id=true");
+
+        Order order = commerce.checkout(fixture.userId(), pickupRequest("PAY_AT_PICKUP"));
+
+        assertThat(order.paymentMethod()).isEqualTo("PAY_AT_PICKUP");
+        assertThat(order.paymentStatus()).isEqualTo("PENDING");
+        assertThat(order.status()).isEqualTo("PLACED");
+        assertThat(order.totalPaise()).isEqualTo(12_500);
+        assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId())).isEqualTo(4);
+        assertThat(count("select count(*) from commerce_order_items where order_id=?", order.id())).isEqualTo(1);
     }
 
     @Test
     void checkoutRollsBackWhenCartQuantityExceedsAvailableStock() throws Exception {
         Fixture fixture = fixture(1, 2, 10_000, 18.0);
 
-        assertThatThrownBy(() -> commerce.checkout(fixture.userId(), pickupRequest()))
+        assertThatThrownBy(() -> commerce.checkout(fixture.userId(), pickupRequest("ONLINE")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("only 1 item");
 
         assertThat(count("select count(*) from commerce_orders where user_id=?", fixture.userId())).isZero();
-        assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId()))
-                .isEqualTo(1);
-        assertThat(count("select count(*) from commerce_cart_items where user_id=?", fixture.userId()))
-                .isEqualTo(1);
-        assertThat(count("select count(*) from commerce_stock_movements where variant_id=?", fixture.variantId()))
-                .isZero();
+        assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId())).isEqualTo(1);
+        assertThat(count("select count(*) from commerce_cart_items where user_id=?", fixture.userId())).isEqualTo(1);
+        assertThat(count("select count(*) from commerce_stock_movements where variant_id=?", fixture.variantId())).isZero();
     }
 
     private Fixture fixture(int stock, int cartQuantity, long pricePaise, double taxPercent) throws Exception {
@@ -86,11 +95,9 @@ class CommerceCheckoutIntegrationTest {
 
         jdbc.update("insert into commerce_categories(id,code,name,status) values(?,?,?,'ACTIVE')",
                 categoryId, "CAT_" + suffix, "Checkout Test Category");
-        jdbc.update("insert into commerce_products(id,category_id,sku,name,tax_percent,status) "
-                        + "values(?,?,?,?,?,'ACTIVE')",
+        jdbc.update("insert into commerce_products(id,category_id,sku,name,tax_percent,status) values(?,?,?,?,?,'ACTIVE')",
                 productId, categoryId, "PROD_" + suffix, "Checkout Test Product", taxPercent);
-        jdbc.update("insert into commerce_variants(id,product_id,sku,label,price_paise,stock_quantity,"
-                        + "low_stock_threshold,status) values(?,?,?,?,?,?,?,'ACTIVE')",
+        jdbc.update("insert into commerce_variants(id,product_id,sku,label,price_paise,stock_quantity,low_stock_threshold,status) values(?,?,?,?,?,?,?,'ACTIVE')",
                 variantId, productId, "VAR_" + suffix, "Standard", pricePaise, stock, 1);
         jdbc.update("insert into commerce_cart_items(user_id,variant_id,quantity) values(?,?,?)",
                 userId, variantId, cartQuantity);
@@ -98,9 +105,9 @@ class CommerceCheckoutIntegrationTest {
         return new Fixture(userId, variantId);
     }
 
-    private CheckoutRequest pickupRequest() {
+    private CheckoutRequest pickupRequest(String paymentMethod) {
         return new CheckoutRequest(
-                "PICKUP", "ONLINE", "Commerce Customer", "8296022107",
+                "PICKUP", paymentMethod, "Commerce Customer", "8296022107",
                 null, null, null, null, 0L);
     }
 
