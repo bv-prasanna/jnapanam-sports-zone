@@ -5,7 +5,7 @@ import com.jnapanam.sportszone.booking.model.*;
 import com.jnapanam.sportszone.booking.repository.*;
 import com.jnapanam.sportszone.common.exception.*;
 import com.jnapanam.sportszone.identity.model.User;
-import com.jnapanam.sportszone.identity.repository.UserRepository;
+import com.jnapanam.sportszone.identity.repository.UserRepository;\nimport com.jnapanam.sportszone.notification.service.NotificationService;
 import java.time.*;
 import java.util.*;
 import java.util.stream.Stream;
@@ -15,8 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BookingService {
- private final BookingSlotRepository slots; private final BookingHoldRepository holds; private final BookingRepository bookings; private final UserRepository users; private final long holdMinutes;private final long paymentMinutes;private final long noShowGraceMinutes;
- public BookingService(BookingSlotRepository slots,BookingHoldRepository holds,BookingRepository bookings,UserRepository users,@Value("${app.booking.hold-minutes:10}") long holdMinutes,@Value("${app.payment.pending-minutes:15}")long paymentMinutes,@Value("${app.booking.no-show-grace-minutes:15}")long noShowGraceMinutes){this.slots=slots;this.holds=holds;this.bookings=bookings;this.users=users;this.holdMinutes=holdMinutes;this.paymentMinutes=paymentMinutes;this.noShowGraceMinutes=noShowGraceMinutes;}
+ private final BookingSlotRepository slots; private final BookingHoldRepository holds; private final BookingRepository bookings; private final UserRepository users; private final NotificationService notificationService; private final long holdMinutes;private final long paymentMinutes;private final long noShowGraceMinutes;
+ public BookingService(BookingSlotRepository slots,BookingHoldRepository holds,BookingRepository bookings,UserRepository users,NotificationService notificationService,@Value("${app.booking.hold-minutes:10}") long holdMinutes,@Value("${app.payment.pending-minutes:15}")long paymentMinutes,@Value("${app.booking.no-show-grace-minutes:15}")long noShowGraceMinutes){this.slots=slots;this.holds=holds;this.bookings=bookings;this.users=users;this.notificationService=notificationService;this.holdMinutes=holdMinutes;this.paymentMinutes=paymentMinutes;this.noShowGraceMinutes=noShowGraceMinutes;}
 
  @Transactional
  public HoldResponse hold(UUID userId,HoldRequest request){
@@ -31,7 +31,7 @@ public class BookingService {
   if(hold.getStatus()!=HoldStatus.ACTIVE) throw new ConflictException("Hold is no longer active");
   BookingSlot slot=slots.findLocked(hold.getSlot().getId()).orElseThrow(()->new NotFoundException("Slot not found"));
   if(hold.expired(Instant.now())){slot.releaseHold(hold.getQuantity());hold.change(HoldStatus.EXPIRED);throw new ConflictException("Hold has expired");}
-  slot.confirm(hold.getQuantity());hold.change(HoldStatus.CONVERTED);boolean priced=slot.getFacility().getBookingPrice().signum()>0;PaymentOption option=request.paymentOption()==null?PaymentOption.PAY_NOW:request.paymentOption();if(priced&&hold.getUser().isRequiresUpfrontPayment()&&option==PaymentOption.PAY_AT_VENUE)throw new ConflictException("Upfront online payment is required for this customer");boolean paymentRequired=priced&&option==PaymentOption.PAY_NOW;return BookingResponse.from(bookings.save(new Booking(hold.getUser(),slot,hold.getQuantity(),priced,option,paymentRequired,Instant.now().plusSeconds(paymentMinutes*60))));
+  slot.confirm(hold.getQuantity());hold.change(HoldStatus.CONVERTED);boolean priced=slot.getFacility().getBookingPrice().signum()>0;PaymentOption option=request.paymentOption()==null?PaymentOption.PAY_NOW:request.paymentOption();if(priced&&hold.getUser().isRequiresUpfrontPayment()&&option==PaymentOption.PAY_AT_VENUE)throw new ConflictException("Upfront online payment is required for this customer");boolean paymentRequired=priced&&option==PaymentOption.PAY_NOW;Booking saved=bookings.save(new Booking(hold.getUser(),slot,hold.getQuantity(),priced,option,paymentRequired,Instant.now().plusSeconds(paymentMinutes*60)));notificationService.notify(userId,paymentRequired?\"BOOKING_CREATED\":\"BOOKING_CONFIRMED\",paymentRequired?\"Booking created - payment pending\":\"Booking confirmed\",paymentRequired?\"Booking \"+saved.getBookingNumber()+\" is reserved. Complete payment before the payment window expires.\":\"Booking \"+saved.getBookingNumber()+\" is confirmed. Payment can be collected at the venue.\");return BookingResponse.from(saved);
  }
  @Transactional
  public void release(UUID userId,UUID holdId){BookingHold hold=holds.findLocked(holdId).orElseThrow(()->new NotFoundException("Hold not found"));assertOwner(hold.getUser(),userId);if(hold.getStatus()!=HoldStatus.ACTIVE)throw new ConflictException("Hold is no longer active");BookingSlot slot=slots.findLocked(hold.getSlot().getId()).orElseThrow();slot.releaseHold(hold.getQuantity());hold.change(HoldStatus.RELEASED);}
