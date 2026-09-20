@@ -52,8 +52,8 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   return response.json() as Promise<T>;
 }
 
-export async function login(email: string, password: string) {
-  const tokens = await api<TokenResponse>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }, false);
+export async function login(email: string, password: string, mfaCode?: string) {
+  const tokens = await api<TokenResponse>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ email, password, mfaCode }) }, false);
   saveTokens(tokens); return api<User>("/api/v1/profile/me");
 }
 
