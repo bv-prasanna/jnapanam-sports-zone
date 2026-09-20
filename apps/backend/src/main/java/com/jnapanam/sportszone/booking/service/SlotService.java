@@ -28,7 +28,7 @@ public class SlotService {
   if(!facility.isAvailableOn(date)) return List.of();
   List<BookingSlot> existing=slots.findByFacilityIdAndDateOrderByStartTimeAsc(facilityId,date);
   if(existing.isEmpty()) existing=generate(facility,date);
-  return existing.stream().map(SlotResponse::from).toList();
+  LocalDateTime now=LocalDateTime.now();\n  return existing.stream()\n    .filter(slot->date.isAfter(now.toLocalDate())||slot.getStartTime().isAfter(now.toLocalTime()))\n    .map(SlotResponse::from).toList();
  }
 
  private List<BookingSlot> generate(Facility facility,LocalDate date){
