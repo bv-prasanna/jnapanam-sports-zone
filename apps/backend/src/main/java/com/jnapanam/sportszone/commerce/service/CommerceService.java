@@ -31,7 +31,7 @@ public class CommerceService {
     }
 
     public ShopSettings settings() {
-        return jdbc.queryForObject("select * from commerce_shop_settings where singleton_id=true",
+        List<ShopSettings> rows = jdbc.query("select * from commerce_shop_settings where singleton_id=true",
                 (r, n) -> new ShopSettings(
                         r.getBoolean("enabled"), r.getString("shop_name"), r.getString("shop_name_kn"),
                         r.getString("hero_title"), r.getString("hero_title_kn"),
@@ -43,6 +43,9 @@ public class CommerceService {
                         r.getBoolean("delivery_enabled"), r.getLong("delivery_fee_paise"),
                         r.getBoolean("pay_at_facility_enabled"), r.getString("contact_phone"),
                         r.getString("contact_email")));
+        if (!rows.isEmpty()) return rows.get(0);
+        jdbc.update("insert into commerce_shop_settings(singleton_id,enabled,shop_name,shop_name_kn,hero_title,hero_title_kn,hero_subtitle,hero_subtitle_kn,logo_url,primary_color,secondary_color,accent_color,background_color,text_color,loyalty_max_percent,loyalty_point_value_paise,delivery_enabled,delivery_fee_paise,pay_at_facility_enabled,contact_phone,contact_email) values(true,true,'Jnapanam Sports Shop','ಜ್ಞಾನಪನಂ ಕ್ರೀಡಾ ಅಂಗಡಿ','Sports shop','ಕ್ರೀಡಾ ಅಂಗಡಿ','Sportswear, accessories and equipment','ಕ್ರೀಡಾ ಉಡುಪು, ಪರಿಕರಗಳು ಮತ್ತು ಉಪಕರಣಗಳು','/images/jnapanam-logo.png','#20360F','#6C765F','#D83A0B','#FBF7EF','#172014',30,100,false,0,true,'+91 82960 22107','info@jnapanam.com') on conflict(singleton_id) do nothing");
+        return settings();
     }
 
     public List<Product> products(String category) {
