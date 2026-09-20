@@ -166,3 +166,6 @@
 .form-note{border:1px solid #86c99a!important;background:#edf9f0!important;color:#14532d!important;font-weight:600!important}
 .form-note[role="alert"]{color:#14532d!important}
 .dialog-error,.error-note{border-color:#e0a3a3;background:#fff0f0;color:#8b1e1e}
+
+.organizer-tournament-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 30px;padding:22px;background:#fffdf8;border:1px solid var(--line);border-radius:14px}
+.organizer-tournament-form h2,.organizer-tournament-form .wide{grid-column:1/-1}.organizer-tournament-form label{display:grid;gap:7px;font-weight:700}.organizer-tournament-form input,.organizer-tournament-form select,.organizer-tournament-form textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:white}.organizer-tournament-form textarea{min-height:100px;resize:vertical}.organizer-form-actions{display:flex;align-items:center;justify-content:space-between;gap:16px}.organizer-form-actions span{color:var(--muted);font-size:13px}@media(max-width:700px){.organizer-tournament-form{grid-template-columns:1fr}.organizer-tournament-form h2,.organizer-tournament-form .wide{grid-column:auto}.organizer-form-actions{align-items:stretch;flex-direction:column}}
