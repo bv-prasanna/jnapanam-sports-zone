@@ -161,3 +161,8 @@
 @media(max-width:760px){.booking-list-tools{grid-template-columns:1fr}.booking-detail-grid{grid-template-columns:1fr}}
 
 .compact-row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Customer portal feedback states */
+.form-note{border:1px solid #86c99a!important;background:#edf9f0!important;color:#14532d!important;font-weight:600!important}
+.form-note[role="alert"]{color:#14532d!important}
+.dialog-error,.error-note{border-color:#e0a3a3;background:#fff0f0;color:#8b1e1e}
