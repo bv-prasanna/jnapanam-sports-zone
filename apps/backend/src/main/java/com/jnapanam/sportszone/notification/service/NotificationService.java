@@ -51,6 +51,9 @@ public class NotificationService {
     }
 
     @Transactional
+    public NotificationResponse notifyChannel(UUID userId, NotificationChannel channel, String category, String subject, String message) { User user=user(userId); return NotificationResponse.from(notifications.save(new Notification(user,channel,category,subject,message))); }
+
+    @Transactional
     public NotificationResponse notify(UUID userId, String category, String subject, String message) {
         User user = user(userId);
         return NotificationResponse.from(notifications.save(new Notification(user, NotificationChannel.IN_APP, category, subject, message)));
