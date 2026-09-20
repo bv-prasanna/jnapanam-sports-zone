@@ -21,13 +21,17 @@ public class SlotService {
  @Transactional
  public List<SlotResponse> availability(UUID facilityId,LocalDate date){
   bookings.cleanupExpired();
+  bookings.cleanupUnpaid();
   if(date==null) throw new BadRequestException("date is required");
   if(date.isBefore(LocalDate.now())) throw new BadRequestException("Past dates are not bookable");
   Facility facility=catalogue.requireFacility(facilityId);
   if(!facility.isAvailableOn(date)) return List.of();
   List<BookingSlot> existing=slots.findByFacilityIdAndDateOrderByStartTimeAsc(facilityId,date);
   if(existing.isEmpty()) existing=generate(facility,date);
-  return existing.stream().map(SlotResponse::from).toList();
+  LocalDateTime now=LocalDateTime.now();
+  return existing.stream()
+    .filter(slot->date.isAfter(now.toLocalDate())||slot.getStartTime().isAfter(now.toLocalTime()))
+    .map(SlotResponse::from).toList();
  }
 
  private List<BookingSlot> generate(Facility facility,LocalDate date){

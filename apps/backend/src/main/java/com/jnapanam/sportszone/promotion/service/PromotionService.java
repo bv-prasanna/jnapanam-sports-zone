@@ -62,13 +62,16 @@ public class PromotionService {
 
     public Applied choose(String code, long amount, PaymentPurpose purpose, User user) {
         Instant now = Instant.now();
+        boolean explicitCode = code != null && !code.isBlank();
         Promotion promotion;
-        if (code != null && !code.isBlank()) {
+        if (explicitCode) {
             promotion = promotions.findByCodeIgnoreCase(code.trim())
                     .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
         } else {
             promotion = promotions.findByActiveTrueAndAutomaticTrueAndStartsAtLessThanEqualAndEndsAtAfter(now, now)
-                    .stream().filter(x -> x.eligible(amount, purpose, now))
+                    .stream()
+                    .filter(x -> x.eligible(amount, purpose, now))
+                    .filter(x -> redemptions.countByPromotionIdAndUserId(x.getId(), user.getId()) < x.getPerUserLimit())
                     .max(Comparator.comparingLong(x -> x.discount(amount))).orElse(null);
         }
         if (promotion == null) return new Applied(null, 0);
