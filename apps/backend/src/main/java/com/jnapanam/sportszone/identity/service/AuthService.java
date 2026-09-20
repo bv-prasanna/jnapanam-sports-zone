@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
     private final UserRepository users; private final RoleRepository roles; private final RefreshTokenRepository refreshTokens;
-    private final PasswordEncoder passwordEncoder; private final AuthenticationManager authenticationManager; private final TokenService tokens;
-    public AuthService(UserRepository users, RoleRepository roles, RefreshTokenRepository refreshTokens, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokens) {
-        this.users=users; this.roles=roles; this.refreshTokens=refreshTokens; this.passwordEncoder=passwordEncoder; this.authenticationManager=authenticationManager; this.tokens=tokens;
+    private final PasswordEncoder passwordEncoder; private final AuthenticationManager authenticationManager; private final TokenService tokens; private final MfaService mfa;
+    public AuthService(UserRepository users, RoleRepository roles, RefreshTokenRepository refreshTokens, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokens, MfaService mfa) {
+        this.users=users; this.roles=roles; this.refreshTokens=refreshTokens; this.passwordEncoder=passwordEncoder; this.authenticationManager=authenticationManager; this.tokens=tokens; this.mfa=mfa;
     }
 
     @Transactional
@@ -35,6 +35,7 @@ public class AuthService {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
         User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+        mfa.verifyOrChallenge(user, request.mfaCode());
         return issueTokens(user);
     }
 
