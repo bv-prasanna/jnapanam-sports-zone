@@ -9,7 +9,7 @@ import styles from "./admin-layout.module.css";
 export default function AdminLayout({children}:PropsWithChildren){
   const router=useRouter();
   const pathname=usePathname();
-  const {user,ready}=useApp();
+  const {user,ready,signOut}=useApp();
   const admin=!!user?.roles.some(role=>role==="ADMIN"||role==="SUPER_ADMIN");
   const profile=user as unknown as {profilePhotoUrl?:string;photoUrl?:string;avatarUrl?:string}|null;
   const photo=profile?.profilePhotoUrl||profile?.photoUrl||profile?.avatarUrl;
@@ -49,7 +49,7 @@ export default function AdminLayout({children}:PropsWithChildren){
         <Link href="/operations">Operations</Link>
         <Link href="/shop-counter">Shop Counter</Link>
         <Link href="/admin/commerce">Commerce</Link>
-        <Link href="/dashboard?section=profile">My Profile</Link>
+        <Link href="/dashboard?section=profile">My Profile</Link>\n        <button type="button" onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button>
       </nav>
     </section>
     <div onClickCapture={routeLegacyNavigation}>{children}</div>
