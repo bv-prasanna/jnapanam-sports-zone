@@ -21,6 +21,7 @@ public class SlotService {
  @Transactional
  public List<SlotResponse> availability(UUID facilityId,LocalDate date){
   bookings.cleanupExpired();
+  bookings.cleanupUnpaid();
   if(date==null) throw new BadRequestException("date is required");
   if(date.isBefore(LocalDate.now())) throw new BadRequestException("Past dates are not bookable");
   Facility facility=catalogue.requireFacility(facilityId);
