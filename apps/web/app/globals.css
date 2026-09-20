@@ -159,3 +159,5 @@
 .booking-detail-grid small{text-transform:capitalize;color:#6c7466;margin-bottom:4px}
 .booking-details-dialog{max-width:760px;max-height:82vh;overflow:auto}
 @media(max-width:760px){.booking-list-tools{grid-template-columns:1fr}.booking-detail-grid{grid-template-columns:1fr}}
+
+.compact-row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
