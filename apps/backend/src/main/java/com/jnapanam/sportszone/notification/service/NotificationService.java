@@ -20,6 +20,7 @@ import com.jnapanam.sportszone.notification.model.NotificationTemplate;
 import com.jnapanam.sportszone.notification.repository.NotificationPreferenceRepository;
 import com.jnapanam.sportszone.notification.repository.NotificationRepository;
 import com.jnapanam.sportszone.notification.repository.NotificationTemplateRepository;
+import com.jnapanam.sportszone.notification.provider.NotificationProviderRegistry;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -30,14 +31,14 @@ public class NotificationService {
     private final NotificationRepository notifications;
     private final NotificationPreferenceRepository preferences;
     private final NotificationTemplateRepository templates;
-    private final UserRepository users; private final ExternalNotificationGateway gateway;
+    private final UserRepository users; private final NotificationProviderRegistry providers;
 
     public NotificationService(NotificationRepository notifications, NotificationPreferenceRepository preferences,
-            NotificationTemplateRepository templates, UserRepository users, ExternalNotificationGateway gateway) {
+            NotificationTemplateRepository templates, UserRepository users, NotificationProviderRegistry providers) {
         this.notifications = notifications;
         this.preferences = preferences;
         this.templates = templates;
-        this.users = users; this.gateway = gateway;
+        this.users = users; this.providers = providers;
     }
 
     @Transactional
@@ -123,7 +124,7 @@ public class NotificationService {
     @Transactional
     public int dispatch() {
         List<Notification> batch = notifications.findTop100ByStatusOrderByCreatedAtAsc(NotificationStatus.QUEUED);
-        for (Notification notification : batch) { try { notification.sent(gateway.send(notification)); } catch (Exception e) { notification.failed(e.getMessage()); } }
+        for (Notification notification : batch) { try { notification.sent(providers.provider(notification.getChannel()).send(notification)); } catch (Exception e) { notification.failed(e.getMessage()); } }
         return batch.size();
     }
 
