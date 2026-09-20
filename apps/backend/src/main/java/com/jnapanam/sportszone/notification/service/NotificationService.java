@@ -30,14 +30,14 @@ public class NotificationService {
     private final NotificationRepository notifications;
     private final NotificationPreferenceRepository preferences;
     private final NotificationTemplateRepository templates;
-    private final UserRepository users;
+    private final UserRepository users; private final ExternalNotificationGateway gateway;
 
     public NotificationService(NotificationRepository notifications, NotificationPreferenceRepository preferences,
-            NotificationTemplateRepository templates, UserRepository users) {
+            NotificationTemplateRepository templates, UserRepository users, ExternalNotificationGateway gateway) {
         this.notifications = notifications;
         this.preferences = preferences;
         this.templates = templates;
-        this.users = users;
+        this.users = users; this.gateway = gateway;
     }
 
     @Transactional
@@ -120,7 +120,7 @@ public class NotificationService {
     @Transactional
     public int dispatch() {
         List<Notification> batch = notifications.findTop100ByStatusOrderByCreatedAtAsc(NotificationStatus.QUEUED);
-        for (Notification notification : batch) notification.sent("mock-" + UUID.randomUUID());
+        for (Notification notification : batch) { try { notification.sent(gateway.send(notification)); } catch (Exception e) { notification.failed(e.getMessage()); } }
         return batch.size();
     }
 
