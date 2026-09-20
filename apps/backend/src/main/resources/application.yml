@@ -52,3 +52,8 @@ app:
     super-admin-email: ${BOOTSTRAP_SUPER_ADMIN_EMAIL:}
     super-admin-password: ${BOOTSTRAP_SUPER_ADMIN_PASSWORD:}
     super-admin-name: ${BOOTSTRAP_SUPER_ADMIN_NAME:Jnapanam Super Admin}
+
+  notification:
+    provider-url: ${NOTIFICATION_PROVIDER_URL:}
+    provider-token: ${NOTIFICATION_PROVIDER_TOKEN:}
+    reminder-delay-ms: ${REMINDER_DELAY_MS:60000}
