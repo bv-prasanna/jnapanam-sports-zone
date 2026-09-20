@@ -1,6 +1,0 @@
-package com.jnapanam.sportszone.notification.service;
-import com.jnapanam.sportszone.notification.model.*;import java.util.*;import org.springframework.beans.factory.annotation.Value;import org.springframework.http.*;import org.springframework.stereotype.Service;import org.springframework.web.client.RestClient;
-@Service public class ExternalNotificationGateway{
- private final RestClient http=RestClient.create();@Value("${app.notification.provider-url:}")String url;@Value("${app.notification.provider-token:}")String token;
- public String send(Notification n){if(url==null||url.isBlank())throw new IllegalStateException("External notification provider is not configured");String destination=switch(n.getChannel()){case EMAIL->n.getUser().getEmail();case SMS,WHATSAPP->n.getUser().getMobile();default->n.getUser().getId().toString();};Map<String,Object> payload=Map.of("channel",n.getChannel().name(),"destination",destination==null?"":destination,"subject",n.getSubject()==null?"":n.getSubject(),"message",n.getMessage());Map response=http.post().uri(url).header(HttpHeaders.AUTHORIZATION,"Bearer "+token).contentType(MediaType.APPLICATION_JSON).body(payload).retrieve().body(Map.class);Object id=response==null?null:response.get("id");return id==null?UUID.randomUUID().toString():id.toString();}
-}
