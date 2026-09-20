@@ -19,7 +19,7 @@ function readable(value?:string){return value?value.replaceAll("_"," "):"—"}
 
 export default function OperationsPage(){
   const router=useRouter();
-  const {user,ready}=useApp();
+  const {user,ready,signOut}=useApp();
   const allowed=!!user?.roles.some(role=>["SUPER_ADMIN","ADMIN","OPERATIONS"].includes(role));
   const today=todayLocal();
   const [selectedDate,setSelectedDate]=useState(today);
@@ -42,7 +42,7 @@ export default function OperationsPage(){
 
   if(!ready||!allowed)return <main className={styles.page}>Checking access…</main>;
   return <main className={styles.page}>
-    <header className={styles.header}><div><span>OPERATIONS · {selectedDate}</span><h1>{selectedDate===today?"Today's Facility Operations":"Facility Operations"}</h1><p>Payment first, then verify customer, check in, and check out.</p></div><button onClick={()=>router.push("/dashboard")}>Customer portal</button></header>
+    <header className={styles.header}><div><span>OPERATIONS · {selectedDate}</span><h1>{selectedDate===today?"Today's Facility Operations":"Facility Operations"}</h1><p>Payment first, then verify customer, check in, and check out.</p></div><div className={styles.headerActions}><button onClick={()=>router.push("/dashboard")}>Customer portal</button><button onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button></div></header>
     <section className={styles.filters}><label>Date<input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}/></label><label>Sport<select value={sport} onChange={e=>{setSport(e.target.value);setFacility("")}}><option value="">All assigned sports</option>{sports.map(x=><option key={x}>{x}</option>)}</select></label><label>Facility<select value={facility} onChange={e=>setFacility(e.target.value)}><option value="">All assigned facilities</option>{facilities.map(x=><option key={x}>{x}</option>)}</select></label><label>Search<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Booking, name, mobile"/></label><button onClick={()=>void load()}>Refresh</button></section>
     {error&&<div className={styles.error}>{error}</div>}
     <section className={styles.summary}><article><strong>{visible.filter(b=>b.paymentStatus==="UNPAID").length}</strong><span>Payment due</span></article><article><strong>{visible.filter(b=>!b.checkedInAt&&(b.paymentStatus==="PAID"||b.paymentStatus==="NOT_REQUIRED")).length}</strong><span>Ready</span></article><article><strong>{visible.filter(b=>!!b.checkedInAt&&!b.checkedOutAt).length}</strong><span>Checked in</span></article></section>
