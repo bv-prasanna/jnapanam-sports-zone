@@ -21,7 +21,7 @@ public class BookingService {
  @Transactional
  public HoldResponse hold(UUID userId,HoldRequest request){
   cleanupExpired(); User user=requireUser(userId); BookingSlot slot=slots.findLocked(request.slotId()).orElseThrow(()->new NotFoundException("Slot not found"));
-  if(slot.getDate().isBefore(LocalDate.now())) throw new ConflictException("This slot has already passed");
+  if(slot.getDate().isBefore(LocalDate.now())||!LocalDateTime.of(slot.getDate(),slot.getStartTime()).isAfter(LocalDateTime.now())) throw new ConflictException("This slot has already started or passed");
   slot.hold(request.quantity()); BookingHold hold=holds.save(new BookingHold(user,slot,request.quantity(),Instant.now().plusSeconds(holdMinutes*60)));
   return HoldResponse.from(hold);
  }
