@@ -163,8 +163,9 @@
 .compact-row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
 /* Customer portal feedback states */
-.form-note{border:1px solid #86c99a!important;background:#edf9f0!important;color:#14532d!important;font-weight:600!important}
-.form-note[role="alert"]{color:#14532d!important}
+.form-note{font-weight:600!important}
+.form-note.success{border:1px solid #86c99a!important;background:#edf9f0!important;color:#14532d!important}
+.form-note.warning{border:1px solid #e9bd73!important;background:#fff5df!important;color:#75440b!important}
 .dialog-error,.error-note{border-color:#e0a3a3;background:#fff0f0;color:#8b1e1e}
 
 .organizer-tournament-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 30px;padding:22px;background:#fffdf8;border:1px solid var(--line);border-radius:14px}
