@@ -1,0 +1,11 @@
+ALTER TABLE booking_reschedules ADD COLUMN IF NOT EXISTS adjustment_status VARCHAR(30) NOT NULL DEFAULT 'NOT_REQUIRED';
+ALTER TABLE booking_reschedules ADD COLUMN IF NOT EXISTS price_difference_paise BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE equipment_transactions ADD COLUMN IF NOT EXISTS inventory_id UUID REFERENCES equipment_inventory(id);
+ALTER TABLE equipment_transactions ADD COLUMN IF NOT EXISTS return_condition VARCHAR(40);
+ALTER TABLE equipment_transactions ADD COLUMN IF NOT EXISTS damage_notes VARCHAR(1000);
+ALTER TABLE training_waitlist ADD COLUMN IF NOT EXISTS status VARCHAR(30) NOT NULL DEFAULT 'WAITING';
+ALTER TABLE training_lifecycle_events ADD COLUMN IF NOT EXISTS target_batch_id UUID REFERENCES training_batches(id);
+ALTER TABLE membership_lifecycle_events ADD COLUMN IF NOT EXISTS effective_until DATE;
+ALTER TABLE account_data_requests ADD COLUMN IF NOT EXISTS processed_by UUID REFERENCES users(id);
+ALTER TABLE account_merge_requests ADD COLUMN IF NOT EXISTS notes VARCHAR(1000);
+CREATE INDEX IF NOT EXISTS idx_tournament_fixture_schedule_conflict ON tournament_fixtures(facility_id,scheduled_at) WHERE status<>'CANCELLED';
