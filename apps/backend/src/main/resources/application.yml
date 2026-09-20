@@ -73,6 +73,8 @@ app:
         api-key: ${FAST2SMS_API_KEY:}
         sender-id: ${FAST2SMS_SENDER_ID:}
         route: ${FAST2SMS_ROUTE:q}
+        otp-url: ${FAST2SMS_OTP_URL:https://www.fast2sms.com/dev/otp/send}
+        otp-id: ${FAST2SMS_OTP_ID:}
     whatsapp:
       provider-url: ${WHATSAPP_PROVIDER_URL:}
       provider-token: ${WHATSAPP_PROVIDER_TOKEN:}
