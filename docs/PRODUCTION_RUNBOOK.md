@@ -29,3 +29,7 @@ pg_restore --clean --if-exists --no-owner --dbname="$RESTORE_DB_URL" jnapanam-YY
 
 ## Rollback
 Application rollback is to the previous known-good image/SHA. Database migrations are forward-only; restore from the pre-deployment backup when a migration cannot be safely forward-fixed.
+
+
+## Automated backup job
+Schedule `scripts/production-backup.sh` daily in the production scheduler with DB_URL, DB_USERNAME and PGPASSWORD secrets. Retain at least 14 days, copy backups to durable off-host/object storage, and perform a monthly restore rehearsal. `/actuator/health` is the deployment and uptime probe; alert on non-2xx health responses, elevated 5xx rate, DB connection failures and backup-job failures.
