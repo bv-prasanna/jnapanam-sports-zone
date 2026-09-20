@@ -22,13 +22,14 @@ export default function OperationsPage(){
   const {user,ready}=useApp();
   const allowed=!!user?.roles.some(role=>["SUPER_ADMIN","ADMIN","OPERATIONS"].includes(role));
   const today=todayLocal();
+  const [selectedDate,setSelectedDate]=useState(today);
   const [bookings,setBookings]=useState<Booking[]>([]);
   const [sport,setSport]=useState(""); const [facility,setFacility]=useState(""); const [query,setQuery]=useState("");
   const [checkingIn,setCheckingIn]=useState<Booking|null>(null); const [verified,setVerified]=useState(false); const [note,setNote]=useState("");
   const [busy,setBusy]=useState(""); const [error,setError]=useState("");
 
   useEffect(()=>{if(ready&&!allowed)router.replace(user?"/dashboard":"/login")},[ready,allowed,user,router]);
-  const load=useCallback(async()=>{if(!allowed)return;try{setError("");const rows=await api<Booking[]>(`/api/v1/admin/bookings?date=${today}`);setBookings(rows.filter(b=>!["CANCELLED","NO_SHOW"].includes(b.status)&&!b.checkedOutAt))}catch(e){setError(e instanceof ApiError?e.message:"Unable to load today's bookings.")}},[allowed,today]);
+  const load=useCallback(async()=>{if(!allowed)return;try{setError("");const rows=await api<Booking[]>(`/api/v1/admin/bookings?date=${selectedDate}`);setBookings(rows.filter(b=>!["CANCELLED","NO_SHOW"].includes(b.status)&&!b.checkedOutAt))}catch(e){setError(e instanceof ApiError?e.message:"Unable to load today's bookings.")}},[allowed,selectedDate]);
   useEffect(()=>{void load()},[load]);
 
   const sports=useMemo(()=>Array.from(new Set(bookings.map(b=>b.sportName).filter(Boolean) as string[])).sort(),[bookings]);
@@ -41,8 +42,8 @@ export default function OperationsPage(){
 
   if(!ready||!allowed)return <main className={styles.page}>Checking access…</main>;
   return <main className={styles.page}>
-    <header className={styles.header}><div><span>OPERATIONS · {today}</span><h1>Today's Facility Operations</h1><p>Payment first, then verify customer, check in, and check out.</p></div><button onClick={()=>router.push("/dashboard")}>Customer portal</button></header>
-    <section className={styles.filters}><label>Sport<select value={sport} onChange={e=>{setSport(e.target.value);setFacility("")}}><option value="">All assigned sports</option>{sports.map(x=><option key={x}>{x}</option>)}</select></label><label>Facility<select value={facility} onChange={e=>setFacility(e.target.value)}><option value="">All assigned facilities</option>{facilities.map(x=><option key={x}>{x}</option>)}</select></label><label>Search<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Booking, name, mobile"/></label><button onClick={()=>void load()}>Refresh</button></section>
+    <header className={styles.header}><div><span>OPERATIONS · {selectedDate}</span><h1>{selectedDate===today?"Today's Facility Operations":"Facility Operations"}</h1><p>Payment first, then verify customer, check in, and check out.</p></div><button onClick={()=>router.push("/dashboard")}>Customer portal</button></header>
+    <section className={styles.filters}><label>Date<input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}/></label><label>Sport<select value={sport} onChange={e=>{setSport(e.target.value);setFacility("")}}><option value="">All assigned sports</option>{sports.map(x=><option key={x}>{x}</option>)}</select></label><label>Facility<select value={facility} onChange={e=>setFacility(e.target.value)}><option value="">All assigned facilities</option>{facilities.map(x=><option key={x}>{x}</option>)}</select></label><label>Search<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Booking, name, mobile"/></label><button onClick={()=>void load()}>Refresh</button></section>
     {error&&<div className={styles.error}>{error}</div>}
     <section className={styles.summary}><article><strong>{visible.filter(b=>b.paymentStatus==="UNPAID").length}</strong><span>Payment due</span></article><article><strong>{visible.filter(b=>!b.checkedInAt&&(b.paymentStatus==="PAID"||b.paymentStatus==="NOT_REQUIRED")).length}</strong><span>Ready</span></article><article><strong>{visible.filter(b=>!!b.checkedInAt&&!b.checkedOutAt).length}</strong><span>Checked in</span></article></section>
     <section className={styles.list}>{visible.map(b=>{const paid=b.paymentStatus==="PAID"||b.paymentStatus==="NOT_REQUIRED";return <article key={b.id} className={styles.card}><div className={styles.cardTop}><div><strong>{b.bookingNumber}</strong><span>{b.startTime}–{b.endTime}</span></div><b className={paid?styles.paid:styles.due}>{paid?"PAID / READY":"PAYMENT DUE"}</b></div><h2>{b.customerName||"Customer"}</h2><p>{b.customerMobile||b.customerEmail||"No contact"}</p><p>{b.sportName} · {b.facilityName}</p><div className={styles.actions}>{!b.checkedInAt&&paid&&<button onClick={()=>void action(b,"check-in")}>Verify & Check In</button>}{b.checkedInAt&&!b.checkedOutAt&&<button onClick={()=>void action(b,"check-out")}>Check Out</button>}{!b.checkedInAt&&<button className={styles.secondary} onClick={()=>void action(b,"no-show")}>No-show</button>}</div></article>})}{visible.length===0&&<p>No active bookings match the current filters.</p>}</section>
