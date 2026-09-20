@@ -1,0 +1,3 @@
+package com.jnapanam.sportszone.notification.provider;
+import com.jnapanam.sportszone.notification.model.NotificationChannel;import java.util.*;import org.springframework.stereotype.Component;
+@Component public class NotificationProviderRegistry{private final Map<NotificationChannel,NotificationProvider> providers=new EnumMap<>(NotificationChannel.class);public NotificationProviderRegistry(List<NotificationProvider> list){for(NotificationProvider p:list)providers.put(p.channel(),p);}public NotificationProvider provider(NotificationChannel channel){NotificationProvider p=providers.get(channel);if(p==null)throw new IllegalStateException("No notification provider configured for "+channel);return p;}}
