@@ -57,6 +57,19 @@ class ModuleRegressionIntegrationTest {
     }
 
     @Test
+    void configuredUatOtpCanVerifyRegistrationWithoutProviderOtp() throws Exception {
+        String mobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        mvc.perform(post("/api/v1/auth/otp/registration/request").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mobile\":\"" + mobile + "\"}"))
+                .andExpect(status().isNoContent());
+        String email = uniqueEmail("fixed-otp");
+        mvc.perform(post("/api/v1/auth/otp/registration/verify").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"OTP Test User\",\"email\":\"" + email + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"9876\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty());
+    }
+
+    @Test
     void authenticationNegativeCasesReturnExpectedStatuses() throws Exception {
         String email = uniqueEmail("negative");
         register(email);
