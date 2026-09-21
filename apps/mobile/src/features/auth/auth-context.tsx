@@ -12,7 +12,7 @@ type AuthValue = {
   initializing: boolean;
   login(email: string, password: string): Promise<void>;
   requestRegistrationOtp(input: RegisterInput): Promise<void>;
-  verifyRegistrationOtp(mobile:string,otp:string): Promise<void>;
+  verifyRegistrationOtp(input:RegisterInput,otp:string): Promise<void>;
   logout(): Promise<void>;
 };
 
@@ -67,8 +67,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(await loadMe());
   }, []);
 
-  const requestRegistrationOtp=useCallback(async(input:RegisterInput)=>{await api<void>('/api/v1/auth/otp/registration/request',{method:'POST',body:JSON.stringify({...input,fullName:input.fullName.trim(),email:input.email.trim().toLowerCase(),mobile:input.mobile?.trim()||null})});},[]);
-  const verifyRegistrationOtp=useCallback(async(mobile:string,otp:string)=>{const tokens=await api<TokenResponse>('/api/v1/auth/otp/registration/verify',{method:'POST',body:JSON.stringify({mobile,otp})});await storeSession(tokens);setUser(await loadMe());},[]);
+  const requestRegistrationOtp=useCallback(async(input:RegisterInput)=>{await api<void>('/api/v1/auth/otp/registration/request',{method:'POST',body:JSON.stringify({mobile:input.mobile?.trim()||null})});},[]);
+  const verifyRegistrationOtp=useCallback(async(input:RegisterInput,otp:string)=>{const tokens=await api<TokenResponse>('/api/v1/auth/otp/registration/verify',{method:'POST',body:JSON.stringify({...input,fullName:input.fullName.trim(),email:input.email.trim().toLowerCase(),mobile:input.mobile?.trim(),otp})});await storeSession(tokens);setUser(await loadMe());},[]);
 
   const logout = useCallback(async () => {
     const refreshToken = await getStoredValue(REFRESH_TOKEN_KEY);
