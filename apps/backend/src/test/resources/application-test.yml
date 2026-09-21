@@ -22,6 +22,8 @@ app:
     access-token-minutes: 60
     refresh-token-days: 1
     privileged-mfa-required: false
+    test-otp-enabled: true
+    test-otp: '9876'
   cors:
     allowed-origins:
       - http://localhost:3000
