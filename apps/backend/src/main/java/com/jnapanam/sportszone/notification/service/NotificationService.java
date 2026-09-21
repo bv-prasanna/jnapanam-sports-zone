@@ -61,6 +61,15 @@ public class NotificationService {
         return NotificationResponse.from(notifications.save(new Notification(user, NotificationChannel.IN_APP, category, subject, message)));
     }
 
+    @Transactional
+    public void lifecycle(UUID userId, String category, String subject, String message) {
+        User user = user(userId);
+        notifications.save(new Notification(user, NotificationChannel.IN_APP, category, subject, message));
+        NotificationPreference preference = preferences.findById(userId).orElseGet(() -> preferences.save(new NotificationPreference(user)));
+        if (preference.isEmailEnabled() && user.getEmail() != null && !user.getEmail().isBlank()) notifications.save(new Notification(user, NotificationChannel.EMAIL, category, subject, message));
+        if (preference.isSmsEnabled() && user.getMobile() != null && !user.getMobile().isBlank()) notifications.save(new Notification(user, NotificationChannel.SMS, category, subject, message));
+    }
+
     @Transactional(readOnly = true)
     public List<NotificationResponse> mine(UUID userId) {
         return notifications.findByUserIdOrderByCreatedAtDesc(userId).stream().map(NotificationResponse::from).toList();
