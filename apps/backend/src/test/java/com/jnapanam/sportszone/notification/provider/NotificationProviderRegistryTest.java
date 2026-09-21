@@ -5,3 +5,4 @@ static class P implements NotificationProvider{private final NotificationChannel
 @Test void selectsConfiguredProviders(){var r=new NotificationProviderRegistry(List.of(new P(NotificationChannel.EMAIL,"smtp"),new P(NotificationChannel.EMAIL,"ses"),new P(NotificationChannel.SMS,"fast2sms"),new P(NotificationChannel.SMS,"other")),"ses","other");assertEquals("ses",r.provider(NotificationChannel.EMAIL).name());assertEquals("other",r.provider(NotificationChannel.SMS).name());}}
 
 
+
