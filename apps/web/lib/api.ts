@@ -57,10 +57,7 @@ export async function login(email: string, password: string, mfaCode?: string) {
   saveTokens(tokens); return api<User>("/api/v1/profile/me");
 }
 
-export async function register(payload: { fullName: string; email: string; mobile: string; password: string }) {
-  const tokens = await api<TokenResponse>("/api/v1/auth/register", { method: "POST", body: JSON.stringify(payload) }, false);
-  saveTokens(tokens); return api<User>("/api/v1/profile/me");
-}
+export async function requestRegistrationOtp(mobile:string){return api<void>("/api/v1/auth/otp/registration/request",{method:"POST",body:JSON.stringify({mobile})},false);}\nexport async function register(payload: { fullName: string; email: string; mobile: string; password: string; otp:string }) {\n  const tokens = await api<TokenResponse>("/api/v1/auth/otp/registration/verify", { method: "POST", body: JSON.stringify(payload) }, false);\n  saveTokens(tokens); return api<User>("/api/v1/profile/me");\n}
 
 export async function restoreSession() { return (await refreshAccess()) ? api<User>("/api/v1/profile/me") : null; }
 export async function logout() {
