@@ -57,7 +57,7 @@ app:
     expose-development-reset-token: ${EXPOSE_DEVELOPMENT_RESET_TOKEN:true}
     auth-rate-limit-per-minute: ${AUTH_RATE_LIMIT_PER_MINUTE:60}
     test-otp-enabled: false
-    test-otp: 9876
+    test-otp: '9876'
   bootstrap:
     super-admin-email: ${BOOTSTRAP_SUPER_ADMIN_EMAIL:}
     super-admin-password: ${BOOTSTRAP_SUPER_ADMIN_PASSWORD:}
