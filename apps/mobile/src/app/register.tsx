@@ -21,7 +21,7 @@ export default function RegisterScreen() {
     if(form.password.length<8){setError(t('auth.passwordLength'));return;}
     if(form.password!==form.confirmPassword){setError(t('auth.passwordMismatch'));return;}
     setBusy(true);setError('');
-    try{if(!otpSent){if(!form.mobile){setError('Mobile number is required for SMS verification.');return;}await requestRegistrationOtp(form);setOtpSent(true);}else{await verifyRegistrationOtp(form.mobile,otp);router.replace('/');}}
+    try{if(!otpSent){if(!form.mobile){setError('Mobile number is required for SMS verification.');return;}await requestRegistrationOtp(form);setOtpSent(true);}else{await verifyRegistrationOtp(form,otp);router.replace('/');}}
     catch(e){setError(e instanceof Error?e.message:t('common.tryAgain'));}
     finally{setBusy(false);}
   }
