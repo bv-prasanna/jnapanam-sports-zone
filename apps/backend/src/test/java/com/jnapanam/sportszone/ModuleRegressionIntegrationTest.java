@@ -60,8 +60,8 @@ class ModuleRegressionIntegrationTest {
     void configuredUatOtpCanVerifyRegistrationWithoutProviderOtp() throws Exception {
         String mobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
         String email = uniqueEmail("fixed-otp");
-        String body = "{\\"fullName\\":\\"OTP Test User\\",\\"email\\":\\"" + email
-                + "\\",\\"mobile\\":\\"" + mobile + "\\",\\"password\\":\\"Test@12345\\",\\"otp\\":\\"9876\\"}";
+        String body = "{\"fullName\":\"OTP Test User\",\"email\":\"" + email
+                + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"9876\"}";
 
         // Fixed test OTP must never authenticate before a challenge was requested.
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
@@ -70,13 +70,13 @@ class ModuleRegressionIntegrationTest {
 
         mvc.perform(post("/api/v1/auth/otp/registration/request")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\\"mobile\\":\\"" + mobile + "\\"}"))
+                        .content("{\"mobile\":\"" + mobile + "\"}"))
                 .andExpect(status().isAccepted());
 
         // Request throttle still applies even when the SMS provider is disabled in UAT.
         mvc.perform(post("/api/v1/auth/otp/registration/request")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\\"mobile\\":\\"" + mobile + "\\"}"))
+                        .content("{\"mobile\":\"" + mobile + "\"}"))
                 .andExpect(status().isConflict());
 
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
