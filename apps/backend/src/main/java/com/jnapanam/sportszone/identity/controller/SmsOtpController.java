@@ -5,5 +5,5 @@ import com.jnapanam.sportszone.identity.dto.*;import com.jnapanam.sportszone.ide
  @PostMapping("/registration/verify")public ResponseEntity<TokenResponse> verify(@Valid@RequestBody RegistrationOtpVerifyRequest r){otp.verifyRegistration(r.mobile(),r.otp());RegisterRequest payload=new RegisterRequest(r.fullName(),r.email(),r.mobile(),r.password());return ResponseEntity.status(HttpStatus.CREATED).body(auth.register(payload));}
  @PostMapping("/password/request")@ResponseStatus(HttpStatus.ACCEPTED)public void password(@Valid@RequestBody OtpRequest r){recovery.requestSmsOtp(r.mobile());}
  @PostMapping("/password/reset")@ResponseStatus(HttpStatus.NO_CONTENT)public void reset(@Valid@RequestBody SmsPasswordResetRequest r){recovery.resetWithSmsOtp(r);}
- public record RegistrationOtpVerifyRequest(@NotBlank String fullName,@Email@NotBlank String email,@NotBlank String mobile,@Size(min=8) String password,@Pattern(regexp="\\d{6}") String otp){}
+ public record RegistrationOtpVerifyRequest(@NotBlank String fullName,@Email@NotBlank String email,@NotBlank String mobile,@Size(min=8) String password,@Pattern(regexp="\\d{4,6}") String otp){}
 }
