@@ -1,6 +1,7 @@
 package com.jnapanam.sportszone.commerce.service;
 
 import static com.jnapanam.sportszone.commerce.dto.ShopCounterDtos.*;
+import com.jnapanam.sportszone.notification.service.NotificationService;
 
 import com.jnapanam.sportszone.common.exception.ConflictException;
 import com.jnapanam.sportszone.common.exception.NotFoundException;
@@ -18,9 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ShopCounterService {
     private final JdbcTemplate jdbc;
+    private final NotificationService notifications;
 
-    public ShopCounterService(JdbcTemplate jdbc) {
+    public ShopCounterService(JdbcTemplate jdbc, NotificationService notifications) {
         this.jdbc = jdbc;
+        this.notifications = notifications;
     }
 
     @Transactional
@@ -75,6 +78,10 @@ public class ShopCounterService {
         jdbc.update("update commerce_orders set payment_status='PAID',status=case when status='PLACED' then 'CONFIRMED' else status end,updated_at=now() where id=?", orderId);
         jdbc.update("insert into commerce_stock_movements(variant_id,quantity_delta,reason,reference_id,actor_id) select variant_id,0,'COUNTER_PAYMENT',?,? from commerce_order_items where order_id=? limit 1",
                 orderId, actor, orderId);
+        if (order.get("user_id") instanceof UUID userId) {
+            notifications.lifecycle(userId, "COMMERCE", "Shop payment collected",
+                    "Payment received for order " + order.get("order_number") + ".");
+        }
         return order(orderId, false);
     }
 
@@ -87,6 +94,10 @@ public class ShopCounterService {
         String status = String.valueOf(order.get("status"));
         if (Set.of("DELIVERED", "CANCELLED").contains(status)) throw new ConflictException("Order cannot be fulfilled from its current status");
         jdbc.update("update commerce_orders set status='DELIVERED',updated_at=now() where id=?", orderId);
+        if (order.get("user_id") instanceof UUID userId) {
+            notifications.lifecycle(userId, "COMMERCE", "Shop order delivered",
+                    "Order " + order.get("order_number") + " was delivered.");
+        }
         return order(orderId, false);
     }
 
