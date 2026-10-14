@@ -99,7 +99,7 @@ public class SmsOtpService {
 
     private void verify(String mobile, String purpose, String otp) {
         if (mobile == null || mobile.length() != 10 || otp == null
-                || !(otp.matches("\\d{6}") || (testOtpEnabled && otp.equals(testOtp)))) {
+                || !otp.matches(testOtpEnabled ? "\\d{4,6}" : "\\d{6}")) {
             throw new BadRequestException("Invalid OTP");
         }
         List<Map<String, Object>> challenges = jdbc.queryForList(
