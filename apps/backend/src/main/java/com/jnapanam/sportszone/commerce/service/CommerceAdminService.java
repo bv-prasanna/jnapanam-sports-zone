@@ -1,6 +1,7 @@
 package com.jnapanam.sportszone.commerce.service;
 
 import static com.jnapanam.sportszone.commerce.dto.CommerceDtos.*;
+import com.jnapanam.sportszone.notification.service.NotificationService;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,10 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommerceAdminService {
     private final JdbcTemplate jdbc;
     private final CommerceService commerce;
+    private final NotificationService notifications;
 
-    public CommerceAdminService(JdbcTemplate jdbc, CommerceService commerce) {
+    public CommerceAdminService(JdbcTemplate jdbc, CommerceService commerce, NotificationService notifications) {
         this.jdbc = jdbc;
         this.commerce = commerce;
+        this.notifications = notifications;
     }
 
     public ShopSettings settings() {
@@ -117,6 +120,7 @@ public class CommerceAdminService {
                 + "values(?,?,?,?)", variant, r.quantityDelta(), r.reason(), actor);
     }
 
+    @Transactional
     public void orderStatus(UUID id, String status) {
         String next = status.toUpperCase();
         if (!Set.of("PLACED", "CONFIRMED", "PACKED", "READY_FOR_PICKUP", "SHIPPED",
@@ -125,6 +129,11 @@ public class CommerceAdminService {
         }
         requireChanged(jdbc.update("update commerce_orders set status=?,updated_at=now() where id=?",
                 next, id), "Order");
+        var order = jdbc.queryForMap("select user_id,order_number from commerce_orders where id=?", id);
+        if (order.get("user_id") instanceof UUID userId) {
+            notifications.lifecycle(userId, "COMMERCE", "Shop order " + next.replace('_', ' ').toLowerCase(),
+                    "Order " + order.get("order_number") + " is now " + next.replace('_', ' ').toLowerCase() + ".");
+        }
     }
 
     public List<Map<String, Object>> orders() {
