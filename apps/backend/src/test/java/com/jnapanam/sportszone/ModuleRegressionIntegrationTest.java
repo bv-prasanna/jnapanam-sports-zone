@@ -99,6 +99,44 @@ class ModuleRegressionIntegrationTest {
     }
 
     @Test
+    void fixedUatOtpStillExpiresAndLocksOutAfterFiveAttempts() throws Exception {
+        String mobile = "9" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        mvc.perform(post("/api/v1/auth/otp/registration/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mobile\":\"" + mobile + "\"}"))
+                .andExpect(status().isAccepted());
+        String email = uniqueEmail("otp-lockout");
+        String json = "{\"fullName\":\"UAT Lockout\",\"email\":\"" + email
+                + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"%s\"}";
+        for (int i = 0; i < 5; i++) {
+            mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(String.format(json, "1111")))
+                    .andExpect(status().isBadRequest());
+        }
+        Integer attempts = jdbc.queryForObject(
+                "select attempts from mobile_otp_challenges where mobile=? and purpose='REGISTRATION' order by created_at desc limit 1",
+                Integer.class, mobile);
+        Assertions.assertEquals(5, attempts);
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format(json, "9876")))
+                .andExpect(status().isBadRequest());
+
+        String expiredMobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        mvc.perform(post("/api/v1/auth/otp/registration/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mobile\":\"" + expiredMobile + "\"}"))
+                .andExpect(status().isAccepted());
+        jdbc.update("update mobile_otp_challenges set expires_at=now()-interval '1 second' where mobile=? and purpose='REGISTRATION'",
+                expiredMobile);
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format(json.replace(mobile, expiredMobile), "9876")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void authenticationNegativeCasesReturnExpectedStatuses() throws Exception {
         String email = uniqueEmail("negative");
         register(email);
