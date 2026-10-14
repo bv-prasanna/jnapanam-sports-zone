@@ -42,6 +42,13 @@ public class NotificationService {
         this.users = users; this.providers = providers; this.jdbc=jdbc;
     }
 
+
+    @Transactional
+    public void welcome(UUID userId, String name) {
+        lifecycle(userId, "ACCOUNT", "Welcome to Jnapanam Sports Zone",
+                "Welcome " + name + ". Your customer account was created successfully.");
+    }
+
     @Transactional
     public void payment(UUID userId, String receipt, long paise) {
         notify(userId, "PAYMENT", "Payment successful", "Payment " + receipt + " of ₹" + money(paise) + " was successful.");
