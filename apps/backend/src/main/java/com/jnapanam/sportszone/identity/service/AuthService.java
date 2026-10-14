@@ -5,6 +5,7 @@ import com.jnapanam.sportszone.identity.dto.*;
 import com.jnapanam.sportszone.identity.model.*;
 import com.jnapanam.sportszone.identity.repository.*;
 import com.jnapanam.sportszone.security.TokenService;
+import com.jnapanam.sportszone.notification.service.NotificationService;
 import java.util.Locale;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,9 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
     private final UserRepository users; private final RoleRepository roles; private final RefreshTokenRepository refreshTokens;
-    private final PasswordEncoder passwordEncoder; private final AuthenticationManager authenticationManager; private final TokenService tokens; private final MfaService mfa;
-    public AuthService(UserRepository users, RoleRepository roles, RefreshTokenRepository refreshTokens, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokens, MfaService mfa) {
-        this.users=users; this.roles=roles; this.refreshTokens=refreshTokens; this.passwordEncoder=passwordEncoder; this.authenticationManager=authenticationManager; this.tokens=tokens; this.mfa=mfa;
+    private final PasswordEncoder passwordEncoder; private final AuthenticationManager authenticationManager; private final TokenService tokens; private final MfaService mfa; private final NotificationService notifications;
+    public AuthService(UserRepository users, RoleRepository roles, RefreshTokenRepository refreshTokens, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, TokenService tokens, MfaService mfa, NotificationService notifications) {
+        this.users=users; this.roles=roles; this.refreshTokens=refreshTokens; this.passwordEncoder=passwordEncoder; this.authenticationManager=authenticationManager; this.tokens=tokens; this.mfa=mfa; this.notifications=notifications;
     }
 
     @Transactional
@@ -27,6 +28,7 @@ public class AuthService {
         if (mobile != null && users.existsByMobile(mobile)) throw new ConflictException("An account already exists for this mobile number");
         Role customer = roles.findByName(RoleName.CUSTOMER).orElseThrow(() -> new IllegalStateException("CUSTOMER role is missing"));
         User user = users.save(new User(request.fullName().trim(), email, mobile, passwordEncoder.encode(request.password()), customer));
+        notifications.welcome(user.getId(), user.getFullName());
         return issueTokens(user,null,null);
     }
 
