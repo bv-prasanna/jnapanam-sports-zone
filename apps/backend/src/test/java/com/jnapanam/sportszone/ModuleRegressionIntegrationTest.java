@@ -59,14 +59,43 @@ class ModuleRegressionIntegrationTest {
     @Test
     void configuredUatOtpCanVerifyRegistrationWithoutProviderOtp() throws Exception {
         String mobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
-        mvc.perform(post("/api/v1/auth/otp/registration/request").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"mobile\":\"" + mobile + "\"}"))
-                .andExpect(status().isNoContent());
         String email = uniqueEmail("fixed-otp");
-        mvc.perform(post("/api/v1/auth/otp/registration/verify").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fullName\":\"OTP Test User\",\"email\":\"" + email + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"9876\"}"))
+        String body = "{\\"fullName\\":\\"OTP Test User\\",\\"email\\":\\"" + email
+                + "\\",\\"mobile\\":\\"" + mobile + "\\",\\"password\\":\\"Test@12345\\",\\"otp\\":\\"9876\\"}";
+
+        // Fixed test OTP must never authenticate before a challenge was requested.
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(post("/api/v1/auth/otp/registration/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\\"mobile\\":\\"" + mobile + "\\"}"))
+                .andExpect(status().isAccepted());
+
+        // Request throttle still applies even when the SMS provider is disabled in UAT.
+        mvc.perform(post("/api/v1/auth/otp/registration/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\\"mobile\\":\\"" + mobile + "\\"}"))
+                .andExpect(status().isConflict());
+
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON).content(body.replace("9876", "1111")))
+                .andExpect(status().isBadRequest());
+        Integer failedAttempts = jdbc.queryForObject(
+                "select attempts from mobile_otp_challenges where mobile=? and purpose='REGISTRATION' order by created_at desc limit 1",
+                Integer.class, mobile);
+        Assertions.assertEquals(1, failedAttempts);
+
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty());
+
+        // A consumed OTP must not be usable again, even when its code is fixed.
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
