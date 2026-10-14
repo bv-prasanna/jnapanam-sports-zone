@@ -170,3 +170,19 @@
 
 .organizer-tournament-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 30px;padding:22px;background:#fffdf8;border:1px solid var(--line);border-radius:14px}
 .organizer-tournament-form h2,.organizer-tournament-form .wide{grid-column:1/-1}.organizer-tournament-form label{display:grid;gap:7px;font-weight:700}.organizer-tournament-form input,.organizer-tournament-form select,.organizer-tournament-form textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:white}.organizer-tournament-form textarea{min-height:100px;resize:vertical}.organizer-form-actions{display:flex;align-items:center;justify-content:space-between;gap:16px}.organizer-form-actions span{color:var(--muted);font-size:13px}@media(max-width:700px){.organizer-tournament-form{grid-template-columns:1fr}.organizer-tournament-form h2,.organizer-tournament-form .wide{grid-column:auto}.organizer-form-actions{align-items:stretch;flex-direction:column}}
+
+
+/* Keep the complete brand mark visible without spilling outside the sticky header. */
+.site-header .brand{height:100%;min-width:0;overflow:visible}
+.site-header .brand-logo{display:block;width:clamp(64px,6vw,86px);height:clamp(64px,6vw,86px);max-width:100%;background-size:contain;background-position:center;background-repeat:no-repeat}
+@media(max-width:780px){.site-header .brand-logo{width:64px;height:64px}}
+
+/* Founder portrait: stable bottom alignment like the Swami illustration. */
+.feature-grid>.founder-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(105px,38%);align-items:stretch;min-width:0;position:relative;overflow:hidden;padding:18px 0 0 20px}
+.feature-grid>.founder-card>div{min-width:0;padding:0 8px 18px 0;position:relative;z-index:1}
+.feature-grid>.founder-card img{display:block;width:100%;height:100%;min-height:0;max-height:100%;object-fit:contain;object-position:center bottom;align-self:end;justify-self:end}
+.feature-grid>.founder-card h3{font-size:clamp(17px,1.5vw,23px);line-height:1.2;overflow-wrap:break-word}
+.feature-grid>.founder-card p{overflow-wrap:break-word}
+@media(max-width:1050px){.feature-grid>.founder-card{grid-template-columns:minmax(0,1fr) minmax(120px,32%)}}
+@media(max-width:780px){.feature-grid>.founder-card{min-height:270px;grid-template-columns:minmax(0,1fr) minmax(110px,35%)}}
+@media(max-width:520px){.feature-grid>.founder-card{grid-template-columns:minmax(0,1fr) minmax(95px,35%);min-height:290px}.feature-grid>.founder-card>div{padding-bottom:12px}.feature-grid>.founder-card img{width:100%;height:100%;margin:0}.feature-grid>.founder-card h3{font-size:20px}}
