@@ -52,13 +52,14 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   return response.json() as Promise<T>;
 }
 
-export async function login(email: string, password: string) {
-  const tokens = await api<TokenResponse>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }, false);
+export async function login(email: string, password: string, mfaCode?: string) {
+  const tokens = await api<TokenResponse>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ email, password, mfaCode }) }, false);
   saveTokens(tokens); return api<User>("/api/v1/profile/me");
 }
 
-export async function register(payload: { fullName: string; email: string; mobile: string; password: string }) {
-  const tokens = await api<TokenResponse>("/api/v1/auth/register", { method: "POST", body: JSON.stringify(payload) }, false);
+export async function requestRegistrationOtp(mobile:string){return api<void>("/api/v1/auth/otp/registration/request",{method:"POST",body:JSON.stringify({mobile})},false);}
+export async function register(payload: { fullName: string; email: string; mobile: string; password: string; otp:string }) {
+  const tokens = await api<TokenResponse>("/api/v1/auth/otp/registration/verify", { method: "POST", body: JSON.stringify(payload) }, false);
   saveTokens(tokens); return api<User>("/api/v1/profile/me");
 }
 

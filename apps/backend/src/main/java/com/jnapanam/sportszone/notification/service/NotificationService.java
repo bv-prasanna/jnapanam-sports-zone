@@ -20,7 +20,9 @@ import com.jnapanam.sportszone.notification.model.NotificationTemplate;
 import com.jnapanam.sportszone.notification.repository.NotificationPreferenceRepository;
 import com.jnapanam.sportszone.notification.repository.NotificationRepository;
 import com.jnapanam.sportszone.notification.repository.NotificationTemplateRepository;
+import com.jnapanam.sportszone.notification.provider.NotificationProviderRegistry;
 import java.util.List;
+import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,14 +32,21 @@ public class NotificationService {
     private final NotificationRepository notifications;
     private final NotificationPreferenceRepository preferences;
     private final NotificationTemplateRepository templates;
-    private final UserRepository users;
+    private final UserRepository users; private final NotificationProviderRegistry providers; private final JdbcTemplate jdbc;
 
     public NotificationService(NotificationRepository notifications, NotificationPreferenceRepository preferences,
-            NotificationTemplateRepository templates, UserRepository users) {
+            NotificationTemplateRepository templates, UserRepository users, NotificationProviderRegistry providers, JdbcTemplate jdbc) {
         this.notifications = notifications;
         this.preferences = preferences;
         this.templates = templates;
-        this.users = users;
+        this.users = users; this.providers = providers; this.jdbc=jdbc;
+    }
+
+
+    @Transactional
+    public void welcome(UUID userId, String name) {
+        lifecycle(userId, "ACCOUNT", "Welcome to Jnapanam Sports Zone",
+                "Welcome " + name + ". Your customer account was created successfully.");
     }
 
     @Transactional
@@ -51,9 +60,21 @@ public class NotificationService {
     }
 
     @Transactional
+    public NotificationResponse notifyChannel(UUID userId, NotificationChannel channel, String category, String subject, String message) { User user=user(userId); return NotificationResponse.from(notifications.save(new Notification(user,channel,category,subject,message))); }
+
+    @Transactional
     public NotificationResponse notify(UUID userId, String category, String subject, String message) {
         User user = user(userId);
         return NotificationResponse.from(notifications.save(new Notification(user, NotificationChannel.IN_APP, category, subject, message)));
+    }
+
+    @Transactional
+    public void lifecycle(UUID userId, String category, String subject, String message) {
+        User user = user(userId);
+        notifications.save(new Notification(user, NotificationChannel.IN_APP, category, subject, message));
+        NotificationPreference preference = preferences.findById(userId).orElseGet(() -> preferences.save(new NotificationPreference(user)));
+        if (preference.isEmailEnabled() && user.getEmail() != null && !user.getEmail().isBlank()) notifications.save(new Notification(user, NotificationChannel.EMAIL, category, subject, message));
+        if (preference.isSmsEnabled() && user.getMobile() != null && !user.getMobile().isBlank()) notifications.save(new Notification(user, NotificationChannel.SMS, category, subject, message));
     }
 
     @Transactional(readOnly = true)
@@ -120,9 +141,11 @@ public class NotificationService {
     @Transactional
     public int dispatch() {
         List<Notification> batch = notifications.findTop100ByStatusOrderByCreatedAtAsc(NotificationStatus.QUEUED);
-        for (Notification notification : batch) notification.sent("mock-" + UUID.randomUUID());
+        for (Notification notification : batch) { try { var provider=providers.provider(notification.getChannel());String ref=provider.send(notification);notification.sent(ref);jdbc.update("insert into notification_delivery_attempts(id,notification_id,channel,provider,destination,status,provider_reference) values(?,?,?,?,?,?,?)",UUID.randomUUID(),notification.getId(),notification.getChannel().name(),provider.name(),destination(notification),"SENT",ref); } catch (Exception e) { notification.failed(e.getMessage());jdbc.update("insert into notification_delivery_attempts(id,notification_id,channel,status,error_message) values(?,?,?,?,?)",UUID.randomUUID(),notification.getId(),notification.getChannel().name(),"FAILED",e.getMessage()); } }
         return batch.size();
     }
+
+    private String destination(Notification n){return switch(n.getChannel()){case EMAIL->n.getUser().getEmail();case SMS,WHATSAPP->n.getUser().getMobile();default->n.getUser().getId().toString();};}
 
     private User user(UUID id) {
         return users.findById(id).orElseThrow(() -> new UnauthorizedException("User not found"));

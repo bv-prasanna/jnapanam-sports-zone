@@ -11,6 +11,7 @@ const icons = {
   training: 'whistle-outline',
   tournaments: 'trophy-outline',
   shop: 'shopping-outline',
+  notifications: 'bell-outline',
   operations: 'clipboard-account-outline',
   admin: 'view-dashboard-outline',
   profile: 'account-outline',
@@ -36,6 +37,7 @@ export default function AppTabs() {
     <Tabs.Screen name="training" options={{title:t('navigation.training'),href:staff?null:'/training'}}/>
     <Tabs.Screen name="tournaments" options={{title:t('navigation.tournaments'),href:staff?null:'/tournaments'}}/>
     <Tabs.Screen name="shop" options={{title:t('navigation.shop'),href:staff?null:'/shop'}}/>
+    <Tabs.Screen name="notifications" options={{title:'Messages'}}/>
     <Tabs.Screen name="operations" options={{title:'Operations',href:staff?'/operations':null}}/>
     <Tabs.Screen name="admin" options={{title:'Admin',href:admin?'/admin':null}}/>
     <Tabs.Screen name="profile" options={{title:t('navigation.profile')}}/>

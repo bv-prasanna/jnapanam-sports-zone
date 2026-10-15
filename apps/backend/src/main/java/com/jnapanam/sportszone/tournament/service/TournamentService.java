@@ -104,10 +104,10 @@ public class TournamentService {
             var organizerRole = roles.findByName(RoleName.ORGANIZER)
                     .orElseThrow(() -> new ConflictException("Organizer role is not configured"));
             applicant.getRoles().add(organizerRole);
-            notifications.notify(applicant.getId(), "ORGANIZER_APPROVED", "Organizer access approved",
+            notifications.lifecycle(applicant.getId(), "ORGANIZER_APPROVED", "Organizer access approved",
                     "Your organizer application has been approved. You can now create and manage tournaments.");
         } else {
-            notifications.notify(applicant.getId(), "ORGANIZER_REJECTED", "Organizer application reviewed",
+            notifications.lifecycle(applicant.getId(), "ORGANIZER_REJECTED", "Organizer application reviewed",
                     "Your organizer application was not approved. " + cleanReviewNote(request.reviewNote()));
         }
         return OrganizerApplicationResponse.from(application);

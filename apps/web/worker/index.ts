@@ -2,6 +2,10 @@
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 
+/* Match the Cloudflare runtime bindings without relying on ambient names. */
+type Fetcher = { fetch(request: Request): Promise<Response> };
+type D1Database = Parameters<typeof import("drizzle-orm/d1").drizzle>[0];
+
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;

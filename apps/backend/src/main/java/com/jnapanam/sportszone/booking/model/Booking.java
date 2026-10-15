@@ -15,6 +15,7 @@ import com.jnapanam.sportszone.identity.model.User;import jakarta.persistence.*;
  protected Booking(){}
  public Booking(User user,BookingSlot slot,int quantity,boolean priced,PaymentOption option,boolean paymentRequired,Instant paymentExpiry){id=UUID.randomUUID();bookingNumber="JNZ-"+UUID.randomUUID().toString().substring(0,8).toUpperCase();this.user=user;this.slot=slot;this.quantity=quantity;confirmedAt=Instant.now();paymentOption=priced?option:null;paymentStatus=priced?BookingPaymentStatus.UNPAID:BookingPaymentStatus.NOT_REQUIRED;status=paymentRequired?BookingStatus.PENDING_PAYMENT:BookingStatus.CONFIRMED;paymentExpiresAt=paymentRequired?paymentExpiry:null;}
  public void paid(){if(paymentStatus==BookingPaymentStatus.UNPAID&&(status==BookingStatus.PENDING_PAYMENT||status==BookingStatus.CONFIRMED)){status=BookingStatus.CONFIRMED;paymentStatus=BookingPaymentStatus.PAID;paymentCompletedAt=Instant.now();paymentExpiresAt=null;}}
+ public void reschedule(BookingSlot newSlot){this.slot=newSlot;this.statusReason="Rescheduled";}
  public void refunded() {
     if (paymentStatus == BookingPaymentStatus.PAID) {
         paymentStatus = BookingPaymentStatus.REFUNDED;
