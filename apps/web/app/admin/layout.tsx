@@ -46,6 +46,7 @@ export default function AdminLayout({children}:PropsWithChildren){
         <Link href="/admin/users">Users</Link>
         <Link href="/admin/bookings">Bookings</Link>
         <Link href="/admin/operator-assignments">Operator Assignments</Link>
+        <Link href="/admin/release-readiness">Release Readiness</Link>
         <Link href="/operations">Operations</Link>
         <Link href="/shop-counter">Shop Counter</Link>
         <Link href="/admin/commerce">Commerce</Link>

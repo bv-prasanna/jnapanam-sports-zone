@@ -15,7 +15,7 @@ const kn = {
     createAccount: 'ಖಾತೆ ತೆರೆಯಿರಿ', registerDescription: 'ಸೌಲಭ್ಯ ಬುಕ್ ಮಾಡಲು ಮತ್ತು ಕಾರ್ಯಕ್ರಮಗಳಿಗೆ ಸೇರಲು ಒಮ್ಮೆ ನೋಂದಾಯಿಸಿ.',
     loginRequired: 'ಲಾಗಿನ್ ಅಗತ್ಯ', validCredentials: 'ಸರಿಯಾದ ಇಮೇಲ್ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ.', validName: 'ಅಕ್ಷರಗಳನ್ನು ಬಳಸಿ ಸರಿಯಾದ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.',
     validEmail: 'ಸರಿಯಾದ ಇಮೇಲ್ ವಿಳಾಸ ನಮೂದಿಸಿ.', validMobile: 'ಸರಿಯಾದ 10 ರಿಂದ 20 ಅಕ್ಷರದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ.',
-    passwordLength: 'ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು.', passwordMismatch: 'ಪಾಸ್‌ವರ್ಡ್‌ಗಳು ಹೊಂದಿಕೆಯಾಗುತ್ತಿಲ್ಲ.',
+    passwordLength: 'ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು.', passwordMismatch: 'ಪಾಸ್‌ವರ್ಡ್‌ಗಳು ಹೊಂದಿಕೆಯಾಗುತ್ತಿಲ್ಲ.', smsOtp:'SMS ಪರಿಶೀಲನಾ ಕೋಡ್', sendOtp:'SMS OTP ಕಳುಹಿಸಿ', verifyOtp:'OTP ಪರಿಶೀಲಿಸಿ', resetPassword:'ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸಿ', deviceVerified:'ನಿಮ್ಮ ಸೆಷನ್‌ಗೆ ಈ ಮೊಬೈಲ್ ಸಾಧನವನ್ನು ಪರಿಶೀಲಿಸಲಾಗಿದೆ',
   },
   home: {
     destination: 'ನಿಮ್ಮ ಕ್ರೀಡಾ ತಾಣ', welcome: 'ಸ್ವಾಗತ, {{name}}', welcomeGuest: 'ಜ್ಞಾಪನಂಗೆ ಸ್ವಾಗತ', atJnapanam: 'ಜ್ಞಾಪನಂನಲ್ಲಿ', bookNow: 'ಈಗ ಬುಕ್ ಮಾಡಿ', sportsUnavailable: 'ಬ್ಯಾಕೆಂಡ್ ಲಭ್ಯವಾದಾಗ ಕ್ರೀಡೆಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.', headline: 'ಆಡಿ. ತರಬೇತಿ ಪಡೆಯಿರಿ. ಸ್ಪರ್ಧಿಸಿ.',

@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.notification.provider;public interface SmsNotificationProvider extends NotificationProvider{String sendTo(String mobile,String message);default String sendOtp(String mobile,String otp){return sendTo(mobile,"Your Jnapanam verification code is "+otp+". It expires in 5 minutes.");}}

@@ -1,0 +1,1 @@
+package com.jnapanam.sportszone.identity.dto;import jakarta.validation.constraints.*;public record SmsPasswordResetRequest(@NotBlank String mobile,@NotBlank@Pattern(regexp="^[0-9]{4,8}$")String otp,@NotBlank@Size(min=8,max=72)String newPassword){}

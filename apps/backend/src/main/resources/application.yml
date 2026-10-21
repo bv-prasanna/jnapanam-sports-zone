@@ -14,6 +14,14 @@ spring:
         jdbc.time_zone: UTC
   flyway:
     enabled: true
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
 server:
   port: ${SERVER_PORT:8080}
   error:
@@ -46,9 +54,29 @@ app:
     jwt-secret: ${JWT_SECRET:Sm5hcGFuYW0gU3BvcnRzIFpvbmUgRGV2ZWxvcG1lbnQgSldUIFNlY3JldCAyMDI2IQ==}
     access-token-minutes: ${JWT_ACCESS_MINUTES:43200}
     refresh-token-days: ${JWT_REFRESH_DAYS:30}
-    expose-development-reset-token: ${EXPOSE_DEVELOPMENT_RESET_TOKEN:true}
+    expose-development-reset-token: ${EXPOSE_DEVELOPMENT_RESET_TOKEN:false}
     auth-rate-limit-per-minute: ${AUTH_RATE_LIMIT_PER_MINUTE:60}
+    test-otp-enabled: false
+    test-otp: '9876'
   bootstrap:
     super-admin-email: ${BOOTSTRAP_SUPER_ADMIN_EMAIL:}
     super-admin-password: ${BOOTSTRAP_SUPER_ADMIN_PASSWORD:}
     super-admin-name: ${BOOTSTRAP_SUPER_ADMIN_NAME:Jnapanam Super Admin}
+
+  notification:
+    reminder-delay-ms: ${REMINDER_DELAY_MS:60000}
+    email:
+      provider: ${EMAIL_PROVIDER:smtp}
+      from: ${SMTP_FROM:}
+    sms:
+      provider: ${SMS_PROVIDER:fast2sms}
+      fast2sms:
+        url: ${FAST2SMS_URL:https://www.fast2sms.com/dev/bulkV2}
+        api-key: ${FAST2SMS_API_KEY:}
+        sender-id: ${FAST2SMS_SENDER_ID:}
+        route: ${FAST2SMS_ROUTE:q}
+        otp-url: ${FAST2SMS_OTP_URL:https://www.fast2sms.com/dev/otp/send}
+        otp-id: ${FAST2SMS_OTP_ID:}
+    whatsapp:
+      provider-url: ${WHATSAPP_PROVIDER_URL:}
+      provider-token: ${WHATSAPP_PROVIDER_TOKEN:}

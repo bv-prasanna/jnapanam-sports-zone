@@ -8,9 +8,9 @@ import { BrandColors } from '@/constants/brand';
 import { useAuth } from '@/features/auth/auth-context';
 
 export default function RegisterScreen() {
-  const { t } = useTranslation(); const { register } = useAuth();
+  const { t } = useTranslation(); const { requestRegistrationOtp,verifyRegistrationOtp } = useAuth();
   const [form,setForm]=useState({fullName:'',email:'',mobile:'',password:'',confirmPassword:''});
-  const [error,setError]=useState(''); const [busy,setBusy]=useState(false);
+  const [error,setError]=useState(''); const [busy,setBusy]=useState(false);const [otpSent,setOtpSent]=useState(false);const [otp,setOtp]=useState('');
   const set=(key:keyof typeof form)=>(value:string)=>setForm(v=>({...v,[key]:value}));
 
   async function submit(){
@@ -21,7 +21,7 @@ export default function RegisterScreen() {
     if(form.password.length<8){setError(t('auth.passwordLength'));return;}
     if(form.password!==form.confirmPassword){setError(t('auth.passwordMismatch'));return;}
     setBusy(true);setError('');
-    try{await register(form);router.replace('/');}
+    try{if(!otpSent){if(!form.mobile){setError('Mobile number is required for SMS verification.');return;}await requestRegistrationOtp(form);setOtpSent(true);}else{await verifyRegistrationOtp(form,otp);router.replace('/');}}
     catch(e){setError(e instanceof Error?e.message:t('common.tryAgain'));}
     finally{setBusy(false);}
   }
@@ -39,7 +39,7 @@ export default function RegisterScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.card}><View style={styles.top}><Text style={styles.eyebrow}>{t('auth.joinCommunity')}</Text><LanguageSwitch /></View>
-      <Text style={styles.title}>{t('auth.createAccount')}</Text><Text style={styles.subtitle}>{t('auth.registerDescription')}</Text>
+      <Text style={styles.title}>{otpSent?'Verify OTP & Create Account':t('auth.createAccount')}</Text><Text style={styles.subtitle}>{t('auth.registerDescription')}</Text>
       {(['fullName','email','mobile','password','confirmPassword'] as const).map(key=><View key={key}>
         <Text style={styles.label}>{t(`auth.${key}`)}</Text>
         <TextInput value={form[key]} onChangeText={set(key)} autoCapitalize={key==='fullName'?'words':'none'}
@@ -47,7 +47,7 @@ export default function RegisterScreen() {
           secureTextEntry={key==='password'||key==='confirmPassword'} style={styles.input}
           returnKeyType={key==='confirmPassword'?'done':'next'} />
       </View>)}
-      {!!error&&<Text style={styles.error}>{error}</Text>}
+      {otpSent&&<View><Text style={styles.label}>SMS verification code</Text><TextInput value={otp} onChangeText={setOtp} keyboardType="number-pad" maxLength={6} style={styles.input} placeholder="6-digit OTP"/></View>}{!!error&&<Text style={styles.error}>{error}</Text>}
       <Pressable onPress={submit} disabled={busy} style={[styles.button,busy&&styles.disabled]}>{busy?<ActivityIndicator color="#fff"/>:<Text style={styles.buttonText}>{t('auth.createAccount')}</Text>}</Pressable>
       <Pressable onPress={()=>router.replace('/login')}><Text style={styles.link}>{t('auth.haveAccount')}</Text></Pressable></View>
     </ScrollView>

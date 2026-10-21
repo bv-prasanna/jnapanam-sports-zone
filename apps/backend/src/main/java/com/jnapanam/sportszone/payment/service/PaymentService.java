@@ -105,6 +105,7 @@ public class PaymentService {
         fulfil(order);
         loyaltyService.earn(order.getUser(), order);
         notificationService.payment(userId, order.getReceiptNumber(), order.getAmountPaise());
+        notifyFulfilment(order);
         return response(order);
     }
 
@@ -159,6 +160,8 @@ public class PaymentService {
         order.paid("onsite_" + bookingId + "_" + reference);
         booking.collectOnsite(operator, request.paymentMethod(), request.reference());
         loyaltyService.earn(booking.getUser(), order);
+        notificationService.payment(booking.getUser().getId(), order.getReceiptNumber(), order.getAmountPaise());
+        notificationService.lifecycle(booking.getUser().getId(), "BOOKING", "Booking payment collected", "Payment collected at the venue for booking " + booking.getBookingNumber() + ".");
         return response(order);
     }
 
@@ -215,6 +218,7 @@ public class PaymentService {
                     fulfil(o);
                     loyaltyService.earn(o.getUser(), o);
                     notificationService.payment(o.getUser().getId(), o.getReceiptNumber(), o.getAmountPaise());
+                    notifyFulfilment(o);
                 }
             });
         }
@@ -261,6 +265,25 @@ public class PaymentService {
             return rupees.movePointRight(2).setScale(0, RoundingMode.UNNECESSARY).longValueExact();
         } catch (ArithmeticException e) {
             throw new BadRequestException("Invalid configured payment amount");
+        }
+    }
+
+
+    /** Confirm relevant product fulfilment messages only after payment is verified. */
+    private void notifyFulfilment(PaymentOrder order) {
+        switch (order.getPurpose()) {
+            case BOOKING -> bookings.findById(order.getReferenceId()).ifPresent(booking ->
+                    notificationService.lifecycle(order.getUser().getId(), "BOOKING", "Booking payment confirmed",
+                            "Booking " + booking.getBookingNumber() + " is paid and confirmed."));
+            case MEMBERSHIP -> memberships.findById(order.getReferenceId()).ifPresent(membership ->
+                    notificationService.lifecycle(order.getUser().getId(), "MEMBERSHIP", "Membership activated",
+                            membership.getPlan().getName() + " membership is active."));
+            case TRAINING -> enrollments.findById(order.getReferenceId()).ifPresent(enrollment ->
+                    notificationService.lifecycle(order.getUser().getId(), "TRAINING", "Training enrolment confirmed",
+                            enrollment.getBatch().getName() + " enrolment is confirmed."));
+            case TOURNAMENT -> tournamentTeams.findById(order.getReferenceId()).ifPresent(team ->
+                    notificationService.lifecycle(order.getUser().getId(), "TOURNAMENT", "Tournament registration confirmed",
+                            team.getTournament().getName() + " registration is confirmed."));
         }
     }
 
