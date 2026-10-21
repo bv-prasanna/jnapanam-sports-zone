@@ -31,7 +31,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      # Ubuntu hosted runners provide a preinstalled Android SDK. Avoid
+      # setup-android license prompts that can fail unattended builds.
+      - name: Validate installed Android SDK
+        run: |
+          test -d "${ANDROID_HOME:-/usr/local/lib/android/sdk}/platform-tools"
+          echo "Using preinstalled Android SDK: ${ANDROID_HOME:-/usr/local/lib/android/sdk}"
       - name: Validate public API URL
         shell: bash
         run: |
