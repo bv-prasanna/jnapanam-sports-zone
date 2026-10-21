@@ -1,0 +1,59 @@
+name: Android APK cloud build
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Public HTTPS backend origin (not frontend URL), without trailing slash'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Validate public API URL
+        shell: bash
+        run: |
+          case "$EXPO_PUBLIC_API_URL" in
+            https://*) ;;
+            *) echo 'Backend API URL must use HTTPS'; exit 1 ;;
+          esac
+      - name: Install packages and check TypeScript
+        run: |
+          npm ci
+          npx tsc --noEmit
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --non-interactive --clean
+      - name: Build installable debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jnapanam-universal-android-debug-apk
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
