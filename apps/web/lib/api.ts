@@ -48,8 +48,11 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
     const fieldErrors=body?.errors&&typeof body.errors==="object"?Object.entries(body.errors).map(([field,value])=>`${field.replace(/([A-Z])/g," $1").replace(/^./,letter=>letter.toUpperCase())}: ${String(value)}`).join(" · "):"";
     throw new ApiError(response.status, fieldErrors || body?.detail || body?.message || body?.error || `Request failed (${response.status})`, body);
   }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  // OTP request endpoints reply 202 Accepted with an empty body. Do not parse it as JSON.
+  if (response.status === 204 || response.headers.get("Content-Length") === "0") return undefined as T;
+  const raw = await response.text();
+  if (!raw.trim()) return undefined as T;
+  return JSON.parse(raw) as T;
 }
 
 export async function login(email: string, password: string, mfaCode?: string) {
