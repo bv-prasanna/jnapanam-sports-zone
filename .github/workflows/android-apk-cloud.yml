@@ -54,16 +54,44 @@ jobs:
         run: |
           npm ci
           npx tsc --noEmit
-      - name: Apply canonical Jnapanam logo
+      - name: Normalize and validate Jnapanam logo for Expo
+        shell: bash
         run: |
-          test -s ../web/public/images/jnapanam-logo.png
-          mkdir -p assets/images
-          cp ../web/public/images/jnapanam-logo.png assets/images/icon.png
-          cp ../web/public/images/jnapanam-logo.png assets/images/android-icon-foreground.png
-          cp ../web/public/images/jnapanam-logo.png assets/images/favicon.png
-          cp ../web/public/images/jnapanam-logo.png assets/images/splash-icon.png
+          python3 -m pip install --quiet --user 'Pillow>=10,<13'
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageFile, ImageOps
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
+          source = Path("../web/public/images/jnapanam-logo.png")
+          if not source.is_file() or source.stat().st_size < 1000:
+              raise SystemExit("Website master logo is missing or suspiciously small")
+          try:
+              with Image.open(source) as original:
+                  original.load()
+                  logo = original.convert("RGBA")
+          except Exception as exc:
+              raise SystemExit(f"Cannot decode source logo; replace damaged PNG in GitHub: {exc}")
+          if min(logo.size) < 128:
+              raise SystemExit(f"Logo resolution too low: {logo.size}")
+          dest = Path("assets/images")
+          dest.mkdir(parents=True, exist_ok=True)
+          def save(name, size, padding):
+              canvas = Image.new("RGBA", (size, size), "white")
+              interior = size - 2 * padding
+              fitted = ImageOps.contain(logo, (interior, interior), Image.Resampling.LANCZOS)
+              canvas.alpha_composite(fitted, ((size-fitted.width)//2, (size-fitted.height)//2))
+              out = dest / name
+              canvas.convert("RGB").save(out, "PNG", optimize=True)
+              with Image.open(out) as check:
+                  check.verify()
+              print(f"Validated {out}: {size}x{size}, {out.stat().st_size} bytes")
+          save("icon.png", 1024, 48)
+          save("android-icon-foreground.png", 1024, 180)
+          save("favicon.png", 256, 12)
+          save("splash-icon.png", 512, 20)
+          PY
       - name: Generate Android project
-        run: npx expo prebuild --platform android --non-interactive --clean
+        run: npx expo prebuild --platform android --clean
       - name: Build installable debug APK
         if: inputs.build_type == 'debug'
         run: |
