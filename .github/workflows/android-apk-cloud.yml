@@ -3,9 +3,17 @@ on:
   workflow_dispatch:
     inputs:
       api_url:
-        description: 'Public HTTPS backend origin (not frontend URL), without trailing slash'
+        description: 'Public HTTPS backend origin, without trailing slash'
         required: true
         type: string
+      build_type:
+        description: 'debug = developer testing; release-uat = smaller APK signed with temporary UAT key (not production)'
+        required: true
+        default: release-uat
+        type: choice
+        options:
+          - release-uat
+          - debug
 
 permissions:
   contents: read
@@ -13,7 +21,7 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: apps/mobile
@@ -46,17 +54,56 @@ jobs:
         run: |
           npm ci
           npx tsc --noEmit
+      - name: Apply canonical Jnapanam logo
+        run: |
+          test -s ../web/public/images/jnapanam-logo.png
+          mkdir -p assets/images
+          cp ../web/public/images/jnapanam-logo.png assets/images/icon.png
+          cp ../web/public/images/jnapanam-logo.png assets/images/android-icon-foreground.png
+          cp ../web/public/images/jnapanam-logo.png assets/images/favicon.png
+          cp ../web/public/images/jnapanam-logo.png assets/images/splash-icon.png
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive --clean
       - name: Build installable debug APK
+        if: inputs.build_type == 'debug'
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
-      - name: Upload installable APK
+      - name: Create disposable UAT signing key
+        if: inputs.build_type == 'release-uat'
+        shell: bash
+        run: |
+          keytool -genkeypair -v -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -alias jnapanam-uat -keyalg RSA -keysize 3072 -validity 365 -storepass android -keypass android -dname "CN=Jnapanam UAT, OU=Testing, O=Jnapanam, C=IN"
+      - name: Build minified UAT release APK
+        if: inputs.build_type == 'release-uat'
+        shell: bash
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/jnapanam-uat.p12" \
+            -Pandroid.injected.signing.store.password=android \
+            -Pandroid.injected.signing.key.alias=jnapanam-uat \
+            -Pandroid.injected.signing.key.password=android
+          test -s app/build/outputs/apk/release/app-release.apk
+      - name: Report APK size
+        shell: bash
+        run: |
+          find android/app/build/outputs/apk -name '*.apk' -exec ls -lh {} \;
+      - name: Upload debug APK
+        if: inputs.build_type == 'debug'
         uses: actions/upload-artifact@v4
         with:
-          name: jnapanam-universal-android-debug-apk
+          name: jnapanam-debug-apk
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
+      - name: Upload lightweight UAT APK
+        if: inputs.build_type == 'release-uat'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jnapanam-lightweight-uat-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 7
           if-no-files-found: error
