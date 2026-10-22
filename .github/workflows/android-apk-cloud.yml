@@ -92,6 +92,20 @@ jobs:
           PY
       - name: Generate Android project
         run: npx expo prebuild --platform android --clean
+      - name: Install required Android SDK and NDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          fi
+          test -n "$SDKMANAGER" && test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$SDK" --licenses >/dev/null || true
+          "$SDKMANAGER" --sdk_root="$SDK" "ndk;27.1.12297006" "platform-tools"
+          test -s "$SDK/ndk/27.1.12297006/source.properties"
+          echo "Required NDK 27.1.12297006 installed"
       - name: Build installable debug APK
         if: inputs.build_type == 'debug'
         run: |
