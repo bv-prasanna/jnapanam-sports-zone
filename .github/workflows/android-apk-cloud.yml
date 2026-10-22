@@ -96,7 +96,9 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           from PIL import Image, ImageFile, ImageOps
-          ImageFile.LOAD_TRUNCATED_IMAGES = False
+          # Some committed Jnapanam PNGs contain damaged chunks; recover decodable pixels
+          # and rewrite as clean PNGs before Metro/AAPT2 examines the resources.
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
           roots = [Path("assets"), Path("src")]
           count = 0
           for root in roots:
