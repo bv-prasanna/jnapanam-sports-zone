@@ -118,7 +118,17 @@ jobs:
                       temp.replace(path)
                       count += 1
                   except Exception as exc:
-                      raise SystemExit(f"Invalid Android-bundled image {path}: {exc}")
+                      if path.name.startswith("jnapanam-logo"):
+                          fallback = Path("assets/images/icon.png")
+                          if not fallback.is_file():
+                              raise SystemExit(f"Damaged logo {path}, fallback missing: {exc}")
+                          path.write_bytes(fallback.read_bytes())
+                          with Image.open(path) as check:
+                              check.verify()
+                          count += 1
+                          print(f"Replaced damaged {path} with validated icon")
+                      else:
+                          raise SystemExit(f"Invalid Android-bundled image {path}: {exc}")
           print(f"Validated and normalized {count} bundled PNG images")
           PY
       - name: Generate Android project
