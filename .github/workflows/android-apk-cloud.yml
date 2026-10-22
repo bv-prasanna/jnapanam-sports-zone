@@ -90,6 +90,35 @@ jobs:
           save("favicon.png", 256, 12)
           save("splash-icon.png", 512, 20)
           PY
+      - name: Validate and normalize all bundled PNG resources
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageFile, ImageOps
+          ImageFile.LOAD_TRUNCATED_IMAGES = False
+          roots = [Path("assets"), Path("src")]
+          count = 0
+          for root in roots:
+              if not root.exists():
+                  continue
+              for path in root.rglob("*.png"):
+                  try:
+                      with Image.open(path) as original:
+                          original.load()
+                          image = ImageOps.exif_transpose(original).convert("RGBA")
+                      if max(image.size) > 2048:
+                          image.thumbnail((2048, 2048), Image.Resampling.LANCZOS)
+                      temp = path.with_suffix(".normalized.png")
+                      image.save(temp, "PNG", optimize=True)
+                      with Image.open(temp) as check:
+                          check.verify()
+                      temp.replace(path)
+                      count += 1
+                  except Exception as exc:
+                      raise SystemExit(f"Invalid Android-bundled image {path}: {exc}")
+          print(f"Validated and normalized {count} bundled PNG images")
+          PY
       - name: Generate Android project
         run: npx expo prebuild --platform android --clean
       - name: Install required Android SDK and NDK packages
