@@ -2,7 +2,6 @@ package com.jnapanam.sportszone.growth;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import java.security.Principal;
 import java.time.LocalDate;
 import java.util.*;
 import org.springframework.http.HttpStatus;
@@ -25,7 +24,8 @@ public class PlayerGrowthController {
 
     @GetMapping("/players/{playerId}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','COACH')")
-    public Map<String,Object> player(@PathVariable UUID playerId) {
+    public Map<String,Object> player(@PathVariable UUID playerId,@AuthenticationPrincipal Jwt jwt) {
+        requireCoachAssignment(jwt,playerId);
         return detail(playerId);
     }
 
@@ -44,6 +44,16 @@ public class PlayerGrowthController {
         return Map.of("assessments",assessments,"goals",goals);
     }
 
+    private void requireCoachAssignment(Jwt jwt,UUID playerId) {
+        Object roles=jwt.getClaim("roles");
+        if(roles instanceof Collection<?> entries && (entries.contains("SUPER_ADMIN") || entries.contains("ADMIN"))) return;
+        Integer count=jdbc.queryForObject("""
+          select count(*) from training_enrollments e join training_batches b on b.id=e.batch_id
+          where e.user_id=? and b.coach_user_id=? and e.status <> 'CANCELLED'
+          """,Integer.class,playerId,UUID.fromString(jwt.getSubject()));
+        if(count==null || count==0) throw new org.springframework.security.access.AccessDeniedException("Player is not assigned to this coach");
+    }
+
     public record AssessmentRequest(@NotNull UUID playerId,@NotNull UUID sportId,
         @NotBlank @Size(max=100) String skill,@NotNull @Min(0) @Max(100) Integer score,
         @Size(max=500) String remarks,@NotNull LocalDate assessedOn) {}
@@ -52,6 +62,7 @@ public class PlayerGrowthController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','COACH')")
     public Map<String,Object> assess(@AuthenticationPrincipal Jwt jwt,@Valid @RequestBody AssessmentRequest req) {
+        requireCoachAssignment(jwt,req.playerId());
         UUID id=UUID.randomUUID();
         jdbc.update("""
           insert into player_growth_assessments(id,player_id,sport_id,assessor_id,skill,score,remarks,assessed_on)
