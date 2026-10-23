@@ -125,8 +125,8 @@
 
 
 /* Render the brand mark independently of framework image sizing. */
-.brand-logo{display:block;width:96px;height:96px;flex:none;background:url('/images/jnapanam-logo.png?v=20260902') center/contain no-repeat}
-@media(max-width:780px){.brand-logo{width:74px;height:74px}}
+.brand-logo{display:block;width:72px;height:72px;flex:none;background:url('/images/jnapanam-logo.jpg?v=20261024') center/contain no-repeat}
+@media(max-width:780px){.brand-logo{width:68px;height:68px}}
 
 
 /* Facility operating hours and closure management */
