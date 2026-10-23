@@ -42,13 +42,14 @@ public class PlayerGrowthController {
            where g.player_id=? order by g.created_at desc limit 100
            """,playerId);
         var attendance=jdbc.queryForList("""
-           select p.name as sport_name,count(*) as sessions,
+           select sp.name as sport_name,count(*) as sessions,
              count(*) filter (where ta.present) as attended
            from training_attendance ta
            join training_enrollments te on te.id=ta.enrollment_id
            join training_batches tb on tb.id=te.batch_id
            join training_programs p on p.id=tb.program_id
-           where te.user_id=? group by p.name order by p.name
+           join sports sp on sp.id=p.sport_id
+           where te.user_id=? group by sp.name order by sp.name
            """,playerId);
         var competitions=jdbc.queryForList("""
            select t.name as tournament_name,tm.name as team_name,f.round_number,
