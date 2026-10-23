@@ -111,4 +111,23 @@ public class PlayerGrowthController {
               req.title().trim(),req.targetScore(),req.dueOn());
         return Map.of("id",id);
     }
+    @PatchMapping("/goals/{goalId}/status")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','COACH')")
+    public Map<String,String> updateGoal(@AuthenticationPrincipal Jwt jwt,@PathVariable UUID goalId,
+            @Valid @RequestBody GoalStatusRequest request) {
+        var owner=jdbc.queryForList("select player_id from player_growth_goals where id=?",goalId);
+        if(owner.isEmpty()) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND,"Goal not found");
+        requireCoachAssignment(jwt,(UUID)owner.get(0).get("player_id"));
+        int count=jdbc.update("update player_growth_goals set status=? where id=?",request.status(),goalId);
+        if(count!=1) throw new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND);
+        return Map.of("status",request.status());
+    }
+
+    public record GoalStatusRequest(@NotNull String status) {
+        public GoalStatusRequest {
+            if(!List.of("ACTIVE","ACHIEVED","CANCELLED").contains(status))
+                throw new IllegalArgumentException("Invalid goal status");
+        }
+    }
+
 }
