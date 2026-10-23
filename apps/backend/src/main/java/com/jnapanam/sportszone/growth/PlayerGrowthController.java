@@ -41,7 +41,30 @@ public class PlayerGrowthController {
            from player_growth_goals g join sports s on s.id=g.sport_id
            where g.player_id=? order by g.created_at desc limit 100
            """,playerId);
-        return Map.of("assessments",assessments,"goals",goals);
+        var attendance=jdbc.queryForList("""
+           select p.name as sport_name,count(*) as sessions,
+             count(*) filter (where ta.present) as attended
+           from training_attendance ta
+           join training_enrollments te on te.id=ta.enrollment_id
+           join training_batches tb on tb.id=te.batch_id
+           join training_programs p on p.id=tb.program_id
+           where te.user_id=? group by p.name order by p.name
+           """,playerId);
+        var competitions=jdbc.queryForList("""
+           select t.name as tournament_name,tm.name as team_name,f.round_number,
+              f.home_score,f.away_score,f.status as match_status,
+              case when f.winner_team_id=tm.id then 'WIN'
+                when f.winner_team_id is not null then 'LOSS' else 'PENDING' end as outcome
+           from tournament_teams tm
+           join tournaments t on t.id=tm.tournament_id
+           join tournament_fixtures f on (f.home_team_id=tm.id or f.away_team_id=tm.id)
+           where tm.captain_user_id=?
+           order by t.start_date desc,f.round_number desc limit 100
+           """,playerId);
+        Map<String,Object> output=new LinkedHashMap<>();
+        output.put("assessments",assessments);output.put("goals",goals);
+        output.put("attendance",attendance);output.put("competitions",competitions);
+        return output;
     }
 
     private void requireCoachAssignment(Jwt jwt,UUID playerId) {
