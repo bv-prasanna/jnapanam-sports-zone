@@ -13,7 +13,7 @@ test("brand uses a nonempty JPEG with valid SOI and EOI markers", () => {
  assert.equal(bytes.at(-2), 0xff); assert.equal(bytes.at(-1), 0xd9);
 });
 test("header and footer use the same logo and legacy PNG is removed", () => {
- assert.match(headerCss, /jnapanam-logo\\.jpg/);
- assert.match(footer, /jnapanam-logo\\.jpg/);
+ assert.ok(headerCss.includes("jnapanam-logo.jpg"));
+ assert.ok(footer.includes("jnapanam-logo.jpg"));
  assert.equal(existsSync(new URL("../public/images/jnapanam-logo.png", import.meta.url)), false);
 });
