@@ -1,5 +1,10 @@
 name: Android APK cloud build
 on:
+  push:
+    branches:
+      - feat/release1-requirements-completion
+    paths:
+      - .github/workflows/android-apk-cloud.yml
   workflow_dispatch:
     inputs:
       api_url:
@@ -26,7 +31,7 @@ jobs:
       run:
         working-directory: apps/mobile
     env:
-      EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'https://p01--jnapanam-sports-zone--v9mpkwy69gfr.code.run' }}
       CI: '1'
     steps:
       - uses: actions/checkout@v4
@@ -148,18 +153,18 @@ jobs:
           test -s "$SDK/ndk/27.1.12297006/source.properties"
           echo "Required NDK 27.1.12297006 installed"
       - name: Build installable debug APK
-        if: inputs.build_type == 'debug'
+        if: github.event_name == 'workflow_dispatch' && inputs.build_type == 'debug'
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
       - name: Create disposable UAT signing key
-        if: inputs.build_type == 'release-uat'
+        if: github.event_name == 'push' || inputs.build_type == 'release-uat'
         shell: bash
         run: |
           keytool -genkeypair -v -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -alias jnapanam-uat -keyalg RSA -keysize 3072 -validity 365 -storepass android -keypass android -dname "CN=Jnapanam UAT, OU=Testing, O=Jnapanam, C=IN"
       - name: Build minified UAT release APK
-        if: inputs.build_type == 'release-uat'
+        if: github.event_name == 'push' || inputs.build_type == 'release-uat'
         shell: bash
         run: |
           cd android
@@ -175,7 +180,7 @@ jobs:
         run: |
           find android/app/build/outputs/apk -name '*.apk' -exec ls -lh {} \;
       - name: Upload debug APK
-        if: inputs.build_type == 'debug'
+        if: github.event_name == 'workflow_dispatch' && inputs.build_type == 'debug'
         uses: actions/upload-artifact@v4
         with:
           name: jnapanam-debug-apk
@@ -183,7 +188,7 @@ jobs:
           retention-days: 7
           if-no-files-found: error
       - name: Upload lightweight UAT APK
-        if: inputs.build_type == 'release-uat'
+        if: github.event_name == 'push' || inputs.build_type == 'release-uat'
         uses: actions/upload-artifact@v4
         with:
           name: jnapanam-lightweight-uat-apk
