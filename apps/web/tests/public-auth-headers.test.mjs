@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 // Spring Security authenticates *present* bearer tokens even for permitAll URLs.
 const api = readFileSync(new URL("../lib/api.ts", import.meta.url), "utf8");
 test("public login and registration OTP endpoints never receive cached bearer authorization", () => {
-  assert.match(api, /publicAuthPath\s*=\s*\/\^/);
+  assert.match(api, /const publicAuthPath = \[/);
   assert.match(api, /headers\.delete\("Authorization"\)/);
   assert.match(api, /if \(response\.status === 401 && retry && !publicAuthPath/);
 });
