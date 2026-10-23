@@ -38,9 +38,16 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   const headers = new Headers(init.headers);
   const multipart = typeof FormData !== "undefined" && init.body instanceof FormData;
   if (!headers.has("Content-Type") && init.body && !multipart) headers.set("Content-Type", "application/json");
-  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+  // Public auth endpoints must never send stale JWTs. Spring's bearer filter
+  // validates a supplied token even when the endpoint itself is permitAll().
+  const publicAuthPath = /^\\/api\\/v1\\/auth\\/(?:login|register|otp\\/|password\\/)/.test(path);
+  if (publicAuthPath) {
+    headers.delete("Authorization");
+  } else if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
   let response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
-  if (response.status === 401 && retry && await refreshAccess()) {
+  if (response.status === 401 && retry && !publicAuthPath && await refreshAccess()) {
     headers.set("Authorization", `Bearer ${accessToken}`); response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
   }
   if (!response.ok) {
