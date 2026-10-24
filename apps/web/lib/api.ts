@@ -34,6 +34,25 @@ async function refreshAccess(): Promise<string | null> {
   return refreshPromise;
 }
 
+
+// Coordinates are best-effort and consent based; never block booking/payment if denied.
+async function attachEventLocation(headers: Headers, method: string) {
+  if (!["POST","PUT","PATCH","DELETE"].includes(method.toUpperCase()) || typeof navigator === "undefined") return;
+  if (!navigator.geolocation || !window.isSecureContext) { headers.set("X-Location-Status","UNAVAILABLE"); return; }
+  try {
+    const permission = await navigator.permissions?.query({name:"geolocation" as PermissionName});
+    if (!permission || permission.state !== "granted") {
+      headers.set("X-Location-Status",permission?.state === "denied"?"DENIED":"NOT_REQUESTED");
+      return;
+    }
+    const point = await new Promise<GeolocationPosition>((resolve,reject)=>
+      navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:false,timeout:2500,maximumAge:60000}));
+    headers.set("X-Client-Latitude",point.coords.latitude.toFixed(7));
+    headers.set("X-Client-Longitude",point.coords.longitude.toFixed(7));
+    headers.set("X-Location-Status","CAPTURED");
+  } catch { headers.set("X-Location-Status","UNAVAILABLE"); }
+}
+
 export async function api<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(init.headers);
   const multipart = typeof FormData !== "undefined" && init.body instanceof FormData;
@@ -47,6 +66,7 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   } else if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
+  await attachEventLocation(headers, init.method || "GET");
   let response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
   if (response.status === 401 && retry && !publicAuthPath && await refreshAccess()) {
     headers.set("Authorization", `Bearer ${accessToken}`); response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
