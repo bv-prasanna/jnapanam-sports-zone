@@ -67,15 +67,15 @@ jobs:
           from pathlib import Path
           from PIL import Image, ImageFile, ImageOps
           ImageFile.LOAD_TRUNCATED_IMAGES = True
-          source = Path("../web/public/images/jnapanam-logo.png")
+          source = Path("../web/public/images/jnapanam-logo.jpg")
           if not source.is_file() or source.stat().st_size < 1000:
-              raise SystemExit("Website master logo is missing or suspiciously small")
+              raise SystemExit("Website JPEG logo is missing or suspiciously small")
           try:
               with Image.open(source) as original:
                   original.load()
                   logo = original.convert("RGBA")
           except Exception as exc:
-              raise SystemExit(f"Cannot decode source logo; replace damaged PNG in GitHub: {exc}")
+              raise SystemExit(f"Cannot decode source JPEG logo: {exc}")
           if min(logo.size) < 128:
               raise SystemExit(f"Logo resolution too low: {logo.size}")
           dest = Path("assets/images")
