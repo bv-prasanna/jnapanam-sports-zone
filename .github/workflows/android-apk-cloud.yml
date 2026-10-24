@@ -195,3 +195,5 @@ jobs:
           path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 7
           if-no-files-found: error
+
+# UAT native GPS verification build — PR45 merged, 2026-10-24.
