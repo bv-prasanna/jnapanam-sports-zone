@@ -18,8 +18,8 @@ class RestrictedTestOtpConfigurationTest {
     @Test void neverPermitFixedOtpInProduction(){
         assertThrows(IllegalStateException.class,()->service(true,"071977","9000000000","prod"));
     }
-    @Test void rejectUnrestrictedFixedOtp(){
-        assertThrows(IllegalStateException.class,()->service(true,"071977","","uat"));
+    @Test void allowEmptyEnvironmentListWithDatabaseManagedNumbers(){
+        assertNotNull(service(true,"071977","","uat"));
     }
     @Test void allowExplicitlyScopedUatOtp(){
         assertNotNull(service(true,"071977","9000000000","uat"));
