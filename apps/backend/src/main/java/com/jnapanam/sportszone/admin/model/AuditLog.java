@@ -23,6 +23,26 @@ public class AuditLog {
     @Column(name = "duration_ms") private Long durationMs;
     @Column(nullable = false) private boolean successful;
 
+    @Column(precision=10,scale=7) private java.math.BigDecimal latitude;
+    @Column(precision=10,scale=7) private java.math.BigDecimal longitude;
+    @Column(name="location_status",nullable=false,length=25) private String locationStatus="UNAVAILABLE";
+    @Column(name="location_source",length=25) private String locationSource;
+
+    public void recordLocation(String lat,String lon,String status) {
+        if ("DENIED".equals(status)) { locationStatus="DENIED"; return; }
+        if (lat==null || lon==null || lat.isBlank() || lon.isBlank()) {
+            locationStatus="UNAVAILABLE"; return;
+        }
+        try {
+            var a=new java.math.BigDecimal(lat);
+            var o=new java.math.BigDecimal(lon);
+            if(a.compareTo(new java.math.BigDecimal("-90"))<0 || a.compareTo(new java.math.BigDecimal("90"))>0
+               || o.compareTo(new java.math.BigDecimal("-180"))<0 || o.compareTo(new java.math.BigDecimal("180"))>0) {
+                locationStatus="INVALID";return;
+            }
+            latitude=a;longitude=o;locationStatus="CAPTURED";locationSource="CLIENT_GPS";
+        } catch (NumberFormatException ex) { locationStatus="INVALID"; }
+    }
     protected AuditLog() {}
 
     public AuditLog(UUID actor, String method, String path, int status, String remote,
@@ -45,6 +65,9 @@ public class AuditLog {
         this.successful = status >= 200 && status < 400;
     }
 
+    public java.math.BigDecimal getLatitude(){return latitude;}
+    public java.math.BigDecimal getLongitude(){return longitude;}
+    public String getLocationStatus(){return locationStatus;}
     public UUID getId(){return id;}
     public UUID getActorUserId(){return actorUserId;}
     public String getHttpMethod(){return httpMethod;}
