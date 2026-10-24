@@ -23,6 +23,8 @@ public class SmsOtpService {
     private final JdbcTemplate jdbc;
     private final PasswordEncoder encoder;
     private final NotificationProviderRegistry providers;
+    private final com.jnapanam.sportszone.notification.provider.Fast2SmsWhatsAppOtpSender whatsapp;
+    private final String deliveryChannel;
     private final boolean testOtpEnabled;
     private final String testOtp;
     private final java.util.Set<String> testMobiles;
@@ -31,6 +33,8 @@ public class SmsOtpService {
             JdbcTemplate jdbc,
             PasswordEncoder encoder,
             NotificationProviderRegistry providers,
+            com.jnapanam.sportszone.notification.provider.Fast2SmsWhatsAppOtpSender whatsapp,
+            @Value("${app.security.otp-delivery-channel:sms}") String deliveryChannel,
             @Value("${app.security.test-otp-enabled:false}") boolean testOtpEnabled,
             @Value("${app.security.test-otp:071977}") String testOtp,
             @Value("${app.security.test-otp-allowed-mobiles:}") String testMobiles,
@@ -38,6 +42,8 @@ public class SmsOtpService {
         this.jdbc = jdbc;
         this.encoder = encoder;
         this.providers = providers;
+        this.whatsapp = whatsapp;
+        this.deliveryChannel = deliveryChannel;
         this.testOtpEnabled = testOtpEnabled;
         this.testOtp = testOtp;
         this.testMobiles = java.util.Arrays.stream(testMobiles.split(",")).map(String::trim).filter(v -> !v.isBlank()).collect(java.util.stream.Collectors.toUnmodifiableSet());
@@ -105,7 +111,9 @@ public class SmsOtpService {
                 UUID.randomUUID(), purpose, mobile, encoder.encode(otp),
                 Timestamp.from(Instant.now().plusSeconds(300)));
         if (!testRequest) {
-            providers.sms().sendOtp(mobile, otp);
+            if ("whatsapp".equalsIgnoreCase(deliveryChannel)) whatsapp.send(mobile, otp);
+            else if ("sms".equalsIgnoreCase(deliveryChannel)) providers.sms().sendOtp(mobile, otp);
+            else throw new IllegalStateException("Unsupported OTP delivery channel");
         }
     }
 
