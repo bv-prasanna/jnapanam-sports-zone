@@ -25,19 +25,22 @@ public class SmsOtpService {
     private final NotificationProviderRegistry providers;
     private final boolean testOtpEnabled;
     private final String testOtp;
+    private final java.util.Set<String> testMobiles;
 
     public SmsOtpService(
             JdbcTemplate jdbc,
             PasswordEncoder encoder,
             NotificationProviderRegistry providers,
             @Value("${app.security.test-otp-enabled:false}") boolean testOtpEnabled,
-            @Value("${app.security.test-otp:9876}") String testOtp,
+            @Value("${app.security.test-otp:071977}") String testOtp,
+            @Value("${app.security.test-otp-allowed-mobiles:}") String testMobiles,
             Environment environment) {
         this.jdbc = jdbc;
         this.encoder = encoder;
         this.providers = providers;
         this.testOtpEnabled = testOtpEnabled;
         this.testOtp = testOtp;
+        this.testMobiles = java.util.Arrays.stream(testMobiles.split(",")).map(String::trim).filter(v -> !v.isBlank()).collect(java.util.stream.Collectors.toUnmodifiableSet());
         // The fixed test OTP must never be usable on a production profile,
         // including when the deployment accidentally enables its property.
         if (testOtpEnabled && (!environment.acceptsProfiles(Profiles.of("test", "uat", "dev", "local"))
@@ -47,6 +50,10 @@ public class SmsOtpService {
         if (testOtpEnabled && (testOtp == null || !testOtp.matches("\\d{4,6}"))) {
             throw new IllegalStateException("Test OTP must contain 4 to 6 digits");
         }
+    }
+
+    private boolean isTestMobile(String mobile) {
+        return testOtpEnabled && testMobiles.contains(mobile);
     }
 
     @Transactional
@@ -87,19 +94,20 @@ public class SmsOtpService {
             throw new ConflictException("OTP request limit reached. Please try again later.");
         }
 
-        String otp = testOtpEnabled ? testOtp : String.format("%06d", RANDOM.nextInt(1000000));
+        boolean testRequest = isTestMobile(mobile);
+        String otp = testRequest ? testOtp : String.format("%06d", RANDOM.nextInt(1000000));
         jdbc.update(
                 "insert into mobile_otp_challenges(id,purpose,mobile,otp_hash,expires_at) values(?,?,?,?,?)",
                 UUID.randomUUID(), purpose, mobile, encoder.encode(otp),
                 Timestamp.from(Instant.now().plusSeconds(300)));
-        if (!testOtpEnabled) {
+        if (!testRequest) {
             providers.sms().sendOtp(mobile, otp);
         }
     }
 
     private void verify(String mobile, String purpose, String otp) {
         if (mobile == null || mobile.length() != 10 || otp == null
-                || !otp.matches(testOtpEnabled ? "\\d{4,6}" : "\\d{6}")) {
+                || !otp.matches("\\d{6}")) {
             throw new BadRequestException("Invalid OTP");
         }
         List<Map<String, Object>> challenges = jdbc.queryForList(
