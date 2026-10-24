@@ -13,7 +13,7 @@ class RestrictedTestOtpConfigurationTest {
         MockEnvironment env = new MockEnvironment();
         env.setActiveProfiles(profile);
         return new SmsOtpService(mock(JdbcTemplate.class),mock(PasswordEncoder.class),
-          mock(NotificationProviderRegistry.class),enabled,otp,phones,env);
+          mock(NotificationProviderRegistry.class),mock(com.jnapanam.sportszone.notification.provider.Fast2SmsWhatsAppOtpSender.class),"sms",enabled,otp,phones,env);
     }
     @Test void neverPermitFixedOtpInProduction(){
         assertThrows(IllegalStateException.class,()->service(true,"071977","9000000000","prod"));
