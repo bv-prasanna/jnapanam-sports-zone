@@ -21,8 +21,7 @@ public class AdminAuditFilter extends OncePerRequestFilter {
 
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        boolean auditedPath = path.startsWith("/api/v1/admin/") || path.startsWith("/api/v1/operations/")
-                || path.startsWith("/api/v1/auth/") || path.equals("/api/v1/profile/password");
+        boolean auditedPath = path.startsWith("/api/v1/");
         return !MUTATING.contains(request.getMethod()) || !auditedPath;
     }
 
@@ -38,11 +37,13 @@ public class AdminAuditFilter extends OncePerRequestFilter {
         } finally {
             try {
                 Resource resource = resource(request.getRequestURI());
-                logs.save(new AuditLog(actor, request.getMethod(), request.getRequestURI(), response.getStatus(),
+                AuditLog event = new AuditLog(actor, request.getMethod(), request.getRequestURI(), response.getStatus(),
                         clientAddress(request), request.getMethod() + "_" + resource.type(), resource.type(),
                         resource.id(), limited(request.getQueryString(), 1000), correlationId,
                         limited(request.getHeader("User-Agent"), 300),
-                        (System.nanoTime() - started) / 1_000_000));
+                        (System.nanoTime() - started) / 1_000_000);
+                event.recordLocation(request.getHeader("X-Client-Latitude"), request.getHeader("X-Client-Longitude"),request.getHeader("X-Location-Status"));
+                logs.save(event);
             } catch (Exception ignored) {
                 // An audit persistence problem must not change the business response.
             }
