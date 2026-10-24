@@ -47,8 +47,11 @@ public class SmsOtpService {
                 || environment.acceptsProfiles(Profiles.of("prod", "production")))) {
             throw new IllegalStateException("Fixed OTP requires a non-production test, uat, dev or local profile");
         }
-        if (testOtpEnabled && (testOtp == null || !testOtp.matches("\\d{4,6}"))) {
-            throw new IllegalStateException("Test OTP must contain 4 to 6 digits");
+        if (testOtpEnabled && (testOtp == null || !testOtp.matches("\\d{6}"))) {
+            throw new IllegalStateException("Test OTP must contain exactly 6 digits");
+        }
+        if (testOtpEnabled && testMobiles.isEmpty()) {
+            throw new IllegalStateException("Fixed OTP requires an explicit allowlist of test mobile numbers");
         }
     }
 
