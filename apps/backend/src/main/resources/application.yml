@@ -56,8 +56,9 @@ app:
     refresh-token-days: ${JWT_REFRESH_DAYS:30}
     expose-development-reset-token: ${EXPOSE_DEVELOPMENT_RESET_TOKEN:false}
     auth-rate-limit-per-minute: ${AUTH_RATE_LIMIT_PER_MINUTE:60}
-    test-otp-enabled: false
-    test-otp: '9876'
+    test-otp-enabled: ${TEST_OTP_ENABLED:false}
+    test-otp: '${TEST_OTP:071977}'
+    test-otp-allowed-mobiles: '${TEST_OTP_ALLOWED_MOBILES:}'
   bootstrap:
     super-admin-email: ${BOOTSTRAP_SUPER_ADMIN_EMAIL:}
     super-admin-password: ${BOOTSTRAP_SUPER_ADMIN_PASSWORD:}
