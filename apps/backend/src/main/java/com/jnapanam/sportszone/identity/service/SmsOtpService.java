@@ -97,7 +97,8 @@ public class SmsOtpService {
             throw new ConflictException("OTP request limit reached. Please try again later.");
         }
 
-        boolean testRequest = isTestMobile(mobile);
+        // Fixed OTP is strictly registration-only; never bypass SMS for password resets.
+        boolean testRequest = "REGISTRATION".equals(purpose) && isTestMobile(mobile);
         String otp = testRequest ? testOtp : String.format("%06d", RANDOM.nextInt(1000000));
         jdbc.update(
                 "insert into mobile_otp_challenges(id,purpose,mobile,otp_hash,expires_at) values(?,?,?,?,?)",
