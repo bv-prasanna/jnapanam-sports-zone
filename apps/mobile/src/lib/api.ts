@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { getEventLocationHeaders } from './event-location';
 
 export type TokenResponse = {
   tokenType: string;
@@ -28,12 +29,16 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+  const geoHeaders = ['POST','PUT','PATCH','DELETE'].includes(method)
+    ? await getEventLocationHeaders() : {};
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...geoHeaders,
       ...options.headers,
     },
   });

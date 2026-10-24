@@ -35,7 +35,15 @@
         }
       ],
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Jnapanam uses your location with your permission to record where activities occur. You can continue without location.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
