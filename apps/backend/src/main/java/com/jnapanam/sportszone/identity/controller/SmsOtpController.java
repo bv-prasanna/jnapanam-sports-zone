@@ -9,7 +9,7 @@ import com.jnapanam.sportszone.identity.dto.*;import com.jnapanam.sportszone.ide
  public ResponseEntity<TokenResponse> emailVerify(@Valid@RequestBody EmailRegistrationVerifyRequest r){
   emailOtp.verify(r.email(),r.otp());
   RegisterRequest payload=new RegisterRequest(r.fullName(),r.email(),r.mobile(),r.password());
-  return ResponseEntity.status(HttpStatus.CREATED).body(auth.register(payload));
+  return ResponseEntity.status(HttpStatus.CREATED).body(auth.register(payload,r.deviceSignature(),r.deviceName()));
  }
  public record EmailOtpRequest(@Email@NotBlank String email){}
  public record EmailRegistrationVerifyRequest(@NotBlank String fullName,@Email@NotBlank String email,String mobile,@Size(min=8) String password,@Pattern(regexp="\\d{6}") String otp,String deviceSignature,String deviceName){}
