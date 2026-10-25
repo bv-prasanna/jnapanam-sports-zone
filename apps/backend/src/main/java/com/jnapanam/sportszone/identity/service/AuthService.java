@@ -34,9 +34,10 @@ public class AuthService {
 
     @Transactional
     public TokenResponse login(LoginRequest request) {
-        String email = request.email().trim().toLowerCase(Locale.ROOT);
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
-        User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+        String identifier = request.email().trim().toLowerCase(Locale.ROOT);
+        User user = (identifier.matches("[0-9]{10}") ? users.findByMobile(identifier) : users.findByEmailIgnoreCase(identifier))
+            .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmail(), request.password()));
         mfa.verifyOrChallenge(user, request.mfaCode());
         return issueTokens(user,request.deviceSignature(),request.deviceName());
     }
