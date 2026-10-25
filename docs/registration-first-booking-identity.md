@@ -12,7 +12,7 @@ Status: product requirement, **not yet implemented as document storage or bookin
 
 ## First booking
 - Before submitting the **first booking**, request one identity/address proof document.
-- Accepted document types proposed: driving licence, voter ID; PAN can establish identity but generally **not address**. If address proof is mandatory, require a document showing address, or separate ID + address evidence.
+- Accepted address proof options: driving licence, voter ID, passport, masked Aadhaar (voluntary, with number masked), electricity bill, water bill, piped-gas bill, postpaid telephone bill, municipal/property-tax receipt. Utility bills should be recent (normally within two months). The document must display the user's name and address; where names differ (for example, a family member's utility bill), provide a review path. PAN card alone is **not address proof**. Do not demand two documents if one accepted document has the required address. These are venue operational rules, not claims of mandatory banking KYC.
 - Display purpose, access restrictions and retention notice; allow the customer to correct/change document through My Profile.
 - Upload must be authenticated, encrypted at rest, size and MIME validated, malware scanned, accessible only to customer and approved verification staff, audit logged, and never served through a public URL.
 - Add verification status `NOT_SUBMITTED / PENDING / APPROVED / REJECTED`. Backend should enforce a first-booking eligibility policy at both hold and confirmation endpoints, not just in the UI.
