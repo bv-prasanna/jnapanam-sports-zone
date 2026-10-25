@@ -21,7 +21,10 @@ public class AuthService {
     }
 
     @Transactional
-    public TokenResponse register(RegisterRequest request) {
+    public TokenResponse register(RegisterRequest request) { return register(request,null,null); }
+
+    @Transactional
+    public TokenResponse register(RegisterRequest request,String deviceSignature,String deviceName) {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
         if (users.existsByEmailIgnoreCase(email)) throw new ConflictException("An account already exists for this email");
         String mobile = request.mobile() == null || request.mobile().isBlank() ? null : request.mobile().replaceAll("[ -]", "");
@@ -29,7 +32,7 @@ public class AuthService {
         Role customer = roles.findByName(RoleName.CUSTOMER).orElseThrow(() -> new IllegalStateException("CUSTOMER role is missing"));
         User user = users.save(new User(request.fullName().trim(), email, mobile, passwordEncoder.encode(request.password()), customer));
         notifications.welcome(user.getId(), user.getFullName());
-        return issueTokens(user,null,null);
+        return issueTokens(user,deviceSignature,deviceName);
     }
 
     @Transactional
