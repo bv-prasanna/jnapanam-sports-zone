@@ -56,6 +56,7 @@ app:
     refresh-token-days: ${JWT_REFRESH_DAYS:30}
     expose-development-reset-token: ${EXPOSE_DEVELOPMENT_RESET_TOKEN:false}
     auth-rate-limit-per-minute: ${AUTH_RATE_LIMIT_PER_MINUTE:60}
+    otp-delivery-channel: ${OTP_DELIVERY_CHANNEL:sms}
     test-otp-enabled: ${TEST_OTP_ENABLED:false}
     test-otp: '${TEST_OTP:071977}'
     test-otp-allowed-mobiles: '${TEST_OTP_ALLOWED_MOBILES:}'
@@ -79,5 +80,11 @@ app:
         otp-url: ${FAST2SMS_OTP_URL:https://www.fast2sms.com/dev/otp/send}
         otp-id: ${FAST2SMS_OTP_ID:}
     whatsapp:
+      fast2sms:
+        api-key: ${FAST2SMS_WHATSAPP_API_KEY:}
+        phone-number-id: ${FAST2SMS_WHATSAPP_PHONE_NUMBER_ID:}
+        template-name: ${FAST2SMS_WHATSAPP_OTP_TEMPLATE:}
+        template-language: ${FAST2SMS_WHATSAPP_OTP_LANGUAGE:en_US}
+        api-version: ${FAST2SMS_WHATSAPP_API_VERSION:v26.0}
       provider-url: ${WHATSAPP_PROVIDER_URL:}
       provider-token: ${WHATSAPP_PROVIDER_TOKEN:}
