@@ -8,6 +8,7 @@ import com.jnapanam.sportszone.identity.repository.PasswordResetTokenRepository;
 import com.jnapanam.sportszone.identity.repository.RefreshTokenRepository;
 import com.jnapanam.sportszone.identity.repository.UserRepository;
 import com.jnapanam.sportszone.notification.provider.NotificationProviderRegistry;
+import com.jnapanam.sportszone.notification.provider.Fast2SmsWhatsAppOtpSender;
 import com.jnapanam.sportszone.notification.service.NotificationService;
 import com.jnapanam.sportszone.security.TokenService;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,8 @@ class UnsafeTestCredentialProfileTest {
 
     private SmsOtpService otp(boolean enabled, MockEnvironment environment) {
         return new SmsOtpService(mock(JdbcTemplate.class), mock(PasswordEncoder.class),
-                mock(NotificationProviderRegistry.class), enabled, "9876", environment);
+                mock(NotificationProviderRegistry.class), mock(Fast2SmsWhatsAppOtpSender.class),
+                "sms", enabled, "071977", "9000000000", environment);
     }
 
     private PasswordRecoveryService passwordRecovery(boolean expose, MockEnvironment environment) {
