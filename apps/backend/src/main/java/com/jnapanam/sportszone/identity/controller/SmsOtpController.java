@@ -6,12 +6,13 @@ import com.jnapanam.sportszone.identity.dto.*;import com.jnapanam.sportszone.ide
  @PostMapping("/registration/email/request")@ResponseStatus(HttpStatus.ACCEPTED)
  public void emailRequest(@Valid@RequestBody EmailOtpRequest r){emailOtp.request(r.email());}
  @PostMapping("/registration/email/verify")
- public ResponseEntity<TokenResponse> emailVerify(@Valid@RequestBody RegistrationOtpVerifyRequest r){
+ public ResponseEntity<TokenResponse> emailVerify(@Valid@RequestBody EmailRegistrationVerifyRequest r){
   emailOtp.verify(r.email(),r.otp());
   RegisterRequest payload=new RegisterRequest(r.fullName(),r.email(),r.mobile(),r.password());
   return ResponseEntity.status(HttpStatus.CREATED).body(auth.register(payload));
  }
  public record EmailOtpRequest(@Email@NotBlank String email){}
+ public record EmailRegistrationVerifyRequest(@NotBlank String fullName,@Email@NotBlank String email,String mobile,@Size(min=8) String password,@Pattern(regexp="\\d{6}") String otp){}
  @PostMapping("/password/request")@ResponseStatus(HttpStatus.ACCEPTED)public void password(@Valid@RequestBody OtpRequest r){recovery.requestSmsOtp(r.mobile());}
  @PostMapping("/password/reset")@ResponseStatus(HttpStatus.NO_CONTENT)public void reset(@Valid@RequestBody SmsPasswordResetRequest r){recovery.resetWithSmsOtp(r);}
  public record RegistrationOtpVerifyRequest(@NotBlank String fullName,@Email@NotBlank String email,@NotBlank String mobile,@Size(min=8) String password,@Pattern(regexp="\\d{4,6}") String otp){}
