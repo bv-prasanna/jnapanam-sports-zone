@@ -56,13 +56,12 @@ public class SmsOtpService {
         if (testOtpEnabled && (testOtp == null || !testOtp.matches("\\d{6}"))) {
             throw new IllegalStateException("Test OTP must contain exactly 6 digits");
         }
-        if (testOtpEnabled && testMobiles.isEmpty()) {
-            throw new IllegalStateException("Fixed OTP requires an explicit allowlist of test mobile numbers");
-        }
     }
 
     private boolean isTestMobile(String mobile) {
-        return testOtpEnabled && testMobiles.contains(mobile);
+        if (!testOtpEnabled) return false;
+        if (testMobiles.contains(mobile)) return true;
+        return Boolean.TRUE.equals(jdbc.queryForObject("select exists(select 1 from uat_otp_allowed_mobiles where mobile=? and active=true)", Boolean.class, mobile));
     }
 
     @Transactional
