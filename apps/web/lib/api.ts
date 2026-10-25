@@ -88,6 +88,11 @@ export async function login(email: string, password: string, mfaCode?: string) {
   saveTokens(tokens); return api<User>("/api/v1/profile/me");
 }
 
+export async function requestEmailRegistrationOtp(email:string){return api<void>("/api/v1/auth/otp/registration/email/request",{method:"POST",body:JSON.stringify({email})},false);}
+export async function registerWithEmailOtp(payload:{fullName:string;email:string;mobile:string;password:string;otp:string}){
+ const tokens=await api<TokenResponse>("/api/v1/auth/otp/registration/email/verify",{method:"POST",body:JSON.stringify(payload)},false);
+ saveTokens(tokens);return api<User>("/api/v1/profile/me");
+}
 export async function requestRegistrationOtp(mobile:string){return api<void>("/api/v1/auth/otp/registration/request",{method:"POST",body:JSON.stringify({mobile})},false);}
 export async function register(payload: { fullName: string; email: string; mobile: string; password: string; otp:string }) {
   const tokens = await api<TokenResponse>("/api/v1/auth/otp/registration/verify", { method: "POST", body: JSON.stringify(payload) }, false);
