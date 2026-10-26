@@ -14,6 +14,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class) ResponseEntity<ProblemDetail> badRequest(BadRequestException ex) { return problem(HttpStatus.BAD_REQUEST, ex.getMessage()); }
     @ExceptionHandler(ConflictException.class) ResponseEntity<ProblemDetail> conflict(ConflictException ex) { return problem(HttpStatus.CONFLICT, ex.getMessage()); }
     @ExceptionHandler(NotFoundException.class) ResponseEntity<ProblemDetail> notFound(NotFoundException ex) { return problem(HttpStatus.NOT_FOUND, ex.getMessage()); }
+    @ExceptionHandler(com.jnapanam.sportszone.common.exception.MfaChallengeRequiredException.class)
+    ResponseEntity<ProblemDetail> mfaChallenge(com.jnapanam.sportszone.common.exception.MfaChallengeRequiredException ex) {
+        return problem(HttpStatus.UNAUTHORIZED, "MFA code sent. Enter the 6-digit code to continue.");
+    }
     @ExceptionHandler({UnauthorizedException.class, AuthenticationException.class}) ResponseEntity<ProblemDetail> unauthorized(RuntimeException ex) { return problem(HttpStatus.UNAUTHORIZED, "Invalid credentials or token"); }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ProblemDetail> validation(MethodArgumentNotValidException ex) {
