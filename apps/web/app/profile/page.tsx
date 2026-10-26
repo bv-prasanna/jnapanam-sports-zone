@@ -12,17 +12,22 @@ export default function ProfilePage(){
   const {user,ready,setUser}=useApp();
   const [displayName,setDisplayName]=useState("");
   const [photoUrl,setPhotoUrl]=useState("");
+  const [mobile,setMobile]=useState("");
+  const [addressLine,setAddressLine]=useState("");
+  const [city,setCity]=useState("");
+  const [state,setState]=useState("");
+  const [postalCode,setPostalCode]=useState("");
   const [saving,setSaving]=useState(false);
   const [uploading,setUploading]=useState(false);
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
 
   useEffect(()=>{if(ready&&!user)router.replace("/login")},[ready,user,router]);
-  useEffect(()=>{if(user){setDisplayName(user.displayName||"");setPhotoUrl(user.profilePhotoUrl||"")}},[user]);
+  useEffect(()=>{if(user){setDisplayName(user.displayName||"");setPhotoUrl(user.profilePhotoUrl||"");setMobile(user.mobile||"");setAddressLine(user.addressLine||"");setCity(user.city||"");setState(user.state||"");setPostalCode(user.postalCode||"")}},[user]);
 
   async function save(event:FormEvent){
     event.preventDefault();
-    try{setSaving(true);setError("");setMessage("");const updated=await api<User>("/api/v1/profile/me",{method:"PUT",body:JSON.stringify({displayName:displayName.trim()||null,profilePhotoUrl:photoUrl.trim()||null})});setUser(updated);setPhotoUrl(updated.profilePhotoUrl||"");setMessage("Profile updated successfully.")}
+    try{setSaving(true);setError("");setMessage("");const updated=await api<User>("/api/v1/profile/me",{method:"PUT",body:JSON.stringify({displayName:displayName.trim()||null,profilePhotoUrl:photoUrl.trim()||null,mobile:mobile.trim(),addressLine:addressLine.trim(),city:city.trim(),state:state.trim(),postalCode:postalCode.trim()})});setUser(updated);setPhotoUrl(updated.profilePhotoUrl||"");setMessage("Profile updated successfully.")}
     catch(value){setError(value instanceof ApiError?value.message:"Unable to update profile.")}
     finally{setSaving(false)}
   }
@@ -47,7 +52,13 @@ export default function ProfilePage(){
         <div><h2>{user.displayName||user.fullName}</h2><p>{user.email}</p><label className={styles.upload}>{uploading?"Uploading…":"Upload photo"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} disabled={uploading}/></label><small>JPG, PNG or WebP · maximum 5 MB</small></div>
       </div>
       <form className={styles.form} onSubmit={save}>
-        <div className={styles.grid}><label>Full name<input value={user.fullName} disabled/></label><label>Display / calling name<input value={displayName} maxLength={60} onChange={e=>setDisplayName(e.target.value)} placeholder={user.fullName}/></label><label>Email<input value={user.email} disabled/></label><label>Mobile<input value={user.mobile||"Not provided"} disabled/></label></div>
+        <div className={styles.grid}><label>Full name<input value={user.fullName} disabled/></label><label>Display / calling name<input value={displayName} maxLength={60} onChange={e=>setDisplayName(e.target.value)} placeholder={user.fullName}/></label><label>Email<input value={user.email} disabled/></label><label>Mobile (not verified)<input value={mobile} inputMode="tel" pattern="[0-9]{10}" maxLength={10} onChange={e=>setMobile(e.target.value)}/></label></div>
+        <div className={styles.grid}>
+        <label>Address<input value={addressLine} maxLength={250} onChange={e=>setAddressLine(e.target.value)}/></label>
+        <label>City<input value={city} maxLength={100} onChange={e=>setCity(e.target.value)}/></label>
+        <label>State<input value={state} maxLength={100} onChange={e=>setState(e.target.value)}/></label>
+        <label>PIN code<input value={postalCode} maxLength={12} onChange={e=>setPostalCode(e.target.value)}/></label>
+        </div>
         <label>Profile photo URL<input type="url" maxLength={500} value={photoUrl} onChange={e=>setPhotoUrl(e.target.value)} placeholder="Upload a photo above or enter an HTTPS image URL"/></label>
         <div className={styles.roles}><small>Roles</small><div>{user.roles.map(role=><span key={role}>{role.replaceAll("_"," ")}</span>)}</div></div>
         {error&&<div className={styles.error}>{error}</div>}{message&&<div className={styles.success}>{message}</div>}
