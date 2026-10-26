@@ -10,7 +10,7 @@ type RegisterInput = { fullName: string; email: string; mobile?: string; passwor
 type AuthValue = {
   user: User | null;
   initializing: boolean;
-  login(email: string, password: string): Promise<void>;
+  login(email: string, password: string, mfaCode?: string): Promise<void>;
   requestRegistrationOtp(input: RegisterInput): Promise<void>;
   verifyRegistrationOtp(input:RegisterInput,otp:string): Promise<void>;
   logout(): Promise<void>;
@@ -57,18 +57,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
     })();
   }, [clearSession]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, mfaCode?: string) => {
     const device=await getDeviceIdentity();
     const tokens = await api<TokenResponse>('/api/v1/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: email.trim().toLowerCase(), password,...device }),
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password,mfaCode,...device }),
     });
     await storeSession(tokens);
     setUser(await loadMe());
   }, []);
 
-  const requestRegistrationOtp=useCallback(async(input:RegisterInput)=>{await api<void>('/api/v1/auth/otp/registration/request',{method:'POST',body:JSON.stringify({mobile:input.mobile?.trim()||null})});},[]);
-  const verifyRegistrationOtp=useCallback(async(input:RegisterInput,otp:string)=>{const device=await getDeviceIdentity();const tokens=await api<TokenResponse>('/api/v1/auth/otp/registration/verify',{method:'POST',body:JSON.stringify({...input,fullName:input.fullName.trim(),email:input.email.trim().toLowerCase(),mobile:input.mobile?.trim(),otp,...device})});await storeSession(tokens);setUser(await loadMe());},[]);
+  const requestRegistrationOtp=useCallback(async(input:RegisterInput)=>{await api<void>('/api/v1/auth/otp/registration/email/request',{method:'POST',body:JSON.stringify({email:input.email.trim().toLowerCase()})});},[]);
+  const verifyRegistrationOtp=useCallback(async(input:RegisterInput,otp:string)=>{const device=await getDeviceIdentity();const tokens=await api<TokenResponse>('/api/v1/auth/otp/registration/email/verify',{method:'POST',body:JSON.stringify({...input,fullName:input.fullName.trim(),email:input.email.trim().toLowerCase(),mobile:input.mobile?.trim(),otp,...device})});await storeSession(tokens);setUser(await loadMe());},[]);
 
   const logout = useCallback(async () => {
     const refreshToken = await getStoredValue(REFRESH_TOKEN_KEY);
