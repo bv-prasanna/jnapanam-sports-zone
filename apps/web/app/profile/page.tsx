@@ -19,6 +19,19 @@ export default function ProfilePage(){
   const [postalCode,setPostalCode]=useState("");
   const [saving,setSaving]=useState(false);
   const [uploading,setUploading]=useState(false);
+  const [proofType,setProofType]=useState("DL");
+  const [proofStatus,setProofStatus]=useState("NOT_SUBMITTED");
+  const [proofBusy,setProofBusy]=useState(false);
+  useEffect(()=>{if(user)api<{status:string}>("/api/v1/profile/address-proof").then(x=>setProofStatus(x.status)).catch(()=>{})},[user?.id]);
+  async function uploadProof(event:ChangeEvent<HTMLInputElement>){
+    const file=event.target.files?.[0];if(!file)return;
+    if(file.size>2*1024*1024||!["image/jpeg","image/png","application/pdf"].includes(file.type)){setError("Use JPG, PNG or PDF of 2 MB or less.");return}
+    const form=new FormData();form.append("type",proofType);form.append("file",file);
+    try{setProofBusy(true);setError("");const value=await api<{status:string}>("/api/v1/profile/address-proof",{method:"POST",body:form});setProofStatus(value.status);setMessage("Address proof submitted for review.")}
+    catch(err){setError(err instanceof ApiError?err.message:"Upload failed")}
+    finally{setProofBusy(false);event.target.value=""}
+  }
+
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
 
@@ -60,6 +73,15 @@ export default function ProfilePage(){
         <label>PIN code<input value={postalCode} maxLength={12} onChange={e=>setPostalCode(e.target.value)}/></label>
         </div>
         <label>Profile photo URL<input type="url" maxLength={500} value={photoUrl} onChange={e=>setPhotoUrl(e.target.value)} placeholder="Upload a photo above or enter an HTTPS image URL"/></label>
+        <section aria-label="First booking verification">
+          <h3>Address proof (required before first booking)</h3>
+          <p>Provide one document showing your address. Status: <strong>{proofStatus.replaceAll("_"," ")}</strong>.</p>
+          <label>Document type<select value={proofType} onChange={e=>setProofType(e.target.value)}>
+          <option value="DL">Driving Licence</option><option value="VOTER_ID">Voter ID</option><option value="PASSPORT">Passport</option>
+          </select></label>
+          <label>{proofBusy?"Uploading…":"JPG, PNG or PDF (up to 2 MB)"}<input type="file" accept="image/jpeg,image/png,application/pdf" disabled={proofBusy} onChange={uploadProof}/></label>
+          <small>Private upload. PAN, Aadhaar and utility bills are not accepted.</small>
+        </section>
         <div className={styles.roles}><small>Roles</small><div>{user.roles.map(role=><span key={role}>{role.replaceAll("_"," ")}</span>)}</div></div>
         {error&&<div className={styles.error}>{error}</div>}{message&&<div className={styles.success}>{message}</div>}
         <div className={styles.actions}><button type="submit" disabled={saving||uploading}>{saving?"Saving…":"Save Profile"}</button><Link href="/dashboard">Cancel</Link></div>
