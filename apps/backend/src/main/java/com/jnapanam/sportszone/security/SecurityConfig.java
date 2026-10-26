@@ -44,6 +44,7 @@ public class SecurityConfig {
     @Bean SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConverter converter) throws Exception {
         return http.cors(Customizer.withDefaults()).csrf(csrf -> csrf.disable()).sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/commerce/settings", "/api/v1/commerce/categories", "/api/v1/commerce/products", "/api/v1/commerce/products/*").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/api/v1/public/**", "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter))).build();
