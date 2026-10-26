@@ -32,12 +32,13 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   const method = (options.method || 'GET').toUpperCase();
   const geoHeaders = ['POST','PUT','PATCH','DELETE'].includes(method)
     ? await getEventLocationHeaders() : {};
+  const publicAuth = path.startsWith('/api/v1/auth/');
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(!publicAuth && accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...geoHeaders,
       ...options.headers,
     },
