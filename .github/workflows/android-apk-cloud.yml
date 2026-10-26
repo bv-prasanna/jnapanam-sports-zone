@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/release1-requirements-completion
+      - fix/register-route-regression-test-20261026
     paths:
       - .github/workflows/android-apk-cloud.yml
   workflow_dispatch:
