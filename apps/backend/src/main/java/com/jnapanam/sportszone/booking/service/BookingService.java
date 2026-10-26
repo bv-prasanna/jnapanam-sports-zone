@@ -7,6 +7,7 @@ import com.jnapanam.sportszone.common.exception.*;
 import com.jnapanam.sportszone.identity.model.User;
 import com.jnapanam.sportszone.identity.repository.UserRepository;
 import com.jnapanam.sportszone.notification.service.NotificationService;
+import org.springframework.jdbc.core.JdbcTemplate;
 import java.time.*;
 import java.util.*;
 import java.util.stream.Stream;
@@ -16,11 +17,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BookingService {
- private final BookingSlotRepository slots; private final BookingHoldRepository holds; private final BookingRepository bookings; private final UserRepository users; private final NotificationService notificationService; private final long holdMinutes;private final long paymentMinutes;private final long noShowGraceMinutes;
+ private final BookingSlotRepository slots; private final BookingHoldRepository holds; private final BookingRepository bookings; private final UserRepository users; private final NotificationService notificationService; private final long holdMinutes;private JdbcTemplate identityJdbc;private final long paymentMinutes;private final long noShowGraceMinutes;
  public BookingService(BookingSlotRepository slots,BookingHoldRepository holds,BookingRepository bookings,UserRepository users,NotificationService notificationService,@Value("${app.booking.hold-minutes:10}") long holdMinutes,@Value("${app.payment.pending-minutes:15}")long paymentMinutes,@Value("${app.booking.no-show-grace-minutes:15}")long noShowGraceMinutes){this.slots=slots;this.holds=holds;this.bookings=bookings;this.users=users;this.notificationService=notificationService;this.holdMinutes=holdMinutes;this.paymentMinutes=paymentMinutes;this.noShowGraceMinutes=noShowGraceMinutes;}
 
+ @org.springframework.beans.factory.annotation.Autowired
+ public void identityDocumentDb(JdbcTemplate jdbc){this.identityJdbc=jdbc;}
+ private void requireFirstBookingDocument(UUID userId){
+  if(identityJdbc==null)throw new IllegalStateException("Identity document store is unavailable");
+  Boolean hasBookings=identityJdbc.queryForObject("select exists(select 1 from bookings where user_id=?)",Boolean.class,userId);
+  if(Boolean.TRUE.equals(hasBookings))return;
+  Boolean hasProof=identityJdbc.queryForObject("select exists(select 1 from booking_address_proofs where user_id=? and status in ('PENDING','APPROVED'))",Boolean.class,userId);
+  if(!Boolean.TRUE.equals(hasProof))throw new ConflictException("Upload a valid DL, Voter ID or Passport from My Profile before your first booking");
+ }
  @Transactional
  public HoldResponse hold(UUID userId,HoldRequest request){
+  requireFirstBookingDocument(userId);
   cleanupExpired(); User user=requireUser(userId); BookingSlot slot=slots.findLocked(request.slotId()).orElseThrow(()->new NotFoundException("Slot not found"));
   if(slot.getDate().isBefore(LocalDate.now())||!LocalDateTime.of(slot.getDate(),slot.getStartTime()).isAfter(LocalDateTime.now())) throw new ConflictException("This slot has already started or passed");
   slot.hold(request.quantity()); BookingHold hold=holds.save(new BookingHold(user,slot,request.quantity(),Instant.now().plusSeconds(holdMinutes*60)));
@@ -28,6 +39,7 @@ public class BookingService {
  }
  @Transactional
  public BookingResponse confirm(UUID userId,ConfirmRequest request){
+  requireFirstBookingDocument(userId);
   BookingHold hold=holds.findLocked(request.holdId()).orElseThrow(()->new NotFoundException("Hold not found")); assertOwner(hold.getUser(),userId);
   if(hold.getStatus()!=HoldStatus.ACTIVE) throw new ConflictException("Hold is no longer active");
   BookingSlot slot=slots.findLocked(hold.getSlot().getId()).orElseThrow(()->new NotFoundException("Slot not found"));
