@@ -35,7 +35,6 @@ public class AuthService {
         return issueTokens(user,deviceSignature,deviceName);
     }
 
-    @Transactional
     public TokenResponse login(LoginRequest request) {
         String identifier=request.email().trim().toLowerCase(Locale.ROOT);
         User user=(identifier.matches("[0-9]{10}")?users.findByMobile(identifier):users.findByEmailIgnoreCase(identifier))
