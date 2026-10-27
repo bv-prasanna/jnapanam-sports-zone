@@ -81,7 +81,7 @@ class MfaServiceTest {
                         "challenge_expires_at", Timestamp.from(Instant.now().plusSeconds(300)))));
         assertThrows(UnauthorizedException.class, () -> service.verifyOrChallenge(admin, "000000"));
         verifyNoInteractions(mail);
-        verify(jdbc, never()).update(startsWith("update privileged_mfa set challenge_hash=null"), any());
+        verify(jdbc, never()).update(startsWith("update privileged_mfa set challenge_hash=null"), eq(admin.getId()));
     }
 
     @Test
