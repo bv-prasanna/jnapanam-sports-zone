@@ -61,7 +61,7 @@ class ModuleRegressionIntegrationTest {
         String mobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
         String email = uniqueEmail("fixed-otp");
         String body = "{\"fullName\":\"OTP Test User\",\"email\":\"" + email
-                + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"9876\"}";
+                + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"987654\"}";
 
         // Fixed test OTP must never authenticate before a challenge was requested.
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
@@ -80,7 +80,7 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isConflict());
 
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
-                        .contentType(MediaType.APPLICATION_JSON).content(body.replace("9876", "1111")))
+                        .contentType(MediaType.APPLICATION_JSON).content(body.replace("987654", "111111")))
                 .andExpect(status().isBadRequest());
         Integer failedAttempts = jdbc.queryForObject(
                 "select attempts from mobile_otp_challenges where mobile=? and purpose='REGISTRATION' order by created_at desc limit 1",
@@ -111,7 +111,7 @@ class ModuleRegressionIntegrationTest {
         for (int i = 0; i < 5; i++) {
             mvc.perform(post("/api/v1/auth/otp/registration/verify")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(String.format(json, "1111")))
+                            .content(String.format(json, "111111")))
                     .andExpect(status().isBadRequest());
         }
         Integer attempts = jdbc.queryForObject(
@@ -120,7 +120,7 @@ class ModuleRegressionIntegrationTest {
         Assertions.assertEquals(5, attempts);
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(String.format(json, "9876")))
+                        .content(String.format(json, "987654")))
                 .andExpect(status().isBadRequest());
 
         String expiredMobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
@@ -132,7 +132,7 @@ class ModuleRegressionIntegrationTest {
                 expiredMobile);
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(String.format(json.replace(mobile, expiredMobile), "9876")))
+                        .content(String.format(json.replace(mobile, expiredMobile), "987654")))
                 .andExpect(status().isBadRequest());
     }
 
