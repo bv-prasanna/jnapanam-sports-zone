@@ -59,6 +59,7 @@ class ModuleRegressionIntegrationTest {
     @Test
     void configuredUatOtpCanVerifyRegistrationWithoutProviderOtp() throws Exception {
         String mobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(mobile);
         String email = uniqueEmail("fixed-otp");
         String body = "{\"fullName\":\"OTP Test User\",\"email\":\"" + email
                 + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"987654\"}";
@@ -101,6 +102,7 @@ class ModuleRegressionIntegrationTest {
     @Test
     void fixedUatOtpStillExpiresAndLocksOutAfterFiveAttempts() throws Exception {
         String mobile = "9" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(mobile);
         mvc.perform(post("/api/v1/auth/otp/registration/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"mobile\":\"" + mobile + "\"}"))
@@ -124,6 +126,7 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isBadRequest());
 
         String expiredMobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(expiredMobile);
         mvc.perform(post("/api/v1/auth/otp/registration/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"mobile\":\"" + expiredMobile + "\"}"))
@@ -659,6 +662,10 @@ class ModuleRegressionIntegrationTest {
         MvcResult result = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody(email, password)))
                 .andExpect(status().isOk()).andReturn();
         return tokens(result);
+    }
+
+    private void allowTestMobile(String mobile) {
+        jdbc.update("INSERT INTO uat_otp_allowed_mobiles(mobile, active, note) VALUES (?,true,?) ON CONFLICT(mobile) DO UPDATE SET active=true", mobile, "Integration test fixture");
     }
 
     private void removeRole(String email,String role) {
