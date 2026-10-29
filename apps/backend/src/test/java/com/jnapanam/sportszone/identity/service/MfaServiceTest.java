@@ -32,7 +32,7 @@ class MfaServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new MfaService(jdbc, encoder, registry);
+        service = new MfaService(jdbc, encoder, registry, false, new org.springframework.mock.env.MockEnvironment());
         service.required = true;
         Role role = mock(Role.class);
         when(role.getName()).thenReturn(RoleName.SUPER_ADMIN);
@@ -40,6 +40,16 @@ class MfaServiceTest {
         when(registry.provider(NotificationChannel.EMAIL)).thenReturn(mail);
         when(encoder.encode(anyString())).thenReturn("otp-hash");
         when(jdbc.update(anyString(), any(), any(), any())).thenReturn(1);
+    }
+
+    @Test
+    void consoleMfaCannotBeEnabledOutsideLocalProfile() {
+        assertThrows(IllegalStateException.class, () ->
+                new MfaService(jdbc, encoder, registry, true, new org.springframework.mock.env.MockEnvironment()));
+        var prod = new org.springframework.mock.env.MockEnvironment();
+        prod.setActiveProfiles("local", "production");
+        assertThrows(IllegalStateException.class, () ->
+                new MfaService(jdbc, encoder, registry, true, prod));
     }
 
     @Test
