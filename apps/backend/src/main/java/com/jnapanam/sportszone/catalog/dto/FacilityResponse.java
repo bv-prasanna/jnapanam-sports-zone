@@ -15,8 +15,9 @@ public record FacilityResponse(UUID id, String code, String name, String descrip
                 effectiveFrom(facility), effectiveUntil(facility), effectiveReason(facility));
     }
     private static boolean inherited(Facility f) {
-        return f.getStatus() == com.jnapanam.sportszone.catalog.model.CatalogueStatus.ACTIVE
-                && f.getSport().getStatus() != com.jnapanam.sportszone.catalog.model.CatalogueStatus.ACTIVE;
+        return f.getSport().getStatus() == com.jnapanam.sportszone.catalog.model.CatalogueStatus.INACTIVE
+                || (f.getStatus() == com.jnapanam.sportszone.catalog.model.CatalogueStatus.ACTIVE
+                    && f.getSport().getStatus() == com.jnapanam.sportszone.catalog.model.CatalogueStatus.TEMPORARILY_SUSPENDED);
     }
     private static String effectiveStatus(Facility f) {
         return inherited(f) ? f.getSport().getStatus().name() : f.getStatus().name();
