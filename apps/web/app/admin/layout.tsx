@@ -41,16 +41,9 @@ export default function AdminLayout({children}:PropsWithChildren){
   return <div className={styles.shell}>
     <section className={styles.staffBar} aria-label="Administrator quick navigation">
       <div className={styles.identity}>{photo?<img src={photo} alt="Profile"/>:<span className={styles.avatar}>{initials||"A"}</span>}<div><strong>{user?.fullName}</strong><small>{user?.roles.join(" · ")}</small></div></div>
-      <nav className={styles.links}>
-        <Link href="/admin">Admin Console</Link>
-        <Link href="/admin/users">Users</Link>
-        <Link href="/admin/bookings">Bookings</Link>
-        <Link href="/admin/operator-assignments">Operator Assignments</Link>
-        <Link href="/admin/release-readiness">Release Readiness</Link>
-        <Link href="/operations">Operations</Link>
-        <Link href="/shop-counter">Shop Counter</Link>
-        <Link href="/admin/commerce">Commerce</Link>
-        <Link href="/dashboard?section=profile">My Profile</Link>\n        <button type="button" onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button>
+      <nav className={styles.links} aria-label="Account actions">
+        <Link href="/dashboard?section=profile">My Profile</Link>
+        <button type="button" onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button>
       </nav>
     </section>
     <div onClickCapture={routeLegacyNavigation}>{children}</div>
