@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,11 +29,20 @@ public class MfaService {
     private final JdbcTemplate jdbc;
     private final PasswordEncoder encoder;
     private final NotificationProviderRegistry providers;
+    private final boolean localConsoleMfa;
 
-    public MfaService(JdbcTemplate jdbc, PasswordEncoder encoder, NotificationProviderRegistry providers) {
+
+    public MfaService(JdbcTemplate jdbc, PasswordEncoder encoder, NotificationProviderRegistry providers,
+            @Value("${app.security.local-console-mfa:false}") boolean localConsoleMfa,
+            Environment environment) {
         this.jdbc = jdbc;
         this.encoder = encoder;
         this.providers = providers;
+        if (localConsoleMfa && (!environment.acceptsProfiles(Profiles.of("local"))
+                || environment.acceptsProfiles(Profiles.of("prod", "production", "uat", "test")))) {
+            throw new IllegalStateException("Console MFA is allowed only with the local profile");
+        }
+        this.localConsoleMfa = localConsoleMfa;
     }
 
     public boolean privileged(User user) {
@@ -80,8 +91,9 @@ public class MfaService {
         Notification email = new Notification(user, NotificationChannel.EMAIL, "SECURITY",
                 "Jnapanam sign-in verification code",
                 "Your verification code is " + code + ". It expires in 10 minutes.");
-        providers.provider(NotificationChannel.EMAIL).send(email);
+        if (!localConsoleMfa) providers.provider(NotificationChannel.EMAIL).send(email);
         jdbc.update("update privileged_mfa set challenge_hash=?,challenge_expires_at=?,updated_at=now() where user_id=?",
                 hash, Timestamp.from(Instant.now().plusSeconds(600)), user.getId());
+        if (localConsoleMfa) System.out.println("[LOCAL TEST ONLY] MFA code for " + user.getEmail() + ": " + code);
     }
 }
