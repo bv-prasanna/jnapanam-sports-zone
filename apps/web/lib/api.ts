@@ -105,3 +105,12 @@ export async function logout() {
   if (refreshToken) await api<void>("/api/v1/auth/logout", { method: "POST", body: JSON.stringify({ refreshToken }) }).catch(() => undefined);
   clearSession();
 }
+
+
+export async function apiDocument(path:string):Promise<Blob>{
+  const request=async(token:string|null)=>fetch(`${API_BASE_URL}${path}`,{headers:token?{Authorization:`Bearer ${token}`}:{}});
+  let response=await request(accessToken);
+  if(response.status===401){const token=await refreshAccess();if(token)response=await request(token);}
+  if(!response.ok)throw new ApiError(response.status,"Unable to retrieve verification document");
+  return response.blob();
+}

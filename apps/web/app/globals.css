@@ -186,3 +186,29 @@
 .feature-grid>.founder-card .founder-portrait img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center bottom!important}
 @media(max-width:780px){.site-header .brand-logo{width:68px;height:68px}.feature-grid>.feature-card{min-height:290px}}
 @media(max-width:520px){.feature-grid>.feature-card{height:auto;min-height:0}.feature-grid>.founder-card{grid-template-columns:minmax(0,1fr);padding:20px 18px 0}.feature-grid>.founder-card>div:first-child{padding:0}.feature-grid>.founder-card .founder-portrait{min-height:240px;max-width:260px;width:100%;margin:0 auto}}
+
+
+/* Founder feature portrait: keep the image proportional and visible at every breakpoint. */
+.feature-grid .founder-card{grid-template-columns:minmax(0,1fr) minmax(165px,40%);padding:20px 0 0 22px;min-width:0}
+.feature-grid .founder-card>div:first-child{min-width:0;padding-right:8px}
+.feature-grid .founder-portrait{position:relative;align-self:stretch;min-width:0;min-height:280px;overflow:hidden}
+.feature-grid .founder-portrait img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center bottom!important}
+@media(max-width:1050px){.feature-grid .founder-card{grid-template-columns:minmax(0,1fr) minmax(180px,34%)}}
+@media(max-width:520px){.feature-grid .founder-card{grid-template-columns:minmax(0,1fr) minmax(135px,39%);padding:18px 0 0 16px}.feature-grid .founder-portrait{min-height:245px}.feature-grid .founder-card h3{font-size:clamp(19px,5vw,24px)}}
+
+/* PR #24 parity: on narrow screens, preserve full founder portrait and readable text.
+   Keep the verified JPEG brand asset, never the older corrupt PNG. */
+.site-header .brand{min-width:0;overflow:visible}
+.site-header .brand-logo{flex:none;background-size:contain;background-repeat:no-repeat}
+@media(max-width:780px){
+  .site-header .brand-logo{width:64px;height:64px}
+}
+@media(max-width:520px){
+  .feature-grid>.feature-card{height:auto;min-height:0}
+  .feature-grid>.founder-card,
+  .feature-grid .founder-card{display:grid;grid-template-columns:minmax(0,1fr);padding:20px 18px 0}
+  .feature-grid>.founder-card>div:first-child,
+  .feature-grid .founder-card>div:first-child{padding:0;min-width:0}
+  .feature-grid .founder-portrait{min-height:240px;max-width:260px;width:100%;margin:0 auto}
+  .feature-grid .founder-card h3{font-size:23px;overflow-wrap:break-word}
+}
