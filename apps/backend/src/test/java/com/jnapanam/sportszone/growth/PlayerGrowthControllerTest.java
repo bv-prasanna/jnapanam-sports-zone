@@ -14,9 +14,10 @@ class PlayerGrowthControllerTest {
  @Test void rejectsMissingAssessmentFieldsByValidationContract() throws Exception {
    var fields=PlayerGrowthController.AssessmentRequest.class.getRecordComponents();
    assertEquals(6,fields.length);
-   assertNotNull(fields[3].getAnnotation(jakarta.validation.constraints.NotNull.class));
-   assertNotNull(fields[3].getAnnotation(jakarta.validation.constraints.Min.class));
-   assertNotNull(fields[3].getAnnotation(jakarta.validation.constraints.Max.class));
+   var scoreAccessor=fields[3].getAccessor();
+   assertNotNull(scoreAccessor.getAnnotation(jakarta.validation.constraints.NotNull.class));
+   assertNotNull(scoreAccessor.getAnnotation(jakarta.validation.constraints.Min.class));
+   assertNotNull(scoreAccessor.getAnnotation(jakarta.validation.constraints.Max.class));
  }
  @Test void goalAndAssessmentEndpointsDoNotAllowAnonymousAccess() throws Exception {
   var paths=PlayerGrowthController.class.getDeclaredMethods();

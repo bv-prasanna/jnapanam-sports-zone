@@ -26,7 +26,7 @@ app:
     # PasswordRecoveryService rejects token exposure under prod/production profiles.
     expose-development-reset-token: true
     test-otp-enabled: true
-    test-otp: '9876'
+    test-otp: '987654'
   cors:
     allowed-origins:
       - http://localhost:3000
