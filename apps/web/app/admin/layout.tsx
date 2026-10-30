@@ -41,18 +41,17 @@ export default function AdminLayout({children}:PropsWithChildren){
   return <div className={styles.shell}>
     <section className={styles.staffBar} aria-label="Administrator quick navigation">
       <div className={styles.identity}>{photo?<img src={photo} alt="Profile"/>:<span className={styles.avatar}>{initials||"A"}</span>}<div><strong>{user?.fullName}</strong><small>{user?.roles.join(" · ")}</small></div></div>
-      <nav className={styles.links}>
-        <Link href="/admin">Admin Console</Link>
-        <Link href="/admin/users">Users</Link>
-        <Link href="/admin/bookings">Bookings</Link>
-        <Link href="/admin/operator-assignments">Operator Assignments</Link>
-        <Link href="/admin/release-readiness">Release Readiness</Link>
-        <Link href="/operations">Operations</Link>
-        <Link href="/shop-counter">Shop Counter</Link>
-        <Link href="/admin/commerce">Commerce</Link>
-        <Link href="/dashboard?section=profile">My Profile</Link>\n        <button type="button" onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button>
+      <nav className={styles.links} aria-label="Account actions">
+        <Link href="/dashboard?section=profile">My Profile</Link>
+        <button type="button" onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button>
       </nav>
     </section>
-    <div onClickCapture={routeLegacyNavigation}>{children}</div>
+    {pathname!=="/admin"&&<div className={styles.secondaryLayout}><aside className={styles.sideNav} aria-label="Admin modules"><strong>Admin modules</strong>{[
+      ["Dashboard","/admin"],["Verification","/admin/verification"],["Users","/admin/users"],["Bookings","/admin/bookings"],["Operator Assignments","/admin/operator-assignments"],
+      ["Release Readiness","/admin/release-readiness"],["Operations","/operations"],["Shop Counter","/shop-counter"],
+      ["Commerce","/admin/commerce"],["Notification Providers","/admin/notification-providers"],
+      ...(user?.roles.includes("SUPER_ADMIN")?[["UAT OTP Numbers","/admin/uat-otp"]]:[])
+    ].map(([label,href])=><Link key={href} href={href} aria-current={pathname===href?"page":undefined}>{label}</Link>)}</aside><div className={styles.subPage}>{children}</div></div>}
+    {pathname==="/admin"&&<div onClickCapture={routeLegacyNavigation}>{children}</div>}
   </div>;
 }

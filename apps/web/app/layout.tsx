@@ -9,8 +9,8 @@ export const metadata: Metadata = {
     "codex-preview": "development",
   },
   icons: {
-    icon: "/images/jnapanam-logo.png",
-    shortcut: "/images/jnapanam-logo.png",
+    icon: "/images/jnapanam-logo.jpg",
+    shortcut: "/images/jnapanam-logo.jpg",
   },
 };
 

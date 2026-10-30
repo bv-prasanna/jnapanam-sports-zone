@@ -1,8 +1,8 @@
 "use client";
 import {FormEvent,useCallback,useEffect,useState} from "react";
 import {useRouter} from "next/navigation";
-import {SiteHeader} from "@/components/site-header";
-import {SiteFooter} from "@/components/site-footer";
+
+
 import {useApp} from "@/components/app-provider";
 import {api,ApiError} from "@/lib/api";
 type NumberRow={mobile:string;active:boolean;note?:string};
@@ -21,7 +21,7 @@ export default function UatOtpAllowlist(){
  setBusy(true);try{await api("/api/v1/admin/uat-otp/numbers/"+number,{method:"DELETE"});await load();setMessage("Number disabled.");}catch(e){setMessage(e instanceof ApiError?e.message:"Unable to disable");}finally{setBusy(false)}}
  if(!ready||!user)return <p>Loading…</p>;
  if(!permitted)return <p>Super Admin access required.</p>;
- return <><SiteHeader/><main className="portal"><section className="portal-content" style={{maxWidth:850,margin:"0 auto",width:"100%"}}>
+ return <><main className="portal"><section className="portal-content" style={{maxWidth:850,margin:"0 auto",width:"100%"}}>
  <div className="portal-heading"><div><span className="eyebrow">Restricted testing</span><h1>UAT OTP approved numbers</h1><p>Add or disable test phone numbers without changing environment variables.</p></div></div>
  <p role="status">Fixed OTP mode: <strong>{enabled?"Enabled in this environment":"Disabled in this environment"}</strong>. This screen never displays the OTP code.</p>
  <form onSubmit={add} className="form-grid"><label>Mobile number<input type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} required value={mobile} onChange={e=>setMobile(e.target.value)} placeholder="10-digit test mobile"/></label>
@@ -29,5 +29,5 @@ export default function UatOtpAllowlist(){
  {message&&<p role="status">{message}</p>}<h2>Approved numbers</h2>
  <div className="record-list">{rows.map(row=><article key={row.mobile}><strong>{row.mobile}</strong><div><small>Status</small><span>{row.active?"Active":"Disabled"}</span></div>{row.note&&<p>{row.note}</p>}
  {row.active&&<button disabled={busy} type="button" onClick={()=>void disable(row.mobile)}>Disable</button>}</article>)}</div>
- </section></main><SiteFooter/></>;
+ </section></main></>;
 }

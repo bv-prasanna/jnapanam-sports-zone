@@ -11,7 +11,25 @@ public record FacilityResponse(UUID id, String code, String name, String descrip
     public static FacilityResponse from(Facility facility) {
         return new FacilityResponse(facility.getId(), facility.getCode(), facility.getName(), facility.getDescription(),
                 facility.getLocationLabel(), facility.getSlotDurationMinutes(), facility.getCapacity(), facility.getBookingPrice(),
-                facility.getSport().getCode(), facility.getSport().getName(), facility.getStatus().name(),
-                facility.getSuspendedFrom(), facility.getSuspendedUntil(), facility.getStatusReason());
+                facility.getSport().getCode(), facility.getSport().getName(), effectiveStatus(facility),
+                effectiveFrom(facility), effectiveUntil(facility), effectiveReason(facility));
+    }
+    private static boolean inherited(Facility f) {
+        return f.getSport().getStatus() == com.jnapanam.sportszone.catalog.model.CatalogueStatus.INACTIVE
+                || (f.getStatus() == com.jnapanam.sportszone.catalog.model.CatalogueStatus.ACTIVE
+                    && f.getSport().getStatus() == com.jnapanam.sportszone.catalog.model.CatalogueStatus.TEMPORARILY_SUSPENDED);
+    }
+    private static String effectiveStatus(Facility f) {
+        return inherited(f) ? f.getSport().getStatus().name() : f.getStatus().name();
+    }
+    private static LocalDate effectiveFrom(Facility f) {
+        return inherited(f) ? f.getSport().getSuspendedFrom() : f.getSuspendedFrom();
+    }
+    private static LocalDate effectiveUntil(Facility f) {
+        return inherited(f) ? f.getSport().getSuspendedUntil() : f.getSuspendedUntil();
+    }
+    private static String effectiveReason(Facility f) {
+        return inherited(f) ? "Parent sport unavailable" : f.getStatusReason();
     }
 }
+

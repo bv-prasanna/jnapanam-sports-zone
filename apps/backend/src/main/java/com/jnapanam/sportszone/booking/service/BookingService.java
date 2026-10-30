@@ -33,6 +33,7 @@ public class BookingService {
  public HoldResponse hold(UUID userId,HoldRequest request){
   requireFirstBookingDocument(userId);
   cleanupExpired(); User user=requireUser(userId); BookingSlot slot=slots.findLocked(request.slotId()).orElseThrow(()->new NotFoundException("Slot not found"));
+  if (!slot.getFacility().isAvailableOn(slot.getDate())) throw new ConflictException("Facility or sport is suspended for this date");
   if(slot.getDate().isBefore(LocalDate.now())||!LocalDateTime.of(slot.getDate(),slot.getStartTime()).isAfter(LocalDateTime.now())) throw new ConflictException("This slot has already started or passed");
   slot.hold(request.quantity()); BookingHold hold=holds.save(new BookingHold(user,slot,request.quantity(),Instant.now().plusSeconds(holdMinutes*60)));
   return HoldResponse.from(hold);
@@ -43,6 +44,7 @@ public class BookingService {
   BookingHold hold=holds.findLocked(request.holdId()).orElseThrow(()->new NotFoundException("Hold not found")); assertOwner(hold.getUser(),userId);
   if(hold.getStatus()!=HoldStatus.ACTIVE) throw new ConflictException("Hold is no longer active");
   BookingSlot slot=slots.findLocked(hold.getSlot().getId()).orElseThrow(()->new NotFoundException("Slot not found"));
+  if (!slot.getFacility().isAvailableOn(slot.getDate())) throw new ConflictException("Facility or sport is suspended for this date");
   if(hold.expired(Instant.now())){slot.releaseHold(hold.getQuantity());hold.change(HoldStatus.EXPIRED);throw new ConflictException("Hold has expired");}
   slot.confirm(hold.getQuantity());hold.change(HoldStatus.CONVERTED);boolean priced=slot.getFacility().getBookingPrice().signum()>0;PaymentOption option=request.paymentOption()==null?PaymentOption.PAY_NOW:request.paymentOption();if(priced&&hold.getUser().isRequiresUpfrontPayment()&&option==PaymentOption.PAY_AT_VENUE)throw new ConflictException("Upfront online payment is required for this customer");boolean paymentRequired=priced&&option==PaymentOption.PAY_NOW;Booking saved=bookings.save(new Booking(hold.getUser(),slot,hold.getQuantity(),priced,option,paymentRequired,Instant.now().plusSeconds(paymentMinutes*60)));notificationService.lifecycle(userId,paymentRequired?"BOOKING_CREATED":"BOOKING_CONFIRMED",paymentRequired?"Booking created - payment pending":"Booking confirmed",paymentRequired?"Booking "+saved.getBookingNumber()+" is reserved. Complete payment before the payment window expires.":"Booking "+saved.getBookingNumber()+" is confirmed. Payment can be collected at the venue.");return BookingResponse.from(saved);
  }

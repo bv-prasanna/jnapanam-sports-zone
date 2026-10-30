@@ -22,6 +22,8 @@ app:
     access-token-minutes: 60
     refresh-token-days: 1
     privileged-mfa-required: false
+    # Existing mobile-OTP integration tests are retained until migrated to email.
+    mobile-otp-enabled: true
     # Test profile only: exercise password-reset token lifecycle without an email provider.
     # PasswordRecoveryService rejects token exposure under prod/production profiles.
     expose-development-reset-token: true
