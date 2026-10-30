@@ -15,7 +15,7 @@ const en = {
     createAccount: 'Create Account', registerDescription: 'Register once to book facilities and join programs.',
     loginRequired: 'Login required', validCredentials: 'Enter a valid email and password.', validName: 'Enter a proper name using letters only.',
     validEmail: 'Enter a valid email address.', validMobile: 'Enter a valid 10 to 20 character mobile number.',
-    passwordLength: 'Password must contain at least 8 characters.', passwordMismatch: 'Passwords do not match.',
+    passwordLength: 'Password must contain at least 8 characters.', passwordMismatch: 'Passwords do not match.', smsOtp:'SMS verification code', sendOtp:'Send SMS OTP', verifyOtp:'Verify OTP', resetPassword:'Reset password', deviceVerified:'This mobile device is verified for your session',
   },
   home: {
     destination: 'YOUR SPORTS DESTINATION', welcome: 'Welcome, {{name}}', welcomeGuest: 'Welcome to Jnapanam', atJnapanam: 'AT JNAPANAM', bookNow: 'Book now', sportsUnavailable: 'Sports will appear when the backend is available.', headline: 'Play. Train. Compete.',

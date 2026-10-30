@@ -46,6 +46,8 @@ jobs:
         run: npm ci
       - name: Build and test
         run: npm test
+      - name: Type-check web
+        run: npx tsc --noEmit
 
   mobile:
     runs-on: ubuntu-latest

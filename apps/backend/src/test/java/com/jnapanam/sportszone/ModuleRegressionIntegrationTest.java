@@ -57,6 +57,89 @@ class ModuleRegressionIntegrationTest {
     }
 
     @Test
+    void configuredUatOtpCanVerifyRegistrationWithoutProviderOtp() throws Exception {
+        String mobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(mobile);
+        String email = uniqueEmail("fixed-otp");
+        String body = "{\"fullName\":\"OTP Test User\",\"email\":\"" + email
+                + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"987654\"}";
+
+        // Fixed test OTP must never authenticate before a challenge was requested.
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(post("/api/v1/auth/otp/registration/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mobile\":\"" + mobile + "\"}"))
+                .andExpect(status().isAccepted());
+
+        // Request throttle still applies even when the SMS provider is disabled in UAT.
+        mvc.perform(post("/api/v1/auth/otp/registration/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mobile\":\"" + mobile + "\"}"))
+                .andExpect(status().isConflict());
+
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON).content(body.replace("987654", "111111")))
+                .andExpect(status().isBadRequest());
+        Integer failedAttempts = jdbc.queryForObject(
+                "select attempts from mobile_otp_challenges where mobile=? and purpose='REGISTRATION' order by created_at desc limit 1",
+                Integer.class, mobile);
+        Assertions.assertEquals(1, failedAttempts);
+
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty());
+
+        // A consumed OTP must not be usable again, even when its code is fixed.
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void fixedUatOtpStillExpiresAndLocksOutAfterFiveAttempts() throws Exception {
+        String mobile = "9" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(mobile);
+        mvc.perform(post("/api/v1/auth/otp/registration/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mobile\":\"" + mobile + "\"}"))
+                .andExpect(status().isAccepted());
+        String email = uniqueEmail("otp-lockout");
+        String json = "{\"fullName\":\"UAT Lockout\",\"email\":\"" + email
+                + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"%s\"}";
+        for (int i = 0; i < 5; i++) {
+            mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(String.format(json, "111111")))
+                    .andExpect(status().isBadRequest());
+        }
+        Integer attempts = jdbc.queryForObject(
+                "select attempts from mobile_otp_challenges where mobile=? and purpose='REGISTRATION' order by created_at desc limit 1",
+                Integer.class, mobile);
+        Assertions.assertEquals(5, attempts);
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format(json, "987654")))
+                .andExpect(status().isBadRequest());
+
+        String expiredMobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(expiredMobile);
+        mvc.perform(post("/api/v1/auth/otp/registration/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mobile\":\"" + expiredMobile + "\"}"))
+                .andExpect(status().isAccepted());
+        jdbc.update("update mobile_otp_challenges set expires_at=now()-interval '1 second' where mobile=? and purpose='REGISTRATION'",
+                expiredMobile);
+        mvc.perform(post("/api/v1/auth/otp/registration/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format(json.replace(mobile, expiredMobile), "987654")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void authenticationNegativeCasesReturnExpectedStatuses() throws Exception {
         String email = uniqueEmail("negative");
         register(email);
@@ -165,6 +248,7 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2))).andExpect(jsonPath("$[0].available").value(2)).andReturn();
         String slotId = field(slotResult, ID);
         TokenPair customer = register(uniqueEmail("booking-customer"));
+        addBookingProof(customer.accessToken());
         MvcResult holdResult = mvc.perform(post("/api/v1/bookings/holds").header("Authorization", bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"slotId\":\"" + slotId + "\",\"quantity\":2}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("ACTIVE")).andReturn();
@@ -470,7 +554,8 @@ class ModuleRegressionIntegrationTest {
                 .content("{\"dayOfWeek\":\"MONDAY\",\"openTime\":\"06:00:00\",\"closeTime\":\"08:00:00\",\"closed\":false}"))
                 .andExpect(status().isOk());
         MvcResult slots=mvc.perform(get("/api/v1/public/facilities/{id}/slots",facilityId).param("date",date.toString())).andExpect(status().isOk()).andReturn();
-        TokenPair customer=register(uniqueEmail("venue-customer"));MvcResult profile=mvc.perform(get("/api/v1/profile/me").header("Authorization",bearer(customer.accessToken()))).andReturn();String customerId=field(profile,ID);
+        TokenPair customer=register(uniqueEmail("venue-customer"));
+        addBookingProof(customer.accessToken());MvcResult profile=mvc.perform(get("/api/v1/profile/me").header("Authorization",bearer(customer.accessToken()))).andReturn();String customerId=field(profile,ID);
         String slotId=field(slots,ID);
         MvcResult hold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"slotId\":\""+slotId+"\",\"quantity\":1}"))
                 .andExpect(status().isCreated()).andReturn();
@@ -512,6 +597,7 @@ class ModuleRegressionIntegrationTest {
                 .content("{\"dayOfWeek\":\"MONDAY\",\"openTime\":\"06:00:00\",\"closeTime\":\"07:00:00\",\"closed\":false}")).andExpect(status().isOk());
         MvcResult slots=mvc.perform(get("/api/v1/public/facilities/{id}/slots",facilityId).param("date",date.toString())).andExpect(status().isOk()).andReturn();
         TokenPair customer=register(uniqueEmail("void-customer"));
+        addBookingProof(customer.accessToken());
         MvcResult hold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"slotId\":\""+field(slots,ID)+"\",\"quantity\":1}")).andExpect(status().isCreated()).andReturn();
         MvcResult booking=mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
@@ -579,6 +665,19 @@ class ModuleRegressionIntegrationTest {
         MvcResult result = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody(email, password)))
                 .andExpect(status().isOk()).andReturn();
         return tokens(result);
+    }
+
+    private void addBookingProof(String token) throws Exception {
+        MvcResult profile = mvc.perform(get("/api/v1/profile/me").header("Authorization", bearer(token)))
+                .andExpect(status().isOk()).andReturn();
+        UUID userId = UUID.fromString(field(profile, ID));
+        jdbc.update("INSERT INTO booking_address_proofs(id,user_id,document_type,content_type,original_filename,document_bytes,status) VALUES (?,?,?,?,?,?,'PENDING')",
+                UUID.randomUUID(), userId, "DL", "application/pdf", "integration-test.pdf",
+                new byte[]{37,80,68,70,45,49,46,52});
+    }
+
+    private void allowTestMobile(String mobile) {
+        jdbc.update("INSERT INTO uat_otp_allowed_mobiles(mobile, active, note) VALUES (?,true,?) ON CONFLICT(mobile) DO UPDATE SET active=true", mobile, "Integration test fixture");
     }
 
     private void removeRole(String email,String role) {

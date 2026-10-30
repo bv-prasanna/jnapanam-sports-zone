@@ -125,8 +125,8 @@
 
 
 /* Render the brand mark independently of framework image sizing. */
-.brand-logo{display:block;width:96px;height:96px;flex:none;background:url('/images/jnapanam-logo.png?v=20260902') center/contain no-repeat}
-@media(max-width:780px){.brand-logo{width:74px;height:74px}}
+.brand-logo{display:block;width:72px;height:72px;flex:none;background:url('/images/jnapanam-logo.jpg?v=20261024') center/contain no-repeat}
+@media(max-width:780px){.brand-logo{width:68px;height:68px}}
 
 
 /* Facility operating hours and closure management */
@@ -170,3 +170,19 @@
 
 .organizer-tournament-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 30px;padding:22px;background:#fffdf8;border:1px solid var(--line);border-radius:14px}
 .organizer-tournament-form h2,.organizer-tournament-form .wide{grid-column:1/-1}.organizer-tournament-form label{display:grid;gap:7px;font-weight:700}.organizer-tournament-form input,.organizer-tournament-form select,.organizer-tournament-form textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:white}.organizer-tournament-form textarea{min-height:100px;resize:vertical}.organizer-form-actions{display:flex;align-items:center;justify-content:space-between;gap:16px}.organizer-form-actions span{color:var(--muted);font-size:13px}@media(max-width:700px){.organizer-tournament-form{grid-template-columns:1fr}.organizer-tournament-form h2,.organizer-tournament-form .wide{grid-column:auto}.organizer-form-actions{align-items:stretch;flex-direction:column}}
+
+.admin-user-identity{display:grid;grid-template-columns:38px 1fr;column-gap:10px;align-items:center;padding:10px 8px}.admin-user-identity strong,.admin-user-identity span:not(.admin-user-avatar){grid-column:2}.admin-user-avatar{grid-row:1/3;width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}.admin-user-avatar-fallback{display:flex;align-items:center;justify-content:center;background:var(--sand);color:var(--olive);font-weight:900}
+
+/* Consolidated responsive branding; preserve the valid JPEG introduced after old logo PRs. */
+.site-header .brand{display:flex;align-items:center;justify-content:center;align-self:stretch;flex-shrink:0;overflow:visible}
+.site-header .brand-logo{display:block;width:clamp(68px,6.5vw,88px);height:clamp(68px,6.5vw,88px);max-width:100%;background-image:url('/images/jnapanam-logo.jpg?v=20261025');background-size:contain;background-position:center;background-repeat:no-repeat;flex:none}
+.feature-grid{align-items:stretch}
+.feature-grid>.feature-card{height:auto;min-height:320px}
+.feature-grid>.founder-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(115px,38%);padding:20px 0 0 20px;align-items:stretch;overflow:hidden;min-width:0}
+.feature-grid>.founder-card>div:first-child{min-width:0;padding:0 8px 20px 0;position:relative;z-index:1}
+.feature-grid>.founder-card h3{font-size:clamp(18px,1.4vw,24px);line-height:1.2;overflow-wrap:break-word}
+.feature-grid>.founder-card p{font-size:13px;line-height:1.5;overflow-wrap:break-word}
+.feature-grid>.founder-card .founder-portrait{position:relative;min-width:0;min-height:240px;align-self:stretch;overflow:hidden}
+.feature-grid>.founder-card .founder-portrait img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center bottom!important}
+@media(max-width:780px){.site-header .brand-logo{width:68px;height:68px}.feature-grid>.feature-card{min-height:290px}}
+@media(max-width:520px){.feature-grid>.feature-card{height:auto;min-height:0}.feature-grid>.founder-card{grid-template-columns:minmax(0,1fr);padding:20px 18px 0}.feature-grid>.founder-card>div:first-child{padding:0}.feature-grid>.founder-card .founder-portrait{min-height:240px;max-width:260px;width:100%;margin:0 auto}}

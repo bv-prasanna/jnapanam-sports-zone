@@ -2,6 +2,7 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 
 import { api, setAccessToken, TokenResponse, User } from '@/lib/api';
 import { getStoredValue, removeStoredValue, setStoredValue } from '@/lib/storage';
+import { getDeviceIdentity } from '@/lib/device-identity';
 
 const REFRESH_TOKEN_KEY = 'jnapanam.refreshToken';
 
@@ -9,8 +10,9 @@ type RegisterInput = { fullName: string; email: string; mobile?: string; passwor
 type AuthValue = {
   user: User | null;
   initializing: boolean;
-  login(email: string, password: string): Promise<void>;
-  register(input: RegisterInput): Promise<void>;
+  login(email: string, password: string, mfaCode?: string): Promise<void>;
+  requestRegistrationOtp(input: RegisterInput): Promise<void>;
+  verifyRegistrationOtp(input:RegisterInput,otp:string): Promise<void>;
   logout(): Promise<void>;
 };
 
@@ -40,9 +42,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       try {
         const refreshToken = await getStoredValue(REFRESH_TOKEN_KEY);
         if (!refreshToken) return;
+        const device=await getDeviceIdentity();
         const tokens = await api<TokenResponse>('/api/v1/auth/refresh', {
           method: 'POST',
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify({ refreshToken,deviceSignature:device.deviceSignature }),
         });
         await storeSession(tokens);
         setUser(await loadMe());
@@ -54,28 +57,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
     })();
   }, [clearSession]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, mfaCode?: string) => {
+    const device=await getDeviceIdentity();
     const tokens = await api<TokenResponse>('/api/v1/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password,mfaCode,...device }),
     });
     await storeSession(tokens);
     setUser(await loadMe());
   }, []);
 
-  const register = useCallback(async (input: RegisterInput) => {
-    const tokens = await api<TokenResponse>('/api/v1/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...input,
-        fullName: input.fullName.trim(),
-        email: input.email.trim().toLowerCase(),
-        mobile: input.mobile?.trim() || null,
-      }),
-    });
-    await storeSession(tokens);
-    setUser(await loadMe());
-  }, []);
+  const requestRegistrationOtp=useCallback(async(input:RegisterInput)=>{await api<void>('/api/v1/auth/otp/registration/email/request',{method:'POST',body:JSON.stringify({email:input.email.trim().toLowerCase()})});},[]);
+  const verifyRegistrationOtp=useCallback(async(input:RegisterInput,otp:string)=>{const device=await getDeviceIdentity();const tokens=await api<TokenResponse>('/api/v1/auth/otp/registration/email/verify',{method:'POST',body:JSON.stringify({...input,fullName:input.fullName.trim(),email:input.email.trim().toLowerCase(),mobile:input.mobile?.trim(),otp,...device})});await storeSession(tokens);setUser(await loadMe());},[]);
 
   const logout = useCallback(async () => {
     const refreshToken = await getStoredValue(REFRESH_TOKEN_KEY);
@@ -89,7 +82,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [clearSession]);
 
-  const value = useMemo(() => ({ user, initializing, login, register, logout }), [user, initializing, login, register, logout]);
+  const value = useMemo(() => ({ user, initializing, login, requestRegistrationOtp, verifyRegistrationOtp, logout }), [user, initializing, login, requestRegistrationOtp, verifyRegistrationOtp, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

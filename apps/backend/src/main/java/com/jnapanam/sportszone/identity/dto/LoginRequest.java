@@ -1,6 +1,1 @@
-package com.jnapanam.sportszone.identity.dto;
-
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-
-public record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {}
+package com.jnapanam.sportszone.identity.dto;import jakarta.validation.constraints.*;public record LoginRequest(@NotBlank String email,@NotBlank String password,String mfaCode,@Size(max=200)String deviceSignature,@Size(max=160)String deviceName){}

@@ -61,3 +61,6 @@ Recommended: 1920×1080, 10–20 seconds, muted, looping, H.264 MP4, ideally und
 - Replace sample events with confirmed event data.
 - Login, registration and form submission are visual placeholders until the backend phase.
 - Kannada language switching will be connected during the localization phase.
+
+
+<!-- Trigger Cloudflare deployment after registration fix -->

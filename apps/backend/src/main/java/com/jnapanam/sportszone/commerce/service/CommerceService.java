@@ -1,6 +1,7 @@
 package com.jnapanam.sportszone.commerce.service;
 
 import static com.jnapanam.sportszone.commerce.dto.CommerceDtos.*;
+import com.jnapanam.sportszone.notification.service.NotificationService;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CommerceService {
     private final JdbcTemplate jdbc;
+    private final NotificationService notifications;
 
-    public CommerceService(JdbcTemplate jdbc) {
+    public CommerceService(JdbcTemplate jdbc, NotificationService notifications) {
         this.jdbc = jdbc;
+        this.notifications = notifications;
     }
 
     public List<Category> categories() {
@@ -215,6 +218,7 @@ public class CommerceService {
                     variant, -quantity, id, user);
         }
         jdbc.update("delete from commerce_cart_items where user_id=?", user);
+        notifications.lifecycle(user, "COMMERCE", "Shop order placed", "Order " + number + " was placed successfully.");
         return order(user, id);
     }
 
@@ -262,6 +266,7 @@ public class CommerceService {
                                     + "values(?,?,'CANCELLATION',?,?)",
                             variant, quantity, id, user);
                 });
+        notifications.lifecycle(user, "COMMERCE", "Shop order cancelled", "Order " + order.orderNumber() + " was cancelled.");
         return order(user, id);
     }
 

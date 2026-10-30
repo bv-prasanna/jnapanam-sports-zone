@@ -15,10 +15,8 @@
     "android": {
       "package": "com.jnapanam.sportszone",
       "adaptiveIcon": {
-        "backgroundColor": "#E8F5EE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -31,13 +29,21 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B5D3B",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 140
         }
       ],
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Jnapanam uses your location with your permission to record where activities occur. You can continue without location.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

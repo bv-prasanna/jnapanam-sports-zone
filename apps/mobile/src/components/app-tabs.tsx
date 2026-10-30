@@ -9,9 +9,12 @@ const icons = {
   bookings: 'calendar-check-outline',
   memberships: 'card-account-details-outline',
   training: 'whistle-outline',
+  growth: 'chart-line',
   tournaments: 'trophy-outline',
   shop: 'shopping-outline',
+  notifications: 'bell-outline',
   operations: 'clipboard-account-outline',
+  'shop-counter': 'storefront-outline',
   admin: 'view-dashboard-outline',
   profile: 'account-outline',
 } as const;
@@ -22,6 +25,7 @@ export default function AppTabs() {
   if (initializing) return null;
   const staff = !!user?.roles.some(r => ['SUPER_ADMIN','ADMIN','OPERATIONS'].includes(r));
   const admin = !!user?.roles.some(r => ['SUPER_ADMIN','ADMIN'].includes(r));
+  const shopkeeper = !!user?.roles.some(r => ['SUPER_ADMIN','ADMIN','SHOP_KEEPER'].includes(r));
   return <Tabs screenOptions={({route})=>({
     headerShown:false,
     tabBarActiveTintColor:BrandColors.accent,
@@ -34,8 +38,11 @@ export default function AppTabs() {
     <Tabs.Screen name="bookings" options={{title:t('navigation.bookings'),href:staff?null:'/bookings'}}/>
     <Tabs.Screen name="memberships" options={{title:t('navigation.memberships'),href:staff?null:'/memberships'}}/>
     <Tabs.Screen name="training" options={{title:t('navigation.training'),href:staff?null:'/training'}}/>
+    <Tabs.Screen name="growth" options={{title:"My Growth",href:staff?null:"/growth"}}/>
     <Tabs.Screen name="tournaments" options={{title:t('navigation.tournaments'),href:staff?null:'/tournaments'}}/>
-    <Tabs.Screen name="shop" options={{title:t('navigation.shop'),href:staff?null:'/shop'}}/>
+    <Tabs.Screen name="shop" options={{title:t('navigation.shop'),href:'/shop'}}/>
+    <Tabs.Screen name="notifications" options={{title:'Messages'}}/>
+    <Tabs.Screen name="shop-counter" options={{title:'Shop counter',href:shopkeeper?'/shop-counter':null}}/>
     <Tabs.Screen name="operations" options={{title:'Operations',href:staff?'/operations':null}}/>
     <Tabs.Screen name="admin" options={{title:'Admin',href:admin?'/admin':null}}/>
     <Tabs.Screen name="profile" options={{title:t('navigation.profile')}}/>

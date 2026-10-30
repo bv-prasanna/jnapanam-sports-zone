@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { getEventLocationHeaders } from './event-location';
 
 export type TokenResponse = {
   tokenType: string;
@@ -28,12 +29,17 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+  const geoHeaders = ['POST','PUT','PATCH','DELETE'].includes(method)
+    ? await getEventLocationHeaders() : {};
+  const publicAuth = path.startsWith('/api/v1/auth/');
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(!publicAuth && accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...geoHeaders,
       ...options.headers,
     },
   });
@@ -47,5 +53,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     throw new ApiError(message, response.status);
   }
   if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  const body = await response.text();
+  if (!body.trim()) return undefined as T;
+  return JSON.parse(body) as T;
 }
