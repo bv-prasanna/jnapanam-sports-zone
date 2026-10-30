@@ -47,7 +47,7 @@ export default function AdminLayout({children}:PropsWithChildren){
       </nav>
     </section>
     {pathname!=="/admin"&&<div className={styles.secondaryLayout}><aside className={styles.sideNav} aria-label="Admin modules"><strong>Admin modules</strong>{[
-      ["Dashboard","/admin"],["Users","/admin/users"],["Bookings","/admin/bookings"],["Operator Assignments","/admin/operator-assignments"],
+      ["Dashboard","/admin"],["Verification","/admin/verification"],["Users","/admin/users"],["Bookings","/admin/bookings"],["Operator Assignments","/admin/operator-assignments"],
       ["Release Readiness","/admin/release-readiness"],["Operations","/operations"],["Shop Counter","/shop-counter"],
       ["Commerce","/admin/commerce"],["Notification Providers","/admin/notification-providers"],
       ...(user?.roles.includes("SUPER_ADMIN")?[["UAT OTP Numbers","/admin/uat-otp"]]:[])
