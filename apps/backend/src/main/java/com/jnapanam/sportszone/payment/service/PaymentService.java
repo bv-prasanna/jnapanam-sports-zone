@@ -170,21 +170,39 @@ public class PaymentService {
         PaymentOrder order = orders.findById(id).orElseThrow(() -> new NotFoundException("Payment not found"));
         if (order.getStatus() != PaymentStatus.PAID && order.getStatus() != PaymentStatus.PARTIALLY_REFUNDED)
             throw new ConflictException("Only paid payments can be refunded");
-        long already = refunds.findByPaymentOrderId(id).stream().filter(r -> r.getStatus() == RefundStatus.PROCESSED)
+        List<PaymentRefund> existing = refunds.findByPaymentOrderId(id);
+        if (existing.stream().anyMatch(r -> r.getStatus() == RefundStatus.REQUESTED))
+            throw new ConflictException("A refund is still processing. Check its status before another request.");
+        long already = existing.stream().filter(r -> r.getStatus() == RefundStatus.PROCESSED)
                 .mapToLong(PaymentRefund::getAmountPaise).sum();
         long amount = request.amountPaise() == null ? order.getAmountPaise() - already : request.amountPaise();
         if (amount <= 0 || already + amount > order.getAmountPaise())
             throw new BadRequestException("Refund exceeds refundable amount");
+
         PaymentRefund refund = refunds.save(new PaymentRefund(order, amount, request.reason().trim()));
-        refund.processed(gateway.refund(order.getProviderPaymentId(), amount, request.reason()).id());
-        order.refundStatus(already + amount);
-        if (already + amount >= order.getAmountPaise()
-        && order.getPurpose() == PaymentPurpose.BOOKING) {
-    bookings.findById(order.getReferenceId())
-            .ifPresent(Booking::refunded);
-}
-        notificationService.refund(order.getUser().getId(), order.getReceiptNumber(), amount);
+        String providerRefundId = gateway.refund(order.getProviderPaymentId(), amount, request.reason()).id();
+        refund.submitted(providerRefundId);
+
+        // Mock refunds are synchronous. Razorpay returns a refund request identifier;
+        // mark it processed only after the refund.processed webhook is verified.
+        if ("MOCK".equals(gateway.provider())) completeRefund(refund, providerRefundId);
         return refundResponse(refund);
+    }
+
+    private void completeRefund(PaymentRefund refund, String providerRefundId) {
+        if (refund.getStatus() == RefundStatus.PROCESSED) return;
+        PaymentOrder order = refund.getPaymentOrder();
+        refund.processed(providerRefundId);
+        long total = refunds.findByPaymentOrderId(order.getId()).stream()
+                .filter(r -> r.getStatus() == RefundStatus.PROCESSED)
+                .mapToLong(PaymentRefund::getAmountPaise).sum();
+        // During a synchronous mock refund, the just-created row must be counted
+        // even when the test repository has not yet included it in findByPaymentOrderId.
+        if (total < refund.getAmountPaise()) total = refund.getAmountPaise();
+        order.refundStatus(total);
+        if (total >= order.getAmountPaise() && order.getPurpose() == PaymentPurpose.BOOKING)
+            bookings.findById(order.getReferenceId()).ifPresent(Booking::refunded);
+        notificationService.refund(order.getUser().getId(), order.getReceiptNumber(), refund.getAmountPaise());
     }
 
     @Transactional
@@ -200,29 +218,83 @@ public class PaymentService {
 
     @Transactional
     public void webhook(String eventId, String signature, String body, com.fasterxml.jackson.databind.JsonNode json) {
-        if (eventId == null || eventId.isBlank())
-            throw new BadRequestException("Missing webhook event id");
-        if (webhookEvents.existsByProviderEventId(eventId))
-            return;
+        if (eventId == null || eventId.isBlank() || eventId.length() > 160)
+            throw new BadRequestException("Invalid webhook event id");
+        // Check signature before consulting de-duplication state; never trust a replay
+        // solely because it supplied the ID of a previously received webhook.
         if (!gateway.verifyWebhook(body, signature))
             throw new BadRequestException("Invalid webhook signature");
-        String type = json.path("event").asText();
+        if (webhookEvents.existsByProviderEventId(eventId)) return;
+
+        String type = json.path("event").asText("");
+        if (type.isBlank() || type.length() > 80)
+            throw new BadRequestException("Webhook event type is missing or invalid");
+        String category = type.substring(0, type.indexOf('.') < 0 ? type.length() : type.indexOf('.'));
+        var entity = json.path("payload").path(category).path("entity");
+        String objectId = safeIdentifier(entity.path("id").asText(null));
+        String providerOrderId = safeIdentifier(entity.path("order_id").asText(null));
+        String providerPaymentId = safeIdentifier(entity.path("payment_id").asText(null));
+        Long amount = entity.hasNonNull("amount") && entity.path("amount").canConvertToLong()
+                ? entity.path("amount").asLong() : null;
+        String result = "OBSERVED";
+
         if ("payment.captured".equals(type)) {
-            var payment = json.path("payload").path("payment").path("entity");
-            String orderId = payment.path("order_id").asText();
-            String paymentId = payment.path("id").asText();
-            orders.findByProviderOrderId(orderId).ifPresent(o -> {
-                if (o.getStatus() == PaymentStatus.CREATED) {
-                    resolveAmount(o.getUser().getId(), o.getPurpose(), o.getReferenceId());
-                    o.paid(paymentId);
-                    fulfil(o);
-                    loyaltyService.earn(o.getUser(), o);
-                    notificationService.payment(o.getUser().getId(), o.getReceiptNumber(), o.getAmountPaise());
-                    notifyFulfilment(o);
+            providerPaymentId = objectId;
+            if (providerOrderId == null || providerPaymentId == null)
+                throw new BadRequestException("Captured payment is missing identifiers");
+            final String capturedPaymentId = providerPaymentId;
+            final String orderId = providerOrderId;
+            var order = orders.findByProviderOrderId(orderId);
+            if (order.isEmpty()) {
+                result = "UNMATCHED";
+            } else if (order.get().getStatus() == PaymentStatus.CREATED) {
+                PaymentOrder target = order.get();
+                if (amount == null || amount != target.getAmountPaise()
+                        || !target.getCurrency().equals(entity.path("currency").asText()))
+                    throw new BadRequestException("Captured payment amount or currency mismatch");
+                resolveAmount(target.getUser().getId(), target.getPurpose(), target.getReferenceId());
+                target.paid(capturedPaymentId);
+                fulfil(target);
+                loyaltyService.earn(target.getUser(), target);
+                notificationService.payment(target.getUser().getId(), target.getReceiptNumber(), target.getAmountPaise());
+                notifyFulfilment(target);
+                result = "APPLIED";
+            }
+        } else if (type.startsWith("refund.")) {
+            providerPaymentId = safeIdentifier(entity.path("payment_id").asText(null));
+            if ("refund.processed".equals(type) || "refund.failed".equals(type)) {
+                var match = objectId == null ? Optional.<PaymentRefund>empty()
+                        : refunds.findByProviderRefundId(objectId);
+                if (match.isEmpty()) {
+                    result = "UNMATCHED";
+                } else {
+                    PaymentRefund refund = match.get();
+                    PaymentOrder order = refund.getPaymentOrder();
+                    if (amount == null || amount != refund.getAmountPaise()
+                            || providerPaymentId == null || !providerPaymentId.equals(order.getProviderPaymentId()))
+                        throw new BadRequestException("Refund does not match the original payment");
+                    if ("refund.processed".equals(type)) {
+                        if (refund.getStatus() != RefundStatus.PROCESSED) {
+                            completeRefund(refund, objectId);
+                            result = "APPLIED";
+                        }
+                    } else if (refund.getStatus() == RefundStatus.REQUESTED) {
+                        refund.failed();
+                        result = "APPLIED";
+                    }
                 }
-            });
+            }
         }
-        webhookEvents.save(new PaymentWebhookEvent(eventId, type, sha256(body)));
+        // payment.failed / payment.authorized / order.paid / settlement.* are
+        // captured as verified observations, never treated as captured money.
+        webhookEvents.save(new PaymentWebhookEvent(eventId, type, sha256(body), result,
+                objectId, providerOrderId, providerPaymentId, amount));
+    }
+
+    private static String safeIdentifier(String value) {
+        if (value == null || value.isBlank()) return null;
+        // Protect the audit row against oversized untrusted provider fields.
+        return value.length() > 120 ? value.substring(0, 120) : value;
     }
 
     private long resolveAmount(UUID userId, PaymentPurpose purpose, UUID ref) {
