@@ -151,9 +151,9 @@ public class HostedPaymentCheckoutController {
         if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) {
             throw new NotFoundException("Checkout session not found");
         }
-        return jdbc.query("SELECT payment_order_id,user_id FROM payment_checkout_sessions WHERE token_hash=? AND expires_at > now()",
-                rs -> rs.next() ? new Session((UUID) rs.getObject(1), (UUID) rs.getObject(2)) : null, hash(token)) instanceof Session session
-                ? session : missing();
+        Session result = jdbc.query("SELECT payment_order_id,user_id FROM payment_checkout_sessions WHERE token_hash=? AND expires_at > now()",
+                rs -> rs.next() ? new Session((UUID) rs.getObject(1), (UUID) rs.getObject(2)) : null, hash(token));
+        return result == null ? missing() : result;
     }
 
     private static Session missing() {
