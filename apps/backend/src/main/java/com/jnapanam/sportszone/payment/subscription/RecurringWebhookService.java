@@ -66,8 +66,10 @@ public class RecurringWebhookService {
    var previous=db.queryForList("select id,status,amount_paise from recurring_charge_refunds where provider_refund_id=?",refundId);
    String status=switch(event){case "refund.processed"->"PROCESSED";case "refund.failed"->"FAILED";default->"CREATED";};
    if(previous.isEmpty()){
-     long refunded=db.queryForObject("select coalesce(sum(amount_paise),0) from recurring_charge_refunds where charge_id=? and status='PROCESSED'",Long.class,chargeId);
-     if("PROCESSED".equals(status)&&refunded+amount>paid)
+     Long refunded="PROCESSED".equals(status)
+         ? db.queryForObject("select coalesce(sum(amount_paise),0) from recurring_charge_refunds where charge_id=? and status='PROCESSED'",Long.class,chargeId)
+         : 0L;
+     if("PROCESSED".equals(status)&&(refunded==null?0:refunded)+amount>paid)
        throw new BadRequestException("Recurring refund aggregate exceeds captured charge");
      db.update("""
        insert into recurring_charge_refunds(id,charge_id,provider_refund_id,amount_paise,status)
