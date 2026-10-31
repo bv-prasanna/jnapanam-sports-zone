@@ -2,6 +2,7 @@ name: Android APK cloud build
 on:
   push:
     branches:
+      - main
       - feat/release1-requirements-completion
       - fix/register-route-regression-test-20261026
     paths:
