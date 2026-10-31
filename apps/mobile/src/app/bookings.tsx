@@ -18,6 +18,7 @@ import { EmptyState, ScreenShell } from '@/components/screen-shell';
 import { BrandColors } from '@/constants/brand';
 import { useAuth } from '@/features/auth/auth-context';
 import { api } from '@/lib/api';
+import { completePayment } from '@/lib/payments';
 
 type Facility = {
   id: string;
@@ -225,27 +226,7 @@ export default function BookingsScreen() {
       });
 
       if (paymentOption === 'PAY_NOW') {
-        const order = await api<PaymentOrder>('/api/v1/payments/orders', {
-          method: 'POST',
-          headers: { 'Idempotency-Key': idempotencyKey() },
-          body: JSON.stringify({
-            purpose: 'BOOKING',
-            referenceId: booking.id,
-            couponCode: null,
-            loyaltyPoints: 0,
-          }),
-        });
-        if (order.provider !== 'MOCK') {
-          throw new Error(t('bookings.checkoutComingSoon'));
-        }
-        await api('/api/v1/payments/verify', {
-          method: 'POST',
-          body: JSON.stringify({
-            paymentOrderId: order.id,
-            providerPaymentId: `pay_mobile_${Date.now()}`,
-            signature: 'mock-signature',
-          }),
-        });
+        await completePayment('BOOKING', booking.id);
         setMessage(t('bookings.paidSuccess', { number: booking.bookingNumber }));
       } else {
         setMessage(t('bookings.venueSuccess', { number: booking.bookingNumber }));
