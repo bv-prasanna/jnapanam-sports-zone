@@ -140,6 +140,7 @@ export default function HomeScreen() {
             ))}
           </View>
 
+          <Pressable style={styles.serviceCard} onPress={() => router.push('/subscriptions')}><View style={styles.serviceIcon}><MaterialCommunityIcons name="repeat" size={25} color={BrandColors.primary}/></View><View style={styles.serviceContent}><Text style={styles.serviceTitle}>Recurring subscriptions</Text><Text style={styles.serviceDescription}>Manage membership renewals and training installments</Text></View><MaterialCommunityIcons name="chevron-right" size={24} color={BrandColors.accent}/></Pressable>
           <Pressable style={styles.profileCard} onPress={() => router.push('/profile')}>
             <MaterialCommunityIcons name={user ? 'account-circle-outline' : 'login'} size={29} color={BrandColors.surface} />
             <View style={styles.profileCopy}>

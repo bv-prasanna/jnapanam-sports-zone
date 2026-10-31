@@ -13,6 +13,7 @@ const items:Item[]=[
  {key:"payments",label:"Payments",href:"/dashboard?section=payments"},
  {key:"profile",label:"My Profile",href:"/profile"},
  {key:"account",label:"Account & Family",href:"/account-services"},
+ {key:"subscriptions",label:"Recurring Subscriptions",href:"/subscriptions"},
  {key:"operations",label:"Facility Operations",href:"/operations",operations:true},
  {key:"admin",label:"Admin Console",href:"/admin",admin:true},
  {key:"verification",label:"Document Verification",href:"/admin/verification",admin:true},
