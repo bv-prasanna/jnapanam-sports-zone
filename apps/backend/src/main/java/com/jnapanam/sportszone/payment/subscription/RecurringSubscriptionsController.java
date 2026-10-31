@@ -38,6 +38,11 @@ public class RecurringSubscriptionsController {
  public Map<String,Boolean> configuration(){return service.configuration();}
  @GetMapping("/api/v1/subscriptions/offerings")
  public List<Map<String,Object>> publicOfferings(){return service.offerings(false);}
+ @GetMapping("/api/v1/admin/subscriptions/charges")
+ @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
+ public List<Map<String,Object>> adminCharges(){return service.charges(null,true);}
+ @GetMapping("/api/v1/subscriptions/charges/me")
+ public List<Map<String,Object>> ownCharges(Authentication auth){return service.charges(UUID.fromString(auth.getName()),false);}
  @GetMapping("/api/v1/subscriptions/me")
  public List<Map<String,Object>> mine(Authentication auth){return service.mine(UUID.fromString(auth.getName()));}
  @PostMapping("/api/v1/subscriptions/start")

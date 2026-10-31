@@ -42,6 +42,9 @@ public class PaymentService {
     private final BookingService bookingService;
     private final PromotionService promotionService;
     private final LoyaltyService loyaltyService;
+    private org.springframework.jdbc.core.JdbcTemplate subscriptionJdbc;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    public void setSubscriptionJdbc(org.springframework.jdbc.core.JdbcTemplate jdbc){this.subscriptionJdbc=jdbc;}
     private com.jnapanam.sportszone.payment.subscription.RecurringWebhookService recurringWebhooks;
     @org.springframework.beans.factory.annotation.Autowired(required=false)
     public void setRecurringWebhooks(com.jnapanam.sportszone.payment.subscription.RecurringWebhookService service){
@@ -78,6 +81,13 @@ public class PaymentService {
         if (orders.existsByPurposeAndReferenceIdAndStatus(request.purpose(), request.referenceId(), PaymentStatus.PAID))
             throw new ConflictException("This item is already paid");
         User user = users.findById(userId).orElseThrow(() -> new UnauthorizedException("User not found"));
+        if (subscriptionJdbc != null && (request.purpose() == PaymentPurpose.MEMBERSHIP || request.purpose() == PaymentPurpose.TRAINING)) {
+            Integer recurring = subscriptionJdbc.queryForObject("""
+                select count(*) from recurring_agreements where kind=? and reference_id=? and status not in ('CANCELLED','EXPIRED')
+                """, Integer.class, request.purpose().name(), request.referenceId());
+            if(recurring != null && recurring > 0)
+                throw new ConflictException("Recurring billing exists for this purchase; do not pay again separately.");
+        }
         long original = resolveAmount(userId, request.purpose(), request.referenceId());
         if (original <= 0)
             throw new ConflictException("Payment amount is not configured");

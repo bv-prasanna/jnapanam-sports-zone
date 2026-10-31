@@ -20,7 +20,8 @@ import com.jnapanam.sportszone.catalog.model.Sport; import com.jnapanam.sportszo
 }else throw new BadRequestException("Admin action supports ACTIVE, SUSPENDED or CANCELLED");return CustomerMembershipResponse.from(m);}
  @Transactional public List<CustomerMembershipResponse> allMemberships(){expire();return memberships.findAllByOrderBySubscribedAtDesc().stream().map(CustomerMembershipResponse::from).toList();}
  private void expire(){for(CustomerMembership m:memberships.findAll())if(m.getStatus()==MembershipStatus.ACTIVE&&m.getEndDate()!=null&&m.getEndDate().isBefore(LocalDate.now()))m.change(MembershipStatus.EXPIRED,"Membership period completed");}
- @Transactional public int cleanupUnpaid(){int count=0;for(CustomerMembership m:memberships.findByStatusAndPaymentExpiresAtLessThanEqual(MembershipStatus.PENDING_PAYMENT,Instant.now())){m.change(MembershipStatus.EXPIRED,"Payment window expired");count++;}return count;}
+ @Transactional public int cleanupUnpaid(){int count=0;for(CustomerMembership m:memberships.findByStatusAndPaymentExpiresAtLessThanEqual(MembershipStatus.PENDING_PAYMENT,Instant.now())){if(recurringSubscriptions!=null)recurringSubscriptions.cancelByReference(m.getUser().getId(),"MEMBERSHIP",m.getId());
+ m.change(MembershipStatus.EXPIRED,"Payment window expired");count++;}return count;}
  private Set<Sport> resolveSports(Set<String> codes){Set<Sport> result=new LinkedHashSet<>();for(String c:codes)result.add(sports.findByCodeIgnoreCase(c).orElseThrow(()->new NotFoundException("Sport not found: "+c)));return result;}
  private MembershipPlan plan(UUID id){return plans.findById(id).orElseThrow(()->new NotFoundException("Membership plan not found"));} private CustomerMembership membership(UUID id){return memberships.findById(id).orElseThrow(()->new NotFoundException("Membership not found"));} private User user(UUID id){return users.findById(id).orElseThrow(()->new UnauthorizedException("User not found"));}
 }

@@ -114,6 +114,8 @@ public class RecurringSubscriptionService {
        "select e.id from training_enrollments e where e.id=? and e.user_id=? and e.batch_id=? and e.status='PENDING_PAYMENT' for update";
    if(db.queryForList(lock,r.referenceId(),owner,target).isEmpty())
      throw new ConflictException("Create a pending membership or training enrollment for this exact plan before starting recurring billing.");
+   if(db.queryForObject("select count(*) from payment_orders where purpose=? and reference_id=? and status in ('CREATED','PAID','PARTIALLY_REFUNDED')",Integer.class,kind,r.referenceId())>0)
+     throw new ConflictException("A one-time payment exists. Select only one billing method.");
    if(!db.queryForList("select id from recurring_agreements where kind=? and reference_id=?",kind,r.referenceId()).isEmpty())
      throw new ConflictException("This membership or enrollment already has a recurring agreement");
    byte[] bytes=new byte[32];random.nextBytes(bytes);
@@ -166,6 +168,26 @@ public class RecurringSubscriptionService {
  public void cancelByReference(UUID owner,String kind,UUID ref){
    var rows=db.queryForList("select id from recurring_agreements where owner_id=? and kind=? and reference_id=? and status not in ('CANCELLED','COMPLETED','EXPIRED')",owner,kind,ref);
    for(var row:rows)cancel(owner,(UUID)row.get("id"),false);
+ }
+ @Transactional(readOnly=true)
+ public List<Map<String,Object>> charges(UUID owner,boolean admin){
+   String sql="""
+     select c.id,c.provider_payment_id as "providerPaymentId",
+       c.amount_paise as "amountPaise",c.charged_at as "chargedAt",
+       a.kind,o.title,u.full_name as "customerName",a.owner_id as "ownerId"
+     from recurring_charges c join recurring_agreements a on a.id=c.agreement_id
+     join recurring_offerings o on o.id=a.offering_id
+     join users u on u.id=a.owner_id
+     """+(admin?"":"where a.owner_id=? ")+"order by c.charged_at desc limit 500";
+   return admin?db.queryForList(sql):db.queryForList(sql,owner);
+ }
+ @Transactional
+ public void cancelForTrainingBatch(UUID batchId){
+   var rows=db.queryForList("""
+       select a.id from recurring_agreements a join training_enrollments e on e.id=a.reference_id
+       where a.kind='TRAINING' and e.batch_id=? and a.status not in ('CANCELLED','COMPLETED','EXPIRED')
+       """,batchId);
+   for(var row:rows)cancel(null,(UUID)row.get("id"),true);
  }
  @Transactional(readOnly=true)
  public List<Map<String,Object>> all(){
