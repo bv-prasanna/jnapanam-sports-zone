@@ -106,7 +106,7 @@ const styles=StyleSheet.create({
  page:{padding:17,paddingBottom:38,gap:12},title:{fontSize:23,fontWeight:'900',color:BrandColors.primary,marginVertical:7},
  description:{fontSize:13,color:BrandColors.textSecondary,lineHeight:20,flexShrink:1},warning:{padding:15,borderRadius:12,backgroundColor:'#FFF0DD',color:'#84521A',lineHeight:21},error:{color:'#AC2F18',fontWeight:'700'},
  card:{padding:17,backgroundColor:'white',borderRadius:16,borderColor:BrandColors.border,borderWidth:1,gap:10},
- tag:{fontWeight:'850',color:'#BB481B',fontSize:12},heading:{fontSize:19,fontWeight:'850',color:BrandColors.textPrimary},
+ tag:{fontWeight:'800',color:'#BB481B',fontSize:12},heading:{fontSize:19,fontWeight:'800',color:BrandColors.textPrimary},
  price:{fontSize:21,fontWeight:'900',color:BrandColors.primary},consent:{flexDirection:'row',alignItems:'center',gap:10},
  button:{backgroundColor:BrandColors.primary,borderRadius:10,padding:13,alignItems:'center'},buttonText:{color:'white',fontWeight:'800'},disabled:{opacity:.45},
  input:{borderWidth:1,borderColor:BrandColors.border,borderRadius:10,padding:12,fontSize:14,color:BrandColors.textPrimary},
