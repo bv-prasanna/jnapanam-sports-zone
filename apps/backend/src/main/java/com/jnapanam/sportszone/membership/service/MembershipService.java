@@ -3,7 +3,8 @@ import com.jnapanam.sportszone.catalog.model.Sport; import com.jnapanam.sportszo
 @Service public class MembershipService{
  private com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService recurringSubscriptions;
  @org.springframework.beans.factory.annotation.Autowired(required=false)
- public void setRecurringSubscriptions(com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService service){this.recurringSubscriptions=service;}\n @org.springframework.beans.factory.annotation.Autowired(required=false)
+ public void setRecurringSubscriptions(com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService service){this.recurringSubscriptions=service;}
+ @org.springframework.beans.factory.annotation.Autowired(required=false)
  public void setRecurringSubscriptions(com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService service){
      this.recurringSubscriptions=service;
  }
