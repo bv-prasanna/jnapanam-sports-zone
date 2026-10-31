@@ -50,6 +50,43 @@ public class RecurringWebhookService {
    db.update("update recurring_agreements set status=?,updated_at=now() where id=?",status,agreementId);
    return "APPLIED";
  }
+ public String refund(String event,JsonNode payload){
+   if(!List.of("refund.created","refund.processed","refund.failed").contains(event))return "OBSERVED";
+   JsonNode item=payload.path("refund").path("entity");
+   String refundId=item.path("id").asText("");
+   String paymentId=item.path("payment_id").asText("");
+   long amount=item.path("amount").asLong(-1);
+   if(!refundId.matches("[A-Za-z0-9_-]{5,120}")||!paymentId.matches("[A-Za-z0-9_-]{5,120}")||amount<=0)
+     throw new BadRequestException("Invalid recurring refund identifiers or amount");
+   var charges=db.queryForList("select id,amount_paise from recurring_charges where provider_payment_id=? for update",paymentId);
+   if(charges.isEmpty())return "UNMATCHED";
+   UUID chargeId=(UUID)charges.get(0).get("id");
+   long paid=((Number)charges.get(0).get("amount_paise")).longValue();
+   if(amount>paid)throw new BadRequestException("Recurring refund exceeds original charge");
+   var previous=db.queryForList("select id,status,amount_paise from recurring_charge_refunds where provider_refund_id=?",refundId);
+   String status=switch(event){case "refund.processed"->"PROCESSED";case "refund.failed"->"FAILED";default->"CREATED";};
+   if(previous.isEmpty()){
+     long refunded=db.queryForObject("select coalesce(sum(amount_paise),0) from recurring_charge_refunds where charge_id=? and status='PROCESSED'",Long.class,chargeId);
+     if("PROCESSED".equals(status)&&refunded+amount>paid)
+       throw new BadRequestException("Recurring refund aggregate exceeds captured charge");
+     db.update("""
+       insert into recurring_charge_refunds(id,charge_id,provider_refund_id,amount_paise,status)
+       values(?,?,?,?,?)
+       """,UUID.randomUUID(),chargeId,refundId,amount,status);
+     return "APPLIED";
+   }
+   var prior=previous.get(0);
+   if(((Number)prior.get("amount_paise")).longValue()!=amount)
+     throw new BadRequestException("Recurring refund amount mismatch for same provider id");
+   if("PROCESSED".equals(prior.get("status"))||status.equals(prior.get("status")))return "OBSERVED";
+   if("PROCESSED".equals(status)){
+     Long refunded=db.queryForObject("select coalesce(sum(amount_paise),0) from recurring_charge_refunds where charge_id=? and status='PROCESSED'",Long.class,chargeId);
+     if((refunded==null?0:refunded)+amount>paid)
+       throw new BadRequestException("Recurring refund aggregate exceeds captured charge");
+   }
+   db.update("update recurring_charge_refunds set status=?,updated_at=now() where id=?",status,prior.get("id"));
+   return "APPLIED";
+ }
  private String charge(java.util.Map<String,Object>a,JsonNode payload,UUID agreementId){
    var charge=payload.path("payment").path("entity");
    String paymentId=charge.path("id").asText("");
