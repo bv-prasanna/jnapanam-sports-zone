@@ -22,6 +22,13 @@ public class RazorpaySubscriptionsClient {
  public boolean configured(){return "razorpay".equalsIgnoreCase(config.provider())&&config.keyId()!=null
    &&!config.keyId().isBlank()&&config.keySecret()!=null&&!config.keySecret().isBlank();}
  public String key(){return config.keyId();}
+ public String sign(String input){
+  try{
+    var mac=javax.crypto.Mac.getInstance("HmacSHA256");
+    mac.init(new javax.crypto.spec.SecretKeySpec(config.keySecret().getBytes(StandardCharsets.UTF_8),"HmacSHA256"));
+    return java.util.HexFormat.of().formatHex(mac.doFinal(input.getBytes(StandardCharsets.UTF_8)));
+  }catch(Exception e){throw new IllegalStateException("Unable to verify subscription authorization",e);}
+ }
  public String plan(String name,long amount,String period,int interval){
    ObjectNode body=json.createObjectNode().put("period",period).put("interval",interval);
    body.putObject("item").put("name",name).put("amount",amount).put("currency","INR");
@@ -33,7 +40,7 @@ public class RazorpaySubscriptionsClient {
    return request("POST","/subscriptions",body).path("id").asText();
  }
  public void cancel(String subscriptionId){request("POST","/subscriptions/"+subscriptionId+"/cancel",
-   json.createObjectNode().put("cancel_at_cycle_end",true));}
+   json.createObjectNode().put("cancel_at_cycle_end",false));}
  public JsonNode subscriptionDetails(String subscriptionId){return request("GET","/subscriptions/"+subscriptionId,null);}
  private JsonNode request(String method,String endpoint,JsonNode body){
    if(!configured())throw new ConflictException("Razorpay provider must be configured for recurring billing");
