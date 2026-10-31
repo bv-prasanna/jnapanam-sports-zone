@@ -12,7 +12,7 @@ type Attendance={sport_name:string;sessions:number;attended:number};
 type Competition={tournament_name:string;team_name:string;round_number:number;outcome:string};
 type GrowthData={assessments?:Assessment[];goals?:Goal[];attendance?:Attendance[];competitions?:Competition[]};
 const score=(n:number)=>Math.min(100,Math.max(0,Number.isFinite(Number(n))?Number(n):0));
-const count=(n:number)=>Math.max(0,Number.isFinite(Number(n))?Number(n):0));
+const count=(n:number)=>Math.max(0,Number.isFinite(Number(n))?Number(n):0);
 const dateLabel=(value:string|null|undefined)=>{if(!value)return "—";const d=new Date(value.slice(0,10)+"T12:00:00Z");return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat("en-IN",{day:"2-digit",month:"short",year:"numeric",timeZone:"UTC"}).format(d);};
 const readable=(value:string)=>value.replaceAll("_"," ").toLowerCase().replace(/^./,m=>m.toUpperCase());
 
