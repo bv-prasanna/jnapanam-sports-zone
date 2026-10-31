@@ -41,3 +41,13 @@ CREATE TABLE recurring_charges (
  charged_at timestamptz not null default now()
 );
 CREATE INDEX idx_recurring_charges_agreement on recurring_charges(agreement_id,charged_at desc);
+
+CREATE TABLE recurring_charge_refunds (
+ id uuid primary key,
+ charge_id uuid not null references recurring_charges(id),
+ provider_refund_id varchar(120) not null unique,
+ amount_paise bigint not null check (amount_paise>0),
+ status varchar(20) not null check (status in ('CREATED','PROCESSED','FAILED')),
+ updated_at timestamptz not null default now()
+);
+CREATE INDEX idx_recurring_refunds_charge on recurring_charge_refunds(charge_id);
