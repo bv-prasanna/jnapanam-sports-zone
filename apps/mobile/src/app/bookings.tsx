@@ -52,21 +52,12 @@ type Booking = {
   paymentStatus: string;
 };
 
-type PaymentOrder = {
-  id: string;
-  provider: string;
-};
-
 const terminalStatuses = new Set(['CANCELLED', 'COMPLETED', 'NO_SHOW']);
 
 function dateValue(offset: number) {
   const value = new Date();
   value.setDate(value.getDate() + offset);
   return value.toISOString().slice(0, 10);
-}
-
-function idempotencyKey() {
-  return `mobile-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 type SelectOption = { value: string; label: string; subtitle?: string };
