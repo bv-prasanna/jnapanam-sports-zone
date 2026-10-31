@@ -5,6 +5,7 @@ import {useApp} from "@/components/app-provider";
 import styles from "./admin-subscriptions.module.css";
 type Option={id:string;code?:string;name:string;price?:number;fee?:number;durationDays?:number;startDate?:string;endDate?:string;status:string};
 type Offering={id:string;kind:string;referenceId:string;title:string;amountPaise:number;period:string;interval:number;totalCycles:number;razorpayPlanId:string;enabled:boolean};
+type Charge={id:string;title:string;customerName:string;providerPaymentId:string;amountPaise:number;chargedAt:string};
 type Agreement={id:string;ownerName:string;email:string;kind:string;title:string;status:string;paidCycles:number;amountPaise:number;period:string;subscriptionId:string};
 const money=(n:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(n/100);
 const errorMessage=(e:unknown)=>e instanceof ApiError?e.message:e instanceof Error?e.message:"Request failed";
@@ -21,13 +22,14 @@ export default function AdminSubscriptions(){
  const [training,setTraining]=useState<Option[]>([]);
  const [offerings,setOfferings]=useState<Offering[]>([]);
  const [agreements,setAgreements]=useState<Agreement[]>([]);
+ const [charges,setCharges]=useState<Charge[]>([]);
  const [error,setError]=useState("");const [notice,setNotice]=useState("");
  const [busy,setBusy]=useState(false);const [loading,setLoading]=useState(true);
  async function load(){setLoading(true);try{
- const [m,t,o,a]=await Promise.all([
+ const [m,t,o,a,c]=await Promise.all([
  api<Option[]>("/api/v1/admin/memberships/plans"),api<Option[]>("/api/v1/admin/training/batches"),
- api<Offering[]>("/api/v1/admin/subscriptions/offerings"),api<Agreement[]>("/api/v1/admin/subscriptions")]);
- setMemberships(m);setTraining(t);setOfferings(o);setAgreements(a);setError("");
+ api<Offering[]>("/api/v1/admin/subscriptions/offerings"),api<Agreement[]>("/api/v1/admin/subscriptions"),api<Charge[]>("/api/v1/admin/subscriptions/charges")]);
+ setMemberships(m);setTraining(t);setOfferings(o);setAgreements(a);setCharges(c);setError("");
  }catch(e){setError(errorMessage(e));}finally{setLoading(false)}}
  useEffect(()=>{void load()},[]);
  const options=(kind==="MEMBERSHIP"?memberships:training).filter(o=>o.status==="ACTIVE");
@@ -77,6 +79,10 @@ export default function AdminSubscriptions(){
  <section className={styles.card}><h2>Customer recurring agreements</h2>{agreements.length===0?<p>No agreements yet.</p>:
  <div className={styles.scroll}><table><thead><tr><th>Customer</th><th>Offering</th><th>Status</th><th>Paid cycles</th><th>Subscription ID</th><th>Action</th></tr></thead><tbody>
  {agreements.map(a=><tr key={a.id}><td><b>{a.ownerName}</b><small>{a.email}</small></td><td>{a.title}</td><td>{a.status}</td><td>{a.paidCycles}</td><td>{a.subscriptionId}</td><td>{!["CANCELLED","COMPLETED","EXPIRED"].includes(a.status)&&<button disabled={!superAdmin||busy} onClick={()=>void cancel(a.id)}>Stop future billing</button>}</td></tr>)}</tbody></table></div>}</section>
+ <section className={styles.card}><h2>Captured recurring installment ledger</h2>
+ {charges.length===0?<p>No confirmed subscription charges yet.</p>:<div className={styles.scroll}><table><thead><tr><th>Customer</th><th>Offering</th><th>Charge date</th><th>Amount</th><th>Provider payment</th></tr></thead><tbody>
+ {charges.map(c=><tr key={c.id}><td>{c.customerName}</td><td>{c.title}</td><td>{new Date(c.chargedAt).toLocaleDateString("en-IN")}</td><td>{money(c.amountPaise)}</td><td>{c.providerPaymentId}</td></tr>)}</tbody></table></div>}
+ </section>
  <p className={styles.hint}>Settlement reconciliation, refunds and mandate changes must be checked against the Razorpay dashboard before moving to live billing.</p>
  </main>;
 }

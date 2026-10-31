@@ -13,12 +13,14 @@ type Enrollment={id:string;batchId:string;status:string};
 type Plan={id:string;code:string};
 type Agreement={id:string;kind:string;title:string;status:string;paidCycles:number;totalCycles:number;amountPaise:number;period:string};
 type Config={enabled:boolean;providerConfigured:boolean};
+type Charge={id:string;title:string;amountPaise:number;chargedAt:string;providerPaymentId:string};
 const money=(paise:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(paise/100);
 const msg=(e:unknown)=>e instanceof ApiError?e.message:e instanceof Error?e.message:"Request failed";
 export default function SubscriptionsPage(){
  const {user,ready}=useApp();
  const [offerings,setOfferings]=useState<Offering[]>([]);
  const [agreements,setAgreements]=useState<Agreement[]>([]);
+ const [charges,setCharges]=useState<Charge[]>([]);
  const [memberships,setMemberships]=useState<Membership[]>([]);
  const [enrollments,setEnrollments]=useState<Enrollment[]>([]);
  const [plans,setPlans]=useState<Plan[]>([]);
@@ -35,15 +37,16 @@ export default function SubscriptionsPage(){
  async function load(){
    setLoading(true);setError("");
    try{
-     const [list,config,active,pending,pricePlans,history]=await Promise.all([
+     const [list,config,active,pending,pricePlans,history,payments]=await Promise.all([
        api<Offering[]>("/api/v1/subscriptions/offerings"),
        api<Config>("/api/v1/subscriptions/config"),
        user?api<Membership[]>("/api/v1/memberships/me"):Promise.resolve([]),
        user?api<Enrollment[]>("/api/v1/training/enrollments/me"):Promise.resolve([]),
        api<Plan[]>("/api/v1/public/membership-plans"),
-       user?api<Agreement[]>("/api/v1/subscriptions/me"):Promise.resolve([])
+       user?api<Agreement[]>("/api/v1/subscriptions/me"):Promise.resolve([]),
+       user?api<Charge[]>("/api/v1/subscriptions/charges/me"):Promise.resolve([])
      ]);
-     setOfferings(list);setCfg(config);setMemberships(active);setEnrollments(pending);setPlans(pricePlans);setAgreements(history);
+     setOfferings(list);setCfg(config);setMemberships(active);setEnrollments(pending);setPlans(pricePlans);setAgreements(history);setCharges(payments);
    }catch(e){setError(msg(e));}finally{setLoading(false);}
  }
  useEffect(()=>{if(ready)void load();},[ready,user?.id]);
@@ -111,6 +114,10 @@ export default function SubscriptionsPage(){
    <div className={styles.scroll}><table><thead><tr><th>Offering</th><th>Status</th><th>Paid cycles</th><th>Price / cycle</th><th>Action</th></tr></thead>
     <tbody>{agreements.map(a=><tr key={a.id}><td><b>{a.title}</b><small>{a.kind}</small></td><td>{a.status}</td><td>{a.paidCycles}/{a.totalCycles}</td><td>{money(a.amountPaise)}</td>
      <td>{!["CANCELLED","COMPLETED","EXPIRED"].includes(a.status)&&<button disabled={busy} onClick={()=>void cancel(a.id)}>Cancel future billing</button>}</td></tr>)}</tbody></table></div>}
+  </section>
+  <section className={styles.section}><h2>Verified recurring charges</h2>
+   {charges.length===0?<p>No captured recurring installments yet.</p>:<div className={styles.scroll}><table><thead><tr><th>Offering</th><th>Charged</th><th>Amount</th><th>Razorpay payment ID</th></tr></thead>
+   <tbody>{charges.map(c=><tr key={c.id}><td><b>{c.title}</b></td><td>{new Date(c.chargedAt).toLocaleDateString("en-IN")}</td><td>{money(c.amountPaise)}</td><td>{c.providerPaymentId}</td></tr>)}</tbody></table></div>}
   </section>
   <p className={styles.footnote}>Subscription authorization does not activate access. Access starts or extends after Razorpay confirms a captured installment. Auto-renewal support depends on your account's Razorpay Subscriptions eligibility.</p>
  </main><SiteFooter/></>;
