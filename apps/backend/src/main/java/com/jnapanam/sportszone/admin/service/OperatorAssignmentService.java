@@ -31,6 +31,29 @@ public class OperatorAssignmentService {
         this.facilities = facilities;
     }
 
+
+    /** A logged-in operator sees only assigned facilities; admin sees the full catalogue. */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> facilitiesForActor(UUID actorId) {
+        if (isAdministrator(actorId)) {
+            return jdbc.query("""
+                select f.id facility_id,f.code facility_code,f.name facility_name,
+                       s.code sport_code,s.name sport_name
+                from facilities f join sports s on s.id=f.sport_id
+                order by s.name,f.name
+                """, (rs, row) -> {
+                Map<String, Object> value = new LinkedHashMap<>();
+                value.put("facilityId", rs.getObject("facility_id", UUID.class));
+                value.put("facilityCode", rs.getString("facility_code"));
+                value.put("facilityName", rs.getString("facility_name"));
+                value.put("sportCode", rs.getString("sport_code"));
+                value.put("sportName", rs.getString("sport_name"));
+                return value;
+            });
+        }
+        return assignments(actorId);
+    }
+
     @Transactional(readOnly = true)
     public List<Map<String, Object>> assignments(UUID operatorId) {
         requireOperator(operatorId);

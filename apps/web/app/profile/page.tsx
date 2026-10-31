@@ -3,9 +3,12 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, ApiError, User } from "@/lib/api";
+import { api, ApiError, User, clearSession } from "@/lib/api";
 import { useApp } from "@/components/app-provider";
 import styles from "./profile.module.css";
+import {SiteHeader} from "@/components/site-header";
+import {PortalSideNavigation} from "@/components/portal-side-navigation";
+import shell from "@/components/portal-shell.module.css";
 
 export default function ProfilePage(){
   const router=useRouter();
@@ -18,6 +21,11 @@ export default function ProfilePage(){
   const [state,setState]=useState("");
   const [postalCode,setPostalCode]=useState("");
   const [saving,setSaving]=useState(false);
+  const [currentPassword,setCurrentPassword]=useState("");
+  const [newPassword,setNewPassword]=useState("");
+  const [confirmPassword,setConfirmPassword]=useState("");
+  const [changingPassword,setChangingPassword]=useState(false);
+  const [passwordError,setPasswordError]=useState("");
   const [uploading,setUploading]=useState(false);
   const [proofType,setProofType]=useState("DL");
   const [proofStatus,setProofStatus]=useState("NOT_SUBMITTED");
@@ -45,6 +53,23 @@ export default function ProfilePage(){
     finally{setSaving(false)}
   }
 
+  async function changePassword(event:FormEvent<HTMLFormElement>){
+    event.preventDefault();
+    setPasswordError("");
+    if(newPassword!==confirmPassword){setPasswordError("New passwords do not match.");return;}
+    if(newPassword.length<12){setPasswordError("Use at least 12 characters.");return;}
+    setChangingPassword(true);
+    try{
+      await api<void>("/api/v1/profile/password",{method:"PUT",body:JSON.stringify({currentPassword,newPassword})});
+      setCurrentPassword("");setNewPassword("");setConfirmPassword("");
+      clearSession();
+      setUser(null);
+      router.replace("/login?passwordChanged=1");
+    }catch(value){
+      setPasswordError(value instanceof ApiError?value.message:"Unable to change password.");
+    }finally{setChangingPassword(false);}
+  }
+
   async function upload(event:ChangeEvent<HTMLInputElement>){
     const file=event.target.files?.[0];if(!file)return;
     if(!["image/jpeg","image/png","image/webp"].includes(file.type)){setError("Choose a JPG, PNG or WebP image.");return}
@@ -57,7 +82,7 @@ export default function ProfilePage(){
 
   if(!ready||!user)return <main className={styles.page}>Loading profile…</main>;
   const initials=(user.displayName||user.fullName).split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
-  return <main className={styles.page}>
+  return <><SiteHeader/><div className={shell.shell}><PortalSideNavigation active="profile"/><main className={styles.page}>
     <header className={styles.header}><div><span>ACCOUNT</span><h1>My Profile</h1><p>Manage how your account appears across Jnapanam Sports Zone.</p></div><Link href="/dashboard?section=profile">← Dashboard</Link></header>
     <section className={styles.card}>
       <div className={styles.photoPanel}>
@@ -87,5 +112,18 @@ export default function ProfilePage(){
         <div className={styles.actions}><button type="submit" disabled={saving||uploading}>{saving?"Saving…":"Save Profile"}</button><Link href="/dashboard">Cancel</Link></div>
       </form>
     </section>
-  </main>;
+    <section className={styles.card} aria-label="Account security">
+      <form className={styles.form} onSubmit={changePassword}>
+        <div><h2 className={styles.securityHeading}>Change password</h2>
+        <p className={styles.securityHelp}>Enter your current password to set a new one. You will be signed out on all devices after changing it.</p></div>
+        <label>Current password<input type="password" autoComplete="current-password" required value={currentPassword} onChange={event=>setCurrentPassword(event.target.value)}/></label>
+        <div className={styles.grid}>
+          <label>New password<input type="password" autoComplete="new-password" minLength={12} maxLength={72} required value={newPassword} onChange={event=>setNewPassword(event.target.value)}/></label>
+          <label>Confirm new password<input type="password" autoComplete="new-password" minLength={12} maxLength={72} required value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)}/></label>
+        </div>
+        {passwordError&&<div className={styles.error} role="alert">{passwordError}</div>}
+        <div className={styles.actions}><button type="submit" disabled={changingPassword}>{changingPassword?"Updating password…":"Change password"}</button></div>
+      </form>
+    </section>
+  </main></div></>;
 }

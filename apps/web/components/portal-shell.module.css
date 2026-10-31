@@ -1,0 +1,1 @@
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr);align-items:stretch;min-height:calc(100vh - 112px);background:#f6f8f7}.shell>main{width:100%;min-width:0;margin:0 auto}.shell>main h1,.shell>main h2,.shell>main h3{overflow-wrap:anywhere}@media(max-width:950px){.shell{grid-template-columns:minmax(0,1fr)}}
