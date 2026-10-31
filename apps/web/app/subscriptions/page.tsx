@@ -13,7 +13,7 @@ type Enrollment={id:string;batchId:string;status:string};
 type Plan={id:string;code:string};
 type Agreement={id:string;kind:string;title:string;status:string;paidCycles:number;totalCycles:number;amountPaise:number;period:string};
 type Config={enabled:boolean;providerConfigured:boolean};
-type Charge={id:string;title:string;amountPaise:number;chargedAt:string;providerPaymentId:string};
+type Charge={id:string;title:string;amountPaise:number;refundedPaise:number;chargedAt:string;providerPaymentId:string};
 const money=(paise:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(paise/100);
 const msg=(e:unknown)=>e instanceof ApiError?e.message:e instanceof Error?e.message:"Request failed";
 export default function SubscriptionsPage(){
@@ -116,8 +116,8 @@ export default function SubscriptionsPage(){
      <td>{!["CANCELLED","COMPLETED","EXPIRED"].includes(a.status)&&<button disabled={busy} onClick={()=>void cancel(a.id)}>Cancel future billing</button>}</td></tr>)}</tbody></table></div>}
   </section>
   <section className={styles.section}><h2>Verified recurring charges</h2>
-   {charges.length===0?<p>No captured recurring installments yet.</p>:<div className={styles.scroll}><table><thead><tr><th>Offering</th><th>Charged</th><th>Amount</th><th>Razorpay payment ID</th></tr></thead>
-   <tbody>{charges.map(c=><tr key={c.id}><td><b>{c.title}</b></td><td>{new Date(c.chargedAt).toLocaleDateString("en-IN")}</td><td>{money(c.amountPaise)}</td><td>{c.providerPaymentId}</td></tr>)}</tbody></table></div>}
+   {charges.length===0?<p>No captured recurring installments yet.</p>:<div className={styles.scroll}><table><thead><tr><th>Offering</th><th>Charged</th><th>Amount</th><th>Refunded</th><th>Razorpay payment ID</th></tr></thead>
+   <tbody>{charges.map(c=><tr key={c.id}><td><b>{c.title}</b></td><td>{new Date(c.chargedAt).toLocaleDateString("en-IN")}</td><td>{money(c.amountPaise)}</td><td>{money(c.refundedPaise)}</td><td>{c.providerPaymentId}</td></tr>)}</tbody></table></div>}
   </section>
   <p className={styles.footnote}>Subscription authorization does not activate access. Access starts or extends after Razorpay confirms a captured installment. Auto-renewal support depends on your account's Razorpay Subscriptions eligibility.</p>
  </main><SiteFooter/></>;

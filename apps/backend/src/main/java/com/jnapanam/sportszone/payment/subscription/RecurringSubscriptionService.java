@@ -174,6 +174,7 @@ public class RecurringSubscriptionService {
    String sql="""
      select c.id,c.provider_payment_id as "providerPaymentId",
        c.amount_paise as "amountPaise",c.charged_at as "chargedAt",
+       coalesce((select sum(r.amount_paise) from recurring_charge_refunds r where r.charge_id=c.id and r.status='PROCESSED'),0) as "refundedPaise",
        a.kind,o.title,u.full_name as "customerName",a.owner_id as "ownerId"
      from recurring_charges c join recurring_agreements a on a.id=c.agreement_id
      join recurring_offerings o on o.id=a.offering_id
