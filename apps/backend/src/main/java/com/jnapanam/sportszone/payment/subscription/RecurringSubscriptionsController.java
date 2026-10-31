@@ -34,6 +34,8 @@ public class RecurringSubscriptionsController {
  @GetMapping("/api/v1/admin/subscriptions")
  @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
  public List<Map<String,Object>> all(){return service.all();}
+ @GetMapping("/api/v1/subscriptions/config")
+ public Map<String,Boolean> configuration(){return service.configuration();}
  @GetMapping("/api/v1/subscriptions/offerings")
  public List<Map<String,Object>> publicOfferings(){return service.offerings(false);}
  @GetMapping("/api/v1/subscriptions/me")
