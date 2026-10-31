@@ -42,6 +42,11 @@ public class PaymentService {
     private final BookingService bookingService;
     private final PromotionService promotionService;
     private final LoyaltyService loyaltyService;
+    private com.jnapanam.sportszone.payment.subscription.RecurringWebhookService recurringWebhooks;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    public void setRecurringWebhooks(com.jnapanam.sportszone.payment.subscription.RecurringWebhookService service){
+        this.recurringWebhooks=service;
+    }
 
     public PaymentService(PaymentOrderRepository o, PaymentRefundRepository r, UserRepository u, BookingRepository b,
             CustomerMembershipRepository m, TrainingEnrollmentRepository e, PaymentGateway g, PaymentProperties p,
@@ -285,6 +290,8 @@ public class PaymentService {
                 }
             }
         }
+        if (type.startsWith("subscription.") && recurringWebhooks != null)
+            result = recurringWebhooks.accept(type,json.path("payload"));
         // payment.failed / payment.authorized / order.paid / settlement.* are
         // captured as verified observations, never treated as captured money.
         webhookEvents.save(new PaymentWebhookEvent(eventId, type, sha256(body), result,
