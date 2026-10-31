@@ -7,6 +7,12 @@ on:
       - fix/register-route-regression-test-20261026
     paths:
       - .github/workflows/android-apk-cloud.yml
+      - apps/mobile/src/**
+      - apps/mobile/app.json
+      - apps/mobile/package.json
+      - apps/mobile/package-lock.json
+      - apps/mobile/assets/**
+      - apps/web/public/images/jnapanam-logo.jpg
   workflow_dispatch:
     inputs:
       api_url:
