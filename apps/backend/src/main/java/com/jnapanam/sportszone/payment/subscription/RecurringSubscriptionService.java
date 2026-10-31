@@ -24,6 +24,7 @@ public class RecurringSubscriptionService {
       @Value("${app.payment.subscriptions-enabled:false}")boolean enabled){
    this.db=db;this.gateway=gateway;this.enabled=enabled;
  }
+ public java.util.Map<String,Boolean> configuration(){return java.util.Map.of("enabled",enabled,"providerConfigured",gateway.configured());}
  public record OfferingRequest(String kind,UUID referenceId,String title,long amountPaise,String period,int interval,int totalCycles){}
  public record StartRequest(UUID offeringId,UUID referenceId,boolean consent){}
  public record StartResult(UUID id,String checkoutUrl,String status){}
