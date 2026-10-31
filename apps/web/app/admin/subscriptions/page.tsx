@@ -33,7 +33,7 @@ export default function AdminSubscriptions(){
  }catch(e){setError(errorMessage(e));}finally{setLoading(false)}}
  useEffect(()=>{void load()},[]);
  const options=(kind==="MEMBERSHIP"?memberships:training).filter(o=>o.status==="ACTIVE");
- function selectReference(id:string){setReferenceId(id);const record=options.find(o=>o.id===id);if(record){setTitle(record.name+" recurring");setAmount(String(record.price??record.fee??""));}}
+ function selectReference(id:string){setReferenceId(id);const record=options.find(o=>o.id===id);if(record){setTitle(record.name+" recurring");setAmount(String(kind==="TRAINING"?((Math.round(Number(record.fee??0)*100/Math.max(2,Number(totalCycles)||3)))/100).toFixed(2):(record.price??"")));}}
  async function create(){setError("");setNotice("");if(!superAdmin)return;
  const amountPaise=Math.round(Number(amount)*100);
  if(!referenceId||!title.trim()||!Number.isSafeInteger(amountPaise)||amountPaise<100){
@@ -68,7 +68,7 @@ export default function AdminSubscriptions(){
  <label>Billing frequency<select value={period} disabled={!superAdmin||busy} onChange={e=>setPeriod(e.target.value)}><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>
  <label>Interval<select value={interval} disabled={!superAdmin||busy} onChange={e=>setInterval(e.target.value)}>{[1,2,3,6,12].map(i=><option key={i} value={String(i)}>Every {i} period{i>1?"s":""}</option>)}</select></label>
  <label>Billing cycles<input type="number" min={2} max={60} disabled={!superAdmin||busy} value={totalCycles} onChange={e=>setTotalCycles(e.target.value)}/></label></div>
- <p className={styles.hint}>Total agreed charge: {Number(amount)>0&&Number(totalCycles)>0?money(Math.round(Number(amount)*100)*Number(totalCycles)):"—"} across {totalCycles||"—"} cycles. Currency: INR. Changes to an existing plan require a new product version.</p>
+ <p className={styles.hint}>Total agreed charge: {Number(amount)>0&&Number(totalCycles)>0?money(Math.round(Number(amount)*100)*Number(totalCycles)):"—"} across {totalCycles||"—"} cycles. Currency: INR. Membership renewal price must match the existing membership plan; for training, total installments must equal the full batch fee (within paise rounding). Changes require a new product version.</p>
  <button className={styles.primary} type="button" disabled={!superAdmin||busy||!referenceId} onClick={()=>void create()}>{busy?"Working…":"Create test Razorpay recurring plan"}</button>
  </section>
  <section className={styles.card}><div className={styles.heading}><h2>Configured recurring offers</h2><button type="button" onClick={()=>void load()}>Refresh</button></div>

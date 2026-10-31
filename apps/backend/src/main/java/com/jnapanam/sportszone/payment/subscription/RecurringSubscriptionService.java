@@ -46,7 +46,7 @@ public class RecurringSubscriptionService {
         ||!List.of("MEMBERSHIP","TRAINING").contains(r.kind()))
      throw new BadRequestException("Invalid recurring offering. Use a priced plan, billing period and 2–60 cycles.");
    if(!gateway.configured())throw new ConflictException("Configure Razorpay API test keys first.");
-   String reference=validateOffering(r);
+   validateOffering(r);
    if(db.queryForObject("select count(*) from recurring_offerings where kind=? and reference_id=?",Integer.class,r.kind(),r.referenceId())>0)
      throw new ConflictException("Recurring offering already exists for this membership plan or training batch");
    String providerPlan=gateway.plan(r.title(),r.amountPaise(),r.period(),r.interval());
@@ -57,21 +57,41 @@ public class RecurringSubscriptionService {
      """,id,r.kind(),r.referenceId(),r.title(),r.amountPaise(),r.period(),r.interval(),r.totalCycles(),providerPlan);
    return db.queryForMap(LIST_OFFERINGS+" where o.id=?",id);
  }
+ static void requireInstallmentTotal(long amountPaise,int totalCycles,java.math.BigDecimal fee){
+   if(fee==null||fee.signum()<=0||amountPaise<100||totalCycles<2)
+     throw new BadRequestException("Recurring installments require a positive training fee and valid cycles.");
+   long expected=toPaise(fee);
+   long planned;
+   try{planned=Math.multiplyExact(amountPaise,(long)totalCycles);}
+   catch(ArithmeticException e){throw new BadRequestException("Invalid training installment amount.");}
+   // Equal fixed installments can differ by at most one paise per rounded cycle.
+   long roundingTolerance=totalCycles-1L;
+   if(Math.abs(planned-expected)>roundingTolerance)
+     throw new BadRequestException("Combined recurring installments must equal the training batch fee (allowing only paise rounding).");
+ }
+ static long toPaise(java.math.BigDecimal rupees){
+   try{return rupees.movePointRight(2).longValueExact();}
+   catch(ArithmeticException e){throw new BadRequestException("Currency amount must have at most two decimal places.");}
+ }
  private String validateOffering(OfferingRequest r){
    if(r.kind().equals("MEMBERSHIP")){
-     var plans=db.queryForList("select code,name,duration_days,status from membership_plans where id=?",r.referenceId());
+     var plans=db.queryForList("select code,name,duration_days,status,price from membership_plans where id=?",r.referenceId());
      if(plans.isEmpty())throw new NotFoundException("Membership plan not found");
      var p=plans.get(0);
      if(!"ACTIVE".equals(p.get("status")))throw new ConflictException("Membership plan must be active");
      int days=((Number)p.get("duration_days")).intValue();
+     long membershipPricePaise=toPaise((java.math.BigDecimal)p.get("price"));
+     if(r.amountPaise()!=membershipPricePaise)
+       throw new BadRequestException("Recurring membership charge must match the configured plan price per period.");
      int required=switch(r.period()){case "weekly"->7*r.interval();case "monthly"->30*r.interval();default->365*r.interval();};
      if(Math.abs(days-required)>r.interval()*3)
        throw new BadRequestException("Membership plan duration must approximately match the recurring billing interval");
      return String.valueOf(p.get("code"));
    }
-   var batches=db.queryForList("select name,start_date,end_date,status from training_batches where id=?",r.referenceId());
+   var batches=db.queryForList("select name,start_date,end_date,status,fee from training_batches where id=?",r.referenceId());
    if(batches.isEmpty())throw new NotFoundException("Training batch not found");
    var b=batches.get(0);
+   requireInstallmentTotal(r.amountPaise(),r.totalCycles(),(java.math.BigDecimal)b.get("fee"));
    if(!"ACTIVE".equals(b.get("status")))throw new ConflictException("Training batch must be active");
    LocalDate start=((java.sql.Date)b.get("start_date")).toLocalDate();
    LocalDate end=((java.sql.Date)b.get("end_date")).toLocalDate();
