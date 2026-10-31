@@ -281,7 +281,7 @@ public class PaymentService {
                 var match = objectId == null ? Optional.<PaymentRefund>empty()
                         : refunds.findByProviderRefundId(objectId);
                 if (match.isEmpty()) {
-                    result = "UNMATCHED";
+                    result = recurringWebhooks==null?"UNMATCHED":recurringWebhooks.refund(type,json.path("payload"));
                 } else {
                     PaymentRefund refund = match.get();
                     PaymentOrder order = refund.getPaymentOrder();
@@ -298,6 +298,8 @@ public class PaymentService {
                         result = "APPLIED";
                     }
                 }
+            } else if (recurringWebhooks != null) {
+                result = recurringWebhooks.refund(type,json.path("payload"));
             }
         }
         if (type.startsWith("subscription.") && recurringWebhooks != null)
