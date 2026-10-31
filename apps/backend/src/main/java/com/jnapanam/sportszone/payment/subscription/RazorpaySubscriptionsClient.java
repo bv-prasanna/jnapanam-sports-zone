@@ -54,7 +54,7 @@ public class RazorpaySubscriptionsClient {
      if(response.statusCode()/100!=2)throw new ConflictException("Razorpay subscription request rejected ("+response.statusCode()+"). Verify your Subscriptions product is enabled.");
      return json.readTree(response.body());
    } catch(ConflictException e){throw e;}catch(Exception e){
-     Thread.currentThread().interruptIf(e instanceof InterruptedException);
+     if(e instanceof InterruptedException)Thread.currentThread().interrupt();
      throw new ConflictException("Razorpay subscriptions unavailable; retry later");
    }
  }
