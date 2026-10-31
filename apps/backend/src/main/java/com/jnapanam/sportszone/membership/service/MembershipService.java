@@ -4,11 +4,6 @@ import com.jnapanam.sportszone.catalog.model.Sport; import com.jnapanam.sportszo
  private com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService recurringSubscriptions;
  @org.springframework.beans.factory.annotation.Autowired(required=false)
  public void setRecurringSubscriptions(com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService service){this.recurringSubscriptions=service;}
- @org.springframework.beans.factory.annotation.Autowired(required=false)
- public void setRecurringSubscriptions(com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService service){
-     this.recurringSubscriptions=service;
- }
- private com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService recurringSubscriptions;
  private final MembershipPlanRepository plans;private final CustomerMembershipRepository memberships;private final SportRepository sports;private final UserRepository users;private final long paymentMinutes;
  public MembershipService(MembershipPlanRepository p,CustomerMembershipRepository m,SportRepository s,UserRepository u,@Value("${app.payment.pending-minutes:15}")long paymentMinutes){plans=p;memberships=m;sports=s;users=u;this.paymentMinutes=paymentMinutes;}
  @Transactional(readOnly=true) public List<MembershipPlanResponse> publicPlans(){return plans.findByStatusOrderByPriceAscNameAsc(MembershipPlanStatus.ACTIVE).stream().map(MembershipPlanResponse::from).toList();}

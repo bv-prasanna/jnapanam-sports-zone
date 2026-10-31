@@ -4,11 +4,6 @@ import com.jnapanam.sportszone.catalog.model.Facility;import com.jnapanam.sports
  private com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService recurringSubscriptions;
  @org.springframework.beans.factory.annotation.Autowired(required=false)
  public void setRecurringSubscriptions(com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService service){this.recurringSubscriptions=service;}
- @org.springframework.beans.factory.annotation.Autowired(required=false)
- public void setRecurringSubscriptions(com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService service){
-     this.recurringSubscriptions=service;
- }
- private com.jnapanam.sportszone.payment.subscription.RecurringSubscriptionService recurringSubscriptions;
  private final TrainingProgramRepository programs;private final TrainingBatchRepository batches;private final TrainingEnrollmentRepository enrollments;private final TrainingAttendanceRepository attendance;private final SportRepository sports;private final FacilityRepository facilities;private final UserRepository users;private final long paymentMinutes;
  public TrainingService(TrainingProgramRepository p,TrainingBatchRepository b,TrainingEnrollmentRepository e,TrainingAttendanceRepository a,SportRepository s,FacilityRepository f,UserRepository u,@Value("${app.payment.pending-minutes:15}")long paymentMinutes){programs=p;batches=b;enrollments=e;attendance=a;sports=s;facilities=f;users=u;this.paymentMinutes=paymentMinutes;}
  @Transactional(readOnly=true)public List<ProgramResponse>publicPrograms(){return programs.findByStatusOrderByNameAsc(TrainingStatus.ACTIVE).stream().filter(p->p.getSport().isAvailableOn(LocalDate.now())).map(ProgramResponse::from).toList();}
