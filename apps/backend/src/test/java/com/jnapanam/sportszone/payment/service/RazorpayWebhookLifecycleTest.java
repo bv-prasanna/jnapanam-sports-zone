@@ -76,7 +76,19 @@ class RazorpayWebhookLifecycleTest {
         verifyNoInteractions(notifications);
     }
 
-    @Test void settlementEventIsAuditedButNeverFulfilsBooking() throws Exception {
+    @Test void capturedSubscriptionPaymentWithoutOrderIsAuditedNotRejected() throws Exception {
+        event("evt-sub-captured",
+                "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_subscription_1\",\"order_id\":null,\"invoice_id\":\"inv_123\",\"amount\":15000,\"status\":\"captured\"}}}}");
+        ArgumentCaptor<PaymentWebhookEvent> captured = ArgumentCaptor.forClass(PaymentWebhookEvent.class);
+        verify(events).save(captured.capture());
+        assertEquals("UNMATCHED", captured.getValue().getStatus());
+        assertEquals("pay_subscription_1", captured.getValue().getProviderPaymentId());
+        verifyNoInteractions(orders);
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void settlementEventIsAuditedButNeverFulfilsBooking() throws Exception {
         event("evt-settlement","{\"event\":\"settlement.processed\",\"payload\":{\"settlement\":{\"entity\":{\"id\":\"setl_001\",\"amount\":50000}}}}");
         ArgumentCaptor<PaymentWebhookEvent> captor = ArgumentCaptor.forClass(PaymentWebhookEvent.class);
         verify(events).save(captor.capture());

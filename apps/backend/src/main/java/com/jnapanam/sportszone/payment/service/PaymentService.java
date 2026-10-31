@@ -255,14 +255,19 @@ public class PaymentService {
 
         if ("payment.captured".equals(type)) {
             providerPaymentId = objectId;
-            if (providerOrderId == null || providerPaymentId == null)
-                throw new BadRequestException("Captured payment is missing identifiers");
-            final String capturedPaymentId = providerPaymentId;
-            final String orderId = providerOrderId;
-            var order = orders.findByProviderOrderId(orderId);
-            if (order.isEmpty()) {
+            if (providerPaymentId == null)
+                throw new BadRequestException("Captured payment is missing its payment identifier");
+            // Subscription charges and other Razorpay products may have no ordinary
+            // order_id. They are audited as unmatched and must never fulfill a
+            // Jnapanam one-time order. subscription.charged owns recurring access.
+            if (providerOrderId == null) {
                 result = "UNMATCHED";
-            } else if (order.get().getStatus() == PaymentStatus.CREATED) {
+            } else {
+                final String capturedPaymentId = providerPaymentId;
+                var order = orders.findByProviderOrderId(providerOrderId);
+                if (order.isEmpty()) {
+                    result = "UNMATCHED";
+                } else if (order.get().getStatus() == PaymentStatus.CREATED) {
                 PaymentOrder target = order.get();
                 if (amount == null || amount != target.getAmountPaise()
                         || !target.getCurrency().equals(entity.path("currency").asText()))
@@ -274,6 +279,7 @@ public class PaymentService {
                 notificationService.payment(target.getUser().getId(), target.getReceiptNumber(), target.getAmountPaise());
                 notifyFulfilment(target);
                 result = "APPLIED";
+                }
             }
         } else if (type.startsWith("refund.")) {
             providerPaymentId = safeIdentifier(entity.path("payment_id").asText(null));
