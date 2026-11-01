@@ -39,6 +39,8 @@ type Slot = {
   available: number;
 };
 
+type SlotQuote = {total: number; tax: number; unitPrice: number};
+
 type Booking = {
   id: string;
   bookingNumber: string;
@@ -140,6 +142,7 @@ export default function BookingsScreen() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [facilityId, setFacilityId] = useState('');
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [quotes, setQuotes] = useState<Record<string, SlotQuote>>({});
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -181,6 +184,7 @@ export default function BookingsScreen() {
     if (!filteredFacilities.some((facility) => facility.id === facilityId)) {
       setFacilityId(filteredFacilities[0]?.id || '');
       setSlots([]);
+      setQuotes({});
     }
   }, [facilityId, filteredFacilities]);
 
@@ -197,6 +201,9 @@ export default function BookingsScreen() {
         `/api/v1/public/facilities/${facilityId}/slots?date=${date}`,
       );
       setSlots(result);
+      setQuotes({});
+      const calculated = result.length ? await api<Record<string, SlotQuote>>("/api/v1/public/pricing/slots/quotes", {method:"POST",body:JSON.stringify({slotIds: result.map(slot=>slot.id)})}) : {};
+      setQuotes(calculated);
       if (!result.length) setMessage(t('bookings.noSlots'));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('bookings.loadError'));
@@ -206,6 +213,7 @@ export default function BookingsScreen() {
   }
 
   async function book(slotId: string, paymentOption: 'PAY_NOW' | 'PAY_AT_VENUE') {
+    if (!quotes[slotId]) { setError("Please refresh slot prices before booking."); return; }
     const key = `${slotId}-${paymentOption}`;
     setProcessing(key);
     setError('');
@@ -217,7 +225,7 @@ export default function BookingsScreen() {
       });
       const booking = await api<Booking>('/api/v1/bookings/confirm', {
         method: 'POST',
-        body: JSON.stringify({ holdId: hold.id, paymentOption }),
+        body: JSON.stringify({ holdId: hold.id, paymentOption, expectedTotalPaise: Math.round(quotes[slotId].total * 100) }),
       });
 
       if (paymentOption === 'PAY_NOW') {
@@ -377,12 +385,15 @@ export default function BookingsScreen() {
                       <Text style={styles.available}>
                         {t('bookings.availableCount', { count: slot.available })}
                       </Text>
+                      <Text style={styles.available} accessibilityLabel={quotes[slot.id] ? `Final slot price ₹${quotes[slot.id].total.toFixed(2)} including tax ₹${quotes[slot.id].tax.toFixed(2)}` : "Price unavailable"}>
+                        {quotes[slot.id] ? `₹${quotes[slot.id].total.toFixed(2)} (incl. tax ₹${quotes[slot.id].tax.toFixed(2)})` : "Price loading / unavailable"}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.actionRow}>
                     <Pressable
-                      disabled={!slot.available || !!processing}
-                      style={[styles.payButton, (!slot.available || !!processing) && styles.disabled]}
+                      disabled={!slot.available || !quotes[slot.id] || !!processing}
+                      style={[styles.payButton, (!slot.available || !quotes[slot.id] || !!processing) && styles.disabled]}
                       onPress={() => void book(slot.id, 'PAY_NOW')}
                     >
                       {processing === `${slot.id}-PAY_NOW` ? (
@@ -392,8 +403,8 @@ export default function BookingsScreen() {
                       )}
                     </Pressable>
                     <Pressable
-                      disabled={!slot.available || !!processing}
-                      style={[styles.venueButton, (!slot.available || !!processing) && styles.disabled]}
+                      disabled={!slot.available || !quotes[slot.id] || !!processing}
+                      style={[styles.venueButton, (!slot.available || !quotes[slot.id] || !!processing) && styles.disabled]}
                       onPress={() => void book(slot.id, 'PAY_AT_VENUE')}
                     >
                       {processing === `${slot.id}-PAY_AT_VENUE` ? (

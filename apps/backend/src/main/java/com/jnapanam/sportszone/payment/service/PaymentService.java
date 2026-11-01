@@ -42,6 +42,9 @@ public class PaymentService {
     private final BookingService bookingService;
     private final PromotionService promotionService;
     private final LoyaltyService loyaltyService;
+    private com.jnapanam.sportszone.pricing.PaymentTaxSnapshotService billingTax;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    public void billingTax(com.jnapanam.sportszone.pricing.PaymentTaxSnapshotService value){this.billingTax=value;}
     private org.springframework.jdbc.core.JdbcTemplate subscriptionJdbc;
     @org.springframework.beans.factory.annotation.Autowired(required=false)
     public void setSubscriptionJdbc(org.springframework.jdbc.core.JdbcTemplate jdbc){this.subscriptionJdbc=jdbc;}
@@ -98,6 +101,7 @@ public class PaymentService {
         PaymentOrder order = new PaymentOrder(user, request.purpose(), request.referenceId(), original,
                 properties.currency(), gateway.provider(), key);
         order.pricing(original, applied.discountPaise(), applied.code(), points, loyaltyValue);
+        if(billingTax!=null)billingTax.snapshot(order);
         orders.save(order);
         promotionService.redeem(applied, user, order);
         loyaltyService.recordRedemption(user, order, points);
@@ -168,6 +172,7 @@ public class PaymentService {
         String key = "onsite-" + bookingId;
         PaymentOrder order = new PaymentOrder(booking.getUser(), PaymentPurpose.BOOKING, bookingId, amount,
                 properties.currency(), "ONSITE", key);
+        if(billingTax!=null)billingTax.snapshot(order);
         orders.save(order);
         order.providerOrder("onsite_order_" + order.getId());
         String reference = request.reference() == null || request.reference().isBlank() ? UUID.randomUUID().toString()
@@ -215,6 +220,10 @@ public class PaymentService {
         // even when the test repository has not yet included it in findByPaymentOrderId.
         if (total < refund.getAmountPaise()) total = refund.getAmountPaise();
         order.refundStatus(total);
+        if(total >= order.getAmountPaise()){
+            loyaltyService.reverseRedemption(order.getUser(),order);
+            loyaltyService.reverseEarn(order.getUser(),order);
+        }
         if (total >= order.getAmountPaise() && order.getPurpose() == PaymentPurpose.BOOKING)
             bookings.findById(order.getReferenceId()).ifPresent(Booking::refunded);
         notificationService.refund(order.getUser().getId(), order.getReceiptNumber(), refund.getAmountPaise());
@@ -331,7 +340,7 @@ public class PaymentService {
                         || (b.getStatus() != BookingStatus.PENDING_PAYMENT && b.getStatus() != BookingStatus.CONFIRMED)
                         || (b.getStatus() == BookingStatus.PENDING_PAYMENT && expired(b.getPaymentExpiresAt())))
                     throw new ConflictException("Booking is not awaiting payment");
-                yield b.getSlot().getFacility().getBookingPrice().multiply(BigDecimal.valueOf(b.getQuantity()));
+                yield b.getPriceTotalPaise() == null ? b.getSlot().getFacility().getBookingPrice().multiply(BigDecimal.valueOf(b.getQuantity())) : BigDecimal.valueOf(b.getPriceTotalPaise(),2);
             }
             case MEMBERSHIP -> {
                 CustomerMembership m = memberships.findById(ref)
