@@ -1,4 +1,35 @@
 const en = {
+  mobileMenu:{
+    title:'Menu',open:'Open menu',openHint:'Shows available customer and staff screens',close:'Close menu',
+    customer:'CUSTOMER',staff:'STAFF',home:'Home',bookings:'Bookings',memberships:'Memberships',
+    training:'Training',growth:'My Growth',tournaments:'Tournaments',shop:'Sports Shop',
+    messages:'Messages',profile:'My Profile',billing:'Payments & Invoices',subscriptions:'Subscriptions',
+    operations:'Today’s Operations',shopCounter:'Shop Counter',webAdmin:'Sports, facilities, pricing, taxes, staff management and shop configuration are available in the web Admin Console.'
+  },
+  mobileProfile:{
+    account:'Account information',photo:'Profile photo',changePhoto:'Upload photo from web profile',
+    update:'Save profile',saving:'Saving…',saved:'Profile updated successfully.',
+    fullName:'Full name',displayName:'Display / calling name',email:'Email',
+    mobile:'Mobile (not verified)',address:'Address',city:'City',state:'State',pin:'PIN code',
+    verification:'Address proof verification',proofDescription:'An address proof is needed before your first booking.',
+    proofStatus:'Document status',uploadProof:'Upload address proof from web profile',
+    photoHelp:'To upload a photo or address proof, sign in to the web profile.',
+    security:'Account security',securityHelp:'Change your password and sign in again.',
+    currentPassword:'Current password',newPassword:'New password',confirmPassword:'Confirm new password',
+    changePassword:'Change password',hidePassword:'Hide password form',showPassword:'Change password',
+    location:'Enable location for activity history',
+    locationEnabled:'Location enabled while using app',locationDenied:'Permission denied. Event details are still recorded.',
+    locationUnavailable:'Device location unavailable',locationDisabled:'Location is off for event audits',
+    billing:'Payments & invoices',logout:'Sign out',passwordTooShort:'Use at least 12 characters for your new password.',
+    passwordsDontMatch:'New passwords do not match.',
+  },
+  errors:{
+    network:'Could not connect to Jnapanam. Check your internet connection and try again.',
+    timeout:'The connection timed out. Please try again.',
+    server:'Jnapanam is temporarily unavailable. Please try again shortly.',
+    session:'Your session has expired. Please sign in again.',
+    generic:'We could not complete that request. Please try again.',
+  },
   common: {
     appName: 'Jnapanam Sports Zone',
     location: 'Holalkere, Chitradurga',
@@ -18,6 +49,9 @@ const en = {
     passwordLength: 'Password must contain at least 8 characters.', passwordMismatch: 'Passwords do not match.', smsOtp:'SMS verification code', sendOtp:'Send SMS OTP', verifyOtp:'Verify OTP', resetPassword:'Reset password', deviceVerified:'This mobile device is verified for your session',
   },
   home: {
+    operationsDescription:'Verify bookings, collect payments and manage check-in or checkout.',
+    counterDescription:'Handle shop counter orders, fulfilment and walk-in sales.',
+    subscriptionsDescription:'Manage membership renewals and training instalments.',
     destination: 'YOUR SPORTS DESTINATION', welcome: 'Welcome, {{name}}', welcomeGuest: 'Welcome to Jnapanam', atJnapanam: 'AT JNAPANAM', bookNow: 'Book now', sportsUnavailable: 'Sports will appear when the backend is available.', headline: 'Play. Train. Compete.',
     description: 'Book sports facilities, join training programs and participate in local tournaments.',
     bookSlot: 'Book a Sports Slot', chooseSport: 'Choose your sport',
