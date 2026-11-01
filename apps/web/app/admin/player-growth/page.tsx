@@ -30,7 +30,7 @@ export default function GrowthCoachPage(){
  <div className="form-grid"><label>Player ID<input required value={playerId} onChange={e=>setPlayerId(e.target.value)} placeholder="Player UUID"/></label>
  <label>Sport ID<input required value={sportId} onChange={e=>setSportId(e.target.value)} placeholder="Sport UUID"/></label></div>
  {result&&<p role="status">{result}</p>}
- <section className="admin-card"><h2>Skill assessment</h2><form className="form-grid" onSubmit={saveAssessment}>
+ </section><section className="admin-card"><h2>Skill assessment</h2><form className="form-grid" onSubmit={saveAssessment}>
  <label>Skill<input required maxLength={100} value={skill} onChange={e=>setSkill(e.target.value)} placeholder="e.g. Serve accuracy"/></label>
  <label>Coach score (0–100)<input required type="number" min="0" max="100" value={score} onChange={e=>setScore(e.target.value)}/></label>
  <label>Feedback<textarea maxLength={500} value={remarks} onChange={e=>setRemarks(e.target.value)}/></label>
