@@ -32,6 +32,11 @@ public class VenueBillingEmailDelivery {
     }
     @Scheduled(fixedDelayString="${app.billing.invoice-mail-period-ms:300000}",initialDelay=60000)
     public void dispatch() {
+        // Opt-in only. Leave any queued messages untouched when delivery is disabled.
+        Boolean enabled=jdbc.queryForObject(
+            "select exists(select 1 from venue_billing_profile where id=1 and invoice_email_enabled=true)",
+            Boolean.class);
+        if(!Boolean.TRUE.equals(enabled))return;
         List<Map<String,Object>> jobs=jdbc.queryForList("""
           select d.id,d.recipient,b.kind,b.document_number,b.document_data::text as details
           from venue_billing_email_deliveries d join venue_billing_documents b on b.id=d.document_id
