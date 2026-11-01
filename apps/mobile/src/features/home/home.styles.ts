@@ -4,7 +4,7 @@ import { BrandColors } from '@/constants/brand';
 
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: BrandColors.background },
-  content: { flexGrow: 1, paddingBottom: 96 },
+  content: { flexGrow: 1, paddingBottom: 32 },
   topBar: {
     minHeight: 118,
     paddingTop: 46,
