@@ -84,6 +84,10 @@ function SelectField({
       <Text style={styles.fieldLabel}>{label}</Text>
       <Pressable
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${selected?.label || placeholder}`}
+        accessibilityHint="Opens the list of available choices"
+        accessibilityState={{disabled: Boolean(disabled)}}
         onPress={() => setOpen(true)}
         style={[styles.selectField, disabled && styles.disabled]}
       >
