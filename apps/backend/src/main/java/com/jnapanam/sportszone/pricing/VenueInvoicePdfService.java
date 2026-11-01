@@ -70,7 +70,20 @@ public class VenueInvoicePdfService {
                     y=line(c,body,11,50,y,"Booking: "+str(receipt.get("bookingNumber")));
                 y=line(c,body,11,50,y,"Payment status: "+str(receipt.get("status")));
                 y=line(c,body,11,50,y,"Payment date: "+str(receipt.get("paidAt")));
-                y=line(c,body,11,50,y-20,"Amount paid: "+money(receipt.get("paymentAmountPaise")));
+                y=line(c,body,11,50,y-20,"Original payment collected: "+money(receipt.get("paymentAmountPaise")));
+                long refunded=0L;
+                Object refunds=receipt.get("refunds");
+                if(refunds instanceof List<?> items){
+                    for(Object obj:items){
+                        if(obj instanceof Map<?,?> row && "PROCESSED".equals(String.valueOf(row.get("status")))
+                            && row.get("amountPaise") instanceof Number n)refunded+=n.longValue();
+                    }
+                }
+                if(refunded>0){
+                    y=line(c,body,11,50,y,"Completed refunds: "+money(refunded));
+                    y=line(c,body,11,50,y,"Net payment retained: "+
+                        money(Math.max(0L,((Number)receipt.get("paymentAmountPaise")).longValue()-refunded)));
+                }
                 y=line(c,body,10,50,y,"Promotion discount: "+money(receipt.get("discountPaise")));
                 y=line(c,body,10,50,y,"Loyalty points used: "+str(receipt.get("loyaltyPointsUsed")));
                 line(c,body,10,50,y-25,"This receipt confirms payment; it is not a GST tax invoice.");
