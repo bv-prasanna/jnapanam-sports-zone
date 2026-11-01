@@ -54,7 +54,7 @@ public class VenueInvoicePdfService {
         }catch(IOException ex){throw new IllegalStateException("Unable to render billing document PDF",ex);}
     }
     private static float line(PDPageContentStream c,PDFont f,int size,float x,float y,String value)throws IOException{
-        if(y<76)throw new IOException("Document overflows one-page invoice template");
+        if(y<45)throw new IOException("Document overflows one-page invoice template");
         c.beginText();c.setFont(f,size);c.newLineAtOffset(x,y);
         c.showText(safe(value));c.endText();return y-size-9;
     }
