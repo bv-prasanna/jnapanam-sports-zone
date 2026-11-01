@@ -81,7 +81,7 @@ export default function ProfileScreen(){
  return <ScreenShell title={t('navigation.profile')}>
    <View style={styles.card}>
      <View style={styles.identity}>
-       {form.profilePhotoUrl&&!photoFailed?<Image source={{uri:form.profilePhotoUrl}} style={styles.avatar} onError={()=>setPhotoFailed(true)}/>:
+       {form.profilePhotoUrl&&!photoFailed?<Image source={{uri:form.profilePhotoUrl}} style={{width:64,height:64,borderRadius:32,backgroundColor:BrandColors.background}} onError={()=>setPhotoFailed(true)}/>:
          <View style={styles.initials}><Text style={styles.initialsText}>{(user.displayName||user.fullName).split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()}</Text></View>}
        <View style={styles.identityCopy}><Text style={styles.name}>{user.displayName||user.fullName}</Text><Text style={styles.subText}>{user.email}</Text>
          <Text style={styles.status}>{t('profile.status')}: {user.status}</Text></View>
@@ -161,13 +161,13 @@ const styles=StyleSheet.create({
  primary:{minHeight:47,backgroundColor:BrandColors.accent,borderRadius:10,alignItems:'center',justifyContent:'center',padding:12,marginTop:12},
  primaryText:{color:'#fff',fontWeight:'900',fontSize:15},
  outline:{borderColor:BrandColors.border,borderWidth:1,borderRadius:10,minHeight:46,alignItems:'center',justifyContent:'center',padding:12,backgroundColor:BrandColors.surface},
- outlineText:{color:BrandColors.primary,fontSize:14,fontWeight:'850',textAlign:'center'},
+ outlineText:{color:BrandColors.primary,fontSize:14,fontWeight:'800',textAlign:'center'},
  collapsible:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:47},
  toggle:{fontSize:24,color:BrandColors.accent,fontWeight:'900'},
  logout:{minHeight:47,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:BrandColors.accent,marginTop:10,padding:13},
- logoutText:{color:BrandColors.accent,fontWeight:'850'},
+ logoutText:{color:BrandColors.accent,fontWeight:'800'},
  hint:{color:BrandColors.textSecondary,fontSize:12,lineHeight:18,marginVertical:6},
  error:{color:'#A32613',padding:10,backgroundColor:'#FFF0ED',borderRadius:9,marginTop:8},
- success:{color:'#166B38',fontWeight:'750',padding:10,backgroundColor:'#E8F6EC',borderRadius:9},
+ success:{color:'#166B38',fontWeight:'700',padding:10,backgroundColor:'#E8F6EC',borderRadius:9},
  disabled:{opacity:.5}
 });

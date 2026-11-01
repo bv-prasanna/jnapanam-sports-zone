@@ -89,7 +89,7 @@ const styles=StyleSheet.create({
  brand:{fontSize:14,color:BrandColors.white,fontWeight:'900'},
  location:{fontSize:11,color:'#DCE5CF',marginTop:2},
  overlay:{flex:1,flexDirection:'row',backgroundColor:'transparent'},
- backdrop:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(8,20,14,.6)'},
+ backdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(8,20,14,.6)'},
  drawer:{width:'85%',maxWidth:350,backgroundColor:BrandColors.background,flex:1,elevation:12},
  drawerTop:{paddingHorizontal:19,paddingVertical:14,backgroundColor:BrandColors.surface,borderBottomWidth:1,borderBottomColor:BrandColors.border,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  drawerTitle:{fontSize:20,color:BrandColors.textPrimary,fontWeight:'900'},
