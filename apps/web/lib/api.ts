@@ -83,6 +83,16 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   return JSON.parse(raw) as T;
 }
 
+/** Download authenticated binary files; standard api() expects JSON. */
+export async function apiBlob(path:string):Promise<Blob>{
+  let jwt=accessToken || await refreshAccess();
+  const request=()=>fetch(`${API_BASE_URL}${path}`,{headers:jwt?{Authorization:`Bearer ${jwt}`}:{}});
+  let response=await request();
+  if(response.status===401){jwt=await refreshAccess();response=await request();}
+  if(!response.ok)throw new ApiError(response.status,`Unable to download document (${response.status})`);
+  return response.blob();
+}
+
 export async function login(email: string, password: string, mfaCode?: string) {
   const tokens = await api<TokenResponse>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ email, password, mfaCode }) }, false);
   saveTokens(tokens); return api<User>("/api/v1/profile/me");
