@@ -9,3 +9,8 @@ ALTER TABLE facilities ADD CONSTRAINT chk_facility_buffer_minutes CHECK (buffer_
 
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS terms_snapshot VARCHAR(3000);
+
+-- Baseline hygiene terms on existing facilities; administrators may tailor the wording.
+UPDATE facilities
+SET terms_and_conditions = 'Gutka, cigarettes, smoking and tobacco are not permitted. Follow the safety and hygiene instructions of the facility operator.'
+WHERE terms_and_conditions IS NULL;

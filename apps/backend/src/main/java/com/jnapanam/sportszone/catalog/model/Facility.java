@@ -62,7 +62,9 @@ public class Facility {
     public void configureBookingRules(int bufferMinutes, String termsAndConditions) {
         if (bufferMinutes < 0 || bufferMinutes > 120) throw new IllegalArgumentException("Invalid buffer minutes");
         this.bufferMinutes = bufferMinutes;
-        this.termsAndConditions = trimToNull(termsAndConditions);
+        this.termsAndConditions = trimToNull(termsAndConditions) == null
+            ? "Gutka, cigarettes, smoking and tobacco are not permitted. Follow the safety and hygiene instructions of the facility operator."
+            : trimToNull(termsAndConditions);
         this.updatedAt = Instant.now();
     }
 
