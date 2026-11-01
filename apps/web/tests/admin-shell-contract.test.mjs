@@ -45,3 +45,14 @@ test("admin design tokens and mobile sidebar are shared without styling public p
   assert.match(page,/useSearchParams/);
   assert.match(page,/router\.push\(target==="dashboard"/);
 });
+
+test("admin staff routes reuse admin navigation without disrupting operator and shopkeeper views",async()=>{
+  const operations=await source("app/operations/page.tsx");
+  const shop=await source("app/shop-counter/page.tsx");
+  for(const page of [operations,shop]){
+    assert.match(page,/import AdminLayout from/);
+    assert.match(page,/<AdminLayout>\{screen\}<\/AdminLayout>/);
+  }
+  assert.match(operations,/<PortalSideNavigation active="operations"\/>/);
+  assert.match(shop,/return admin\?<AdminLayout>/);
+});
