@@ -28,12 +28,12 @@ public class VenueBillingService {
         this.jdbc=jdbc;this.orders=orders;this.bookings=bookings;this.refunds=refunds;this.json=json;
     }
 
-    public record BillingProfile(@NotBlank @Size(max=160) String legalName,
+    public record BillingProfile(@Size(max=160) String legalName,
         @Pattern(regexp="^[0-9]{2}[A-Z0-9]{13}$") String gstin,
-        @NotBlank @Size(max=400) String registeredAddress,
+        @Size(max=400) String registeredAddress,
         @Pattern(regexp="^[0-9]{2}$") String stateCode,
-        @NotBlank @Pattern(regexp="^[A-Za-z0-9]{4,12}$") String serviceAccountingCode,
-        @NotBlank @Size(max=120) String signatory) {}
+        @Size(max=12) String serviceAccountingCode,
+        @Size(max=120) String signatory) {}
 
     public record InvoiceDetails(String recipientGstin,String recipientStateCode,String recipientAddress,
         String componentMode,String placeOfSupplyStateCode) {
@@ -63,8 +63,9 @@ public class VenueBillingService {
             on conflict(id) do update set legal_name=excluded.legal_name,gstin=excluded.gstin,
             registered_address=excluded.registered_address,state_code=excluded.state_code,
             service_accounting_code=excluded.service_accounting_code,signatory=excluded.signatory,updated_at=now()
-            """,p.legalName().trim(),blank(p.gstin()),p.registeredAddress().trim(),p.stateCode(),
-            p.serviceAccountingCode(),p.signatory().trim());
+            """,defaultName(p.legalName()),blank(p.gstin()),draftText(p.registeredAddress()),
+            p.stateCode()==null||p.stateCode().isBlank()?"29":p.stateCode(),
+            blank(p.serviceAccountingCode()),blank(p.signatory()));
     }
 
     @Transactional(readOnly=true)
@@ -118,8 +119,11 @@ public class VenueBillingService {
         if(net+tax!=total||total!=o.getAmountPaise()+o.getBillingLoyaltyTenderPaise())
             throw new ConflictException("The invoice breakdown does not match captured cash and loyalty consideration");
         Map<String,Object> seller=profile();
-        if(seller.isEmpty()||seller.get("gstin")==null)
-            throw new ConflictException("Configure supplier legal name, registered address and GSTIN before issuing GST invoices");
+        if(seller.isEmpty() || seller.get("gstin")==null
+            || isBlank(seller.get("legalName")) || isBlank(seller.get("registeredAddress"))
+            || isBlank(seller.get("stateCode")) || isBlank(seller.get("serviceAccountingCode"))
+            || isBlank(seller.get("signatory")))
+            throw new ConflictException("Complete and verify legal name, registered address, GSTIN, state, SAC and signatory in Admin billing settings before issuing GST invoices");
         if(details==null||details.componentMode()==null||!Set.of("IGST","CGST_SGST").contains(details.componentMode()))
             throw new BadRequestException("Choose applicable IGST or CGST + SGST");
         if(details.recipientStateCode()==null||!details.recipientStateCode().matches("[0-9]{2}"))
@@ -249,5 +253,8 @@ public class VenueBillingService {
           """,UUID.randomUUID(),documentId,paymentId,paymentId);
         return Map.of("documentNumber",documentNumber,"state","ISSUED","totalPaise",total);
     }
+    private static boolean isBlank(Object value){return value==null||String.valueOf(value).isBlank();}
+    private static String defaultName(String value){return value==null||value.isBlank()?"Jnapanam Sports Zone":value.trim();}
+    private static String draftText(String value){return value==null?"":value.trim();}
     private static String blank(String s){return s==null||s.isBlank()?null:s.trim();}
 }
