@@ -1,4 +1,32 @@
 const kn = {
+  mobileOperations:{
+    accessRequired:'ಕಾರ್ಯಾಚರಣೆ ಪ್ರವೇಶ ಅಗತ್ಯ',accessDescription:'ಕಾರ್ಯಾಚರಣೆ ಖಾತೆಯಿಂದ ಲಾಗಿನ್ ಮಾಡಿ.',
+    title:'ಸೌಲಭ್ಯ ಕಾರ್ಯಾಚರಣೆ',description:'ಇಂದಿನ ಸೌಲಭ್ಯ ಬುಕಿಂಗ್‌ಗಳು. ಚೆಕ್-ಇನ್ ಮೊದಲು ಪಾವತಿ ದೃಢವಾಗಿರಬೇಕು.',
+    sport:'ಕ್ರೀಡೆ',facility:'ಸೌಲಭ್ಯ',allSports:'ಎಲ್ಲಾ ಕ್ರೀಡೆಗಳು',allFacilities:'ಎಲ್ಲಾ ಸೌಲಭ್ಯಗಳು',
+    paymentDue:'ಪಾವತಿ ಬಾಕಿ',ready:'ಸಿದ್ಧ',checkedIn:'ಚೆಕ್-ಇನ್ ಆಗಿದೆ',
+    search:'ಬುಕಿಂಗ್ ಸಂಖ್ಯೆ, ಗ್ರಾಹಕ, ಮೊಬೈಲ್, ಸೌಲಭ್ಯ',bookingCount:'ಇಂದು {{count}} ಬುಕಿಂಗ್‌ಗಳು',
+    noMatching:'ಇಂದು ಹೊಂದುವ ಬುಕಿಂಗ್ ಇಲ್ಲ.',noActive:'ಈ ಸೌಲಭ್ಯದಲ್ಲಿ ಇಂದು ಸಕ್ರಿಯ ಬುಕಿಂಗ್‌ಗಳಿಲ್ಲ.',
+    collect:'ಪಾವತಿ ಸಂಗ್ರಹಿಸಿ',checkin:'ಪರಿಶೀಲಿಸಿ ಚೆಕ್-ಇನ್',checkout:'ಚೆಕ್-ಔಟ್',noShow:'ಬಂದಿಲ್ಲ',
+    reverse:'ಚೆಕ್-ಇನ್ ಹಿಂತಿರುಗಿಸಿ',refund:'ರದ್ದು ಮಾಡಿ ಮರುಪಾವತಿ',cancel:'ರದ್ದುಮಾಡಿ'
+  },
+  mobileCounter:{
+    accessRequired:'ಅಂಗಡಿ ಕೌಂಟರ್ ಪ್ರವೇಶ ಅಗತ್ಯ',accessDescription:'ಅಂಗಡಿ ಸಿಬ್ಬಂದಿ ಖಾತೆಯಿಂದ ಲಾಗಿನ್ ಮಾಡಿ.',
+    eyebrow:'ಅಂಗಡಿ ಸಿಬ್ಬಂದಿ',title:'ಅಂಗಡಿ ಕೌಂಟರ್',
+    description:'ಪಿಕಪ್, ವಿತರಣೆ ಮತ್ತು ನೇರ ಮಾರಾಟ ನಿರ್ವಹಿಸಿ. ಮರುಪಾವತಿಗೆ ಅಡ್ಮಿನ್ ಅನುಮೋದನೆ ಅಗತ್ಯ.',
+    orders:'ಮುಂಗಡ ಆರ್ಡರ್‌ಗಳು',walkIn:'ನೇರ ಮಾರಾಟ',search:'ಆರ್ಡರ್ ಸಂಖ್ಯೆ, ಗ್ರಾಹಕ, ಮೊಬೈಲ್, ಸ್ಥಿತಿ',
+    orderCount:'{{count}} ಆರ್ಡರ್‌ಗಳು',noOrders:'ಹೊಂದುವ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ.',pos:'ನೇರ ಮಾರಾಟ ಕೇಂದ್ರ',
+    posDescription:'ಉತ್ಪನ್ನಗಳು ಹಾಗೂ ಪಾವತಿ ವಿಧಾನ ಆಯ್ಕೆಮಾಡಿ ಮಾರಾಟ ಪೂರ್ಣಗೊಳಿಸಿ.',
+    stock:'ಸ್ಟಾಕ್ {{count}}',currentSale:'ಪ್ರಸ್ತುತ ಮಾರಾಟ',customerName:'ಗ್ರಾಹಕರ ಹೆಸರು (ಐಚ್ಛಿಕ)',
+    mobile:'ಮೊಬೈಲ್ (ಐಚ್ಛಿಕ)',reference:'ಪಾವತಿ ಉಲ್ಲೇಖ ಸಂಖ್ಯೆ (ಐಚ್ಛಿಕ)',
+    processing:'ನಡೆಯುತ್ತಿದೆ…',complete:'ಮಾರಾಟ ಪೂರ್ಣಗೊಳಿಸಿ',noProducts:'ಸಕ್ರಿಯ ಉತ್ಪನ್ನಗಳಿಲ್ಲ.'
+  },
+  mobileShop:{
+    unavailable:'ಅಂಗಡಿ ಲಭ್ಯವಿಲ್ಲ',disabled:'ಅಂಗಡಿ ತಾತ್ಕಾಲಿಕವಾಗಿ ಲಭ್ಯವಿಲ್ಲ.',shop:'ಅಂಗಡಿ',
+    cart:'ಕಾರ್ಟ್',orders:'ನನ್ನ ಆರ್ಡರ್‌ಗಳು',inStock:'{{count}} ಸ್ಟಾಕ್‌ನಲ್ಲಿವೆ',outOfStock:'ಸ್ಟಾಕ್ ಇಲ್ಲ',
+    add:'ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಿ',empty:'ಇನ್ನೂ ಉತ್ಪನ್ನಗಳಿಲ್ಲ.',emptyCart:'ನಿಮ್ಮ ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ.',
+    subtotal:'ಉಪಮೊತ್ತ',loyalty:'ಲಾಯಲ್ಟಿ ಪಾಯಿಂಟ್ ಬಳಸಿ',placeOrder:'ಆರ್ಡರ್ ಮಾಡಿ · ಸ್ಥಳದಲ್ಲಿ ಪಾವತಿ',
+    paymentUnavailable:'ಸ್ಥಳದಲ್ಲಿ ಪಾವತಿ ಲಭ್ಯವಿಲ್ಲ',noOrders:'ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ.'
+  },
   sports:{cricket:'ಕ್ರಿಕೆಟ್',badminton:'ಬ್ಯಾಡ್ಮಿಂಟನ್',swimming:'ಈಜು',football:'ಫುಟ್‌ಬಾಲ್',chess:'ಚೆಸ್',carrom:'ಕ್ಯಾರಂ',gym:'ಜಿಮ್',aerobics:'ಏರೋಬಿಕ್ಸ್',table_tennis:'ಟೇಬಲ್ ಟೆನ್ನಿಸ್'},
   mobileMenu:{
     title:'ಮೆನು',open:'ಮೆನು ತೆರೆಯಿರಿ',openHint:'ಲಭ್ಯವಿರುವ ಪರದೆಗಳನ್ನು ತೋರಿಸುತ್ತದೆ',close:'ಮೆನು ಮುಚ್ಚಿ',

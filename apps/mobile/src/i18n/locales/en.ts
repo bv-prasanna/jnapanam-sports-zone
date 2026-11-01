@@ -1,4 +1,32 @@
 const en = {
+  mobileOperations:{
+    accessRequired:'Operations access required',accessDescription:'Sign in with an Operations account.',
+    title:'Facility operations',description:'Today’s facility queue. Payment must be confirmed before check-in.',
+    sport:'Sport',facility:'Facility',allSports:'All sports',allFacilities:'All facilities',
+    paymentDue:'Payment due',ready:'Ready',checkedIn:'Checked in',
+    search:'Booking no., customer, mobile, facility',bookingCount:'{{count}} bookings today',
+    noMatching:'No matching booking for today.',noActive:'No active bookings for this sport/facility today.',
+    collect:'Collect payment',checkin:'Verify & check in',checkout:'Check out',noShow:'No-show',
+    reverse:'Reverse check-in',refund:'Cancel & refund',cancel:'Cancel'
+  },
+  mobileCounter:{
+    accessRequired:'Shop Counter access required',accessDescription:'Sign in with a Shop Keeper account.',
+    eyebrow:'SHOP KEEPER',title:'Shop Counter',
+    description:'Handle pickups, deliveries and walk-in sales. Refunds require Admin approval.',
+    orders:'Prebooked orders',walkIn:'Walk-in sale',search:'Order no., customer, mobile, status',
+    orderCount:'{{count}} orders',noOrders:'No matching orders.',pos:'Walk-in POS',
+    posDescription:'Choose products, payment method and complete the sale.',
+    stock:'Stock {{count}}',currentSale:'Current sale',customerName:'Customer name (optional)',
+    mobile:'Mobile (optional)',reference:'Payment reference (optional for cash)',
+    processing:'Processing…',complete:'Complete sale',noProducts:'No active products.'
+  },
+  mobileShop:{
+    unavailable:'Shop unavailable',disabled:'The shop is currently unavailable.',shop:'Shop',
+    cart:'Cart',orders:'My orders',inStock:'{{count}} in stock',outOfStock:'Out of stock',
+    add:'Add to cart',empty:'No merchandise is available yet.',emptyCart:'Your cart is empty.',
+    subtotal:'Subtotal',loyalty:'Use loyalty points',placeOrder:'Place order · Pay at facility',
+    paymentUnavailable:'Pay at facility unavailable',noOrders:'No orders yet.'
+  },
   sports:{cricket:'Cricket',badminton:'Badminton',swimming:'Swimming',football:'Football',chess:'Chess',carrom:'Carrom',gym:'Gym',aerobics:'Aerobics',table_tennis:'Table Tennis'},
   mobileMenu:{
     title:'Menu',open:'Open menu',openHint:'Shows available customer and staff screens',close:'Close menu',
