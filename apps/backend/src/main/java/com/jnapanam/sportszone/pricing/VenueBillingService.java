@@ -106,8 +106,7 @@ public class VenueBillingService {
     public Map<String,Object> requestOwnInvoice(UUID userId,UUID paymentId){
         PaymentOrder order=orders.findById(paymentId).orElseThrow(()->new NotFoundException("Payment not found"));
         if(!order.getUser().getId().equals(userId))throw new NotFoundException("Payment not found");
-        if(order.getStatus()!=PaymentStatus.PAID && order.getStatus()!=PaymentStatus.PARTIALLY_REFUNDED
-           && order.getStatus()!=PaymentStatus.REFUNDED)
+        if(order.getStatus()!=PaymentStatus.PAID && order.getStatus()!=PaymentStatus.PARTIALLY_REFUNDED)
             throw new ConflictException("Payment must be completed before requesting a tax invoice");
         List<Map<String,Object>> available=jdbc.queryForList("""
           select place_of_supply_state_code from venue_billing_purpose_policies
@@ -132,8 +131,7 @@ public class VenueBillingService {
     @Transactional
     public Map<String,Object> issueInvoice(UUID paymentId,InvoiceDetails details){
         PaymentOrder o=orders.findById(paymentId).orElseThrow(()->new NotFoundException("Payment not found"));
-        if(o.getStatus()!=PaymentStatus.PAID && o.getStatus()!=PaymentStatus.PARTIALLY_REFUNDED
-             && o.getStatus()!=PaymentStatus.REFUNDED)
+        if(o.getStatus()!=PaymentStatus.PAID && o.getStatus()!=PaymentStatus.PARTIALLY_REFUNDED)
             throw new ConflictException("Only captured payments can receive an invoice");
         List<Map<String,Object>> existing=jdbc.queryForList("""
             select document_number as "documentNumber",state,total_paise as "totalPaise"
