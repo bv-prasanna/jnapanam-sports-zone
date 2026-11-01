@@ -73,11 +73,12 @@ export default function ProfileScreen(){
    <EmptyState icon="account-circle-outline" title={t('auth.loginRequired')} description={t('profile.loginDescription')}/>
    <Pressable style={styles.primary} onPress={()=>router.push('/login')}><Text style={styles.primaryText}>{t('auth.login')}</Text></Pressable>
  </ScreenShell>;
- const Field=({field,label,keyboard='default',limit=150}:{field:keyof ProfileData;label:string;keyboard?:'default'|'numeric'|'phone-pad';limit?:number})=>
+ // Render inputs inline rather than declaring a nested component: preserve keyboard focus while typing.
+ const field=(key:keyof ProfileData,label:string,keyboard:'default'|'numeric'|'phone-pad'='default',limit=150)=>
    <View style={styles.field}><Text style={styles.label}>{label}</Text>
-     <TextInput accessibilityLabel={label} style={styles.input} value={form[field]}
-       keyboardType={keyboard} maxLength={limit} autoCapitalize={field==='mobile'||field==='postalCode'?'none':'sentences'}
-       onChangeText={value=>change(field,value)}/></View>;
+     <TextInput accessibilityLabel={label} style={styles.input} value={form[key]}
+       keyboardType={keyboard} maxLength={limit} autoCapitalize={key==='mobile'||key==='postalCode'?'none':'sentences'}
+       onChangeText={value=>change(key,value)}/></View>;
  return <ScreenShell title={t('navigation.profile')}>
    <View style={styles.card}>
      <View style={styles.identity}>
@@ -95,15 +96,15 @@ export default function ProfileScreen(){
      <Text style={styles.sectionTitle}>{t('mobileProfile.account')}</Text>
      <View style={styles.field}><Text style={styles.label}>{t('mobileProfile.fullName')}</Text>
        <TextInput accessibilityLabel={t('mobileProfile.fullName')} editable={false} style={[styles.input,styles.readOnly]} value={user.fullName}/></View>
-     <Field field="displayName" label={t('mobileProfile.displayName')} limit={60}/>
+     {field("displayName",t("mobileProfile.displayName"),"default",60)}
      <View style={styles.field}><Text style={styles.label}>{t('mobileProfile.email')}</Text>
        <TextInput accessibilityLabel={t('mobileProfile.email')} editable={false} style={[styles.input,styles.readOnly]} value={user.email}/></View>
-     <Field field="mobile" label={t('mobileProfile.mobile')} keyboard="phone-pad" limit={10}/>
-     <Field field="addressLine" label={t('mobileProfile.address')} limit={250}/>
-     <Field field="city" label={t('mobileProfile.city')} limit={100}/>
-     <Field field="state" label={t('mobileProfile.state')} limit={100}/>
-     <Field field="postalCode" label={t('mobileProfile.pin')} keyboard="numeric" limit={12}/>
-     <Field field="profilePhotoUrl" label={t('mobileProfile.photo')} limit={500}/>
+     {field("mobile",t("mobileProfile.mobile"),"phone-pad",10)}
+     {field("addressLine",t("mobileProfile.address"),"default",250)}
+     {field("city",t("mobileProfile.city"),"default",100)}
+     {field("state",t("mobileProfile.state"),"default",100)}
+     {field("postalCode",t("mobileProfile.pin"),"numeric",12)}
+     {field("profilePhotoUrl",t("mobileProfile.photo"),"default",500)}
      {!!error&&<Text style={styles.error} accessibilityRole="alert">{error}</Text>}
      {!!feedback&&<Text style={styles.success} accessibilityRole="alert">{feedback}</Text>}
      <Pressable accessibilityRole="button" style={[styles.primary,saving&&styles.disabled]} disabled={saving} onPress={()=>void save()}>
