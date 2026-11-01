@@ -28,7 +28,13 @@ class VenuePricingPublicIntegrationTest {
 
     @Test
     void publicBatchAndSingleQuotesLoadFacilityAndSportWithoutOpenSessionInView() throws Exception {
-        UUID facilityId=jdbc.queryForObject("select id from facilities order by code limit 1",UUID.class);
+        // Seed a private facility: migration V3 supplies sports but no facilities.
+        UUID facilityId=UUID.randomUUID();
+        UUID sportId=UUID.fromString("10000000-0000-0000-0000-000000000001");
+        jdbc.update("""
+            insert into facilities(id,sport_id,code,name,slot_duration_minutes,capacity,booking_price,status,created_at,updated_at)
+            values(?,?,?,'Pricing Quote Integration Court',60,2,500.00,'ACTIVE',now(),now())
+            """,facilityId,sportId,"QUOTE_TEST_"+facilityId.toString().substring(0,8));
         UUID slotId=UUID.randomUUID();
         LocalDate day=LocalDate.of(2048,6,14);
         LocalTime start=LocalTime.of(5,15);
@@ -57,6 +63,7 @@ class VenuePricingPublicIntegrationTest {
                 .andExpect(status().isNotFound());
         } finally {
             jdbc.update("delete from booking_slots where id=?",slotId);
+            jdbc.update("delete from facilities where id=?",facilityId);
         }
     }
 }
