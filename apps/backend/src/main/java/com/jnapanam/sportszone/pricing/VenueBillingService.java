@@ -71,7 +71,7 @@ public class VenueBillingService {
         if(!admin&&!o.getUser().getId().equals(userId))throw new NotFoundException("Payment not found");
         List<Map<String,Object>> documents=jdbc.queryForList("""
             select kind,state,document_number as "documentNumber",taxable_paise as "taxablePaise",
-            tax_paise as "taxPaise",total_paise as "totalPaise",issued_at as "issuedAt"
+            tax_paise as "taxPaise",total_paise as "totalPaise",document_data::text as "details",issued_at as "issuedAt"
             from venue_billing_documents where payment_order_id=? order by created_at
             """,paymentId);
         List<Map<String,Object>> returns=jdbc.queryForList("""
@@ -136,7 +136,7 @@ public class VenueBillingService {
         data.put("recipientStateCode",details.recipientStateCode());data.put("componentMode",details.componentMode());
         data.put("service",b.getSlot().getFacility().getName()+" — "+b.getSlot().getDate());
         data.put("bookingNumber",b.getBookingNumber());data.put("quantity",b.getQuantity());
-        data.put("taxablePaise",net);data.put("cgstPaise",central);data.put("sgstPaise",state);
+        data.put("taxablePaise",net);data.put("taxRatePercent",net==0?BigDecimal.ZERO:BigDecimal.valueOf(tax).multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(net),3,RoundingMode.HALF_UP));data.put("cgstPaise",central);data.put("sgstPaise",state);
         data.put("igstPaise",integrated);data.put("totalPaise",total);data.put("paymentId",paymentId.toString());
         return issueDocument(paymentId,null,"INVOICE",net,tax,total,data);
     }
@@ -147,7 +147,7 @@ public class VenueBillingService {
         if(refund.getStatus()!=RefundStatus.PROCESSED)throw new ConflictException("Only completed refunds can have a credit note");
         PaymentOrder o=refund.getPaymentOrder();
         List<Map<String,Object>> previous=jdbc.queryForList("""
-            select id,taxable_paise,tax_paise,total_paise,document_number
+            select id,taxable_paise,tax_paise,total_paise,document_number,document_data::text as original_data
             from venue_billing_documents where payment_order_id=? and kind='INVOICE' and state='ISSUED'
             """,o.getId());
         if(previous.isEmpty())throw new ConflictException("An issued GST invoice is required before a credit note");
@@ -166,9 +166,10 @@ public class VenueBillingService {
             """,Long.class,o.getId());
         if(refunded<=0 || refunded+already>invoiceTotal)
             throw new ConflictException("Refund exceeds original invoice balance");
-        long tax=(long)Math.round((double)invoiceTax*refunded/invoiceTotal);
+        long tax=BigDecimal.valueOf(invoiceTax).multiply(BigDecimal.valueOf(refunded)).divide(BigDecimal.valueOf(invoiceTotal),0,RoundingMode.HALF_UP).longValueExact();
         long net=refunded-tax;
         Map<String,Object> data=new LinkedHashMap<>();
+        try{Map<?,?> original=json.readValue(String.valueOf(invoice.get("original_data")),Map.class);data.put("supplier",original.get("supplier"));data.put("recipientName",original.get("recipientName"));data.put("recipientAddress",original.get("recipientAddress"));data.put("recipientStateCode",original.get("recipientStateCode"));data.put("recipientGstin",original.get("recipientGstin"));data.put("componentMode",original.get("componentMode"));data.put("cgstPaise","CGST_SGST".equals(original.get("componentMode"))?tax/2:0);data.put("sgstPaise","CGST_SGST".equals(original.get("componentMode"))?tax-tax/2:0);data.put("igstPaise","IGST".equals(original.get("componentMode"))?tax:0);}catch(JsonProcessingException ex){throw new IllegalStateException("Invalid stored invoice snapshot",ex);}
         data.put("originalInvoice",invoice.get("document_number"));
         data.put("refundId",refundId.toString());
         data.put("reason",refund.getReason());
