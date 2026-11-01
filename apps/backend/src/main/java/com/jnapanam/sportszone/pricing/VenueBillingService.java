@@ -101,32 +101,36 @@ public class VenueBillingService {
     @Transactional
     public Map<String,Object> issueInvoice(UUID paymentId,InvoiceDetails details){
         PaymentOrder o=orders.findById(paymentId).orElseThrow(()->new NotFoundException("Payment not found"));
-        if(o.getStatus()!=PaymentStatus.PAID && o.getStatus()!=PaymentStatus.PARTIALLY_REFUNDED && o.getStatus()!=PaymentStatus.REFUNDED)
+        if(o.getStatus()!=PaymentStatus.PAID && o.getStatus()!=PaymentStatus.PARTIALLY_REFUNDED
+             && o.getStatus()!=PaymentStatus.REFUNDED)
             throw new ConflictException("Only captured payments can receive an invoice");
-        if(o.getPurpose()!=PaymentPurpose.BOOKING)
-            throw new BadRequestException("Booking-specific GST invoice handling supports booking payments only");
-        Booking b=bookings.findById(o.getReferenceId()).orElseThrow(()->new NotFoundException("Booking not found"));
-        if(b.getPriceTotalPaise()==null || b.getPriceTaxPaise()==null || b.getTaxRatePercent()==null)
-            throw new ConflictException("This legacy booking has no locked tax breakdown. Manual accounting review is required.");
-        if(b.getPriceTotalPaise()!=o.getAmountPaise()||o.getDiscountPaise()!=0||o.getLoyaltyPointsUsed()!=0)
-            throw new ConflictException("Discount or loyalty allocation requires manual tax review before invoice issue");
-        Map<String,Object> seller=profile();
-        if(seller.isEmpty()||seller.get("gstin")==null)
-            throw new ConflictException("Configure supplier legal name, address and GSTIN before issuing GST invoices");
-        if(details==null||details.componentMode()==null||!Set.of("IGST","CGST_SGST").contains(details.componentMode()))
-            throw new BadRequestException("Choose IGST or CGST + SGST after checking place-of-supply rules");
-        if(details.recipientStateCode()==null||!details.recipientStateCode().matches("[0-9]{2}"))
-            throw new BadRequestException("Recipient state code is required");
-        if(details.recipientAddress()==null||details.recipientAddress().isBlank())
-            throw new BadRequestException("Recipient address is required");
-        if(details.recipientGstin()!=null&&!details.recipientGstin().isBlank()&&!details.recipientGstin().matches("[0-9]{2}[A-Z0-9]{13}"))
-            throw new BadRequestException("Invalid recipient GSTIN");
         List<Map<String,Object>> existing=jdbc.queryForList("""
             select document_number as "documentNumber",state,total_paise as "totalPaise"
             from venue_billing_documents where payment_order_id=? and kind='INVOICE'
             """,paymentId);
         if(!existing.isEmpty())return existing.get(0);
-        long net=b.getPriceSubtotalPaise(),tax=b.getPriceTaxPaise(),total=b.getPriceTotalPaise();
+        if(o.getBillingGrossPaise()==null||o.getBillingTaxablePaise()==null
+           ||o.getBillingTaxPaise()==null||o.getBillingRatePercent()==null)
+            throw new ConflictException("Payment has no approved tax snapshot. Review its discount/loyalty treatment or legacy tax data.");
+        long net=o.getBillingTaxablePaise(),tax=o.getBillingTaxPaise(),total=o.getBillingGrossPaise();
+        if(net+tax!=total||total!=o.getAmountPaise()+o.getBillingLoyaltyTenderPaise())
+            throw new ConflictException("The invoice breakdown does not match captured cash and loyalty consideration");
+        Map<String,Object> seller=profile();
+        if(seller.isEmpty()||seller.get("gstin")==null)
+            throw new ConflictException("Configure supplier legal name, registered address and GSTIN before issuing GST invoices");
+        if(details==null||details.componentMode()==null||!Set.of("IGST","CGST_SGST").contains(details.componentMode()))
+            throw new BadRequestException("Choose applicable IGST or CGST + SGST");
+        if(details.recipientStateCode()==null||!details.recipientStateCode().matches("[0-9]{2}"))
+            throw new BadRequestException("Recipient state code is required");
+        if(details.recipientAddress()==null||details.recipientAddress().isBlank())
+            throw new BadRequestException("Recipient address is required");
+        if(details.recipientGstin()!=null&&!details.recipientGstin().isBlank()
+           &&!details.recipientGstin().matches("[0-9]{2}[A-Z0-9]{13}"))
+            throw new BadRequestException("Invalid recipient GSTIN");
+        if(!details.recipientStateCode().equals(seller.get("stateCode"))&&!"IGST".equals(details.componentMode()))
+            throw new BadRequestException("Inter-state transaction requires IGST mode. Verify place-of-supply with your tax advisor.");
+        if(details.recipientStateCode().equals(seller.get("stateCode"))&&!"CGST_SGST".equals(details.componentMode()))
+            throw new BadRequestException("Intra-state transaction requires CGST + SGST mode. Verify place-of-supply with your tax advisor.");
         long central=details.componentMode().equals("CGST_SGST")?tax/2:0;
         long state=details.componentMode().equals("CGST_SGST")?tax-central:0;
         long integrated=details.componentMode().equals("IGST")?tax:0;
@@ -134,11 +138,41 @@ public class VenueBillingService {
         data.put("supplier",seller);data.put("recipientName",o.getUser().getFullName());
         data.put("recipientAddress",details.recipientAddress());data.put("recipientGstin",blank(details.recipientGstin()));
         data.put("recipientStateCode",details.recipientStateCode());data.put("componentMode",details.componentMode());
-        data.put("service",b.getSlot().getFacility().getName()+" — "+b.getSlot().getDate());
-        data.put("bookingNumber",b.getBookingNumber());data.put("quantity",b.getQuantity());
-        data.put("taxablePaise",net);data.put("taxRatePercent",b.getTaxRatePercent());data.put("taxInclusive",b.getTaxInclusive());data.put("cgstPaise",central);data.put("sgstPaise",state);
+        data.put("service",serviceDescription(o));data.put("quantity",1);
+        data.put("purpose",o.getPurpose().name());data.put("paymentReceipt",o.getReceiptNumber());
+        data.put("originalPricePaise",o.getOriginalAmountPaise());
+        data.put("couponDiscountPaise",o.getDiscountPaise());
+        data.put("promotionCode",o.getPromotionCode());
+        data.put("loyaltyPointsUsed",o.getLoyaltyPointsUsed());
+        data.put("loyaltyTenderPaise",o.getBillingLoyaltyTenderPaise());
+        data.put("customerCashPaidPaise",o.getAmountPaise());
+        data.put("taxablePaise",net);data.put("taxRatePercent",o.getBillingRatePercent());
+        data.put("cgstPaise",central);data.put("sgstPaise",state);
         data.put("igstPaise",integrated);data.put("totalPaise",total);data.put("paymentId",paymentId.toString());
+        if(o.getPurpose()==PaymentPurpose.BOOKING){
+            Booking b=bookings.findById(o.getReferenceId()).orElseThrow(()->new NotFoundException("Booking not found"));
+            data.put("bookingNumber",b.getBookingNumber());data.put("quantity",b.getQuantity());
+        }
         return issueDocument(paymentId,null,"INVOICE",net,tax,total,data);
+    }
+
+    private String serviceDescription(PaymentOrder order){
+        UUID reference=order.getReferenceId();
+        return switch(order.getPurpose()){
+            case BOOKING -> {
+                Booking b=bookings.findById(reference).orElseThrow(()->new NotFoundException("Booking not found"));
+                yield "Court booking: "+b.getSlot().getFacility().getName()+" / "+b.getSlot().getDate();
+            }
+            case MEMBERSHIP -> jdbc.queryForObject("""
+                select p.name from customer_memberships m join membership_plans p on p.id=m.plan_id where m.id=?
+                """,String.class,reference);
+            case TRAINING -> jdbc.queryForObject("""
+                select b.name from training_enrollments e join training_batches b on b.id=e.batch_id where e.id=?
+                """,String.class,reference);
+            case TOURNAMENT -> jdbc.queryForObject("""
+                select t.name from tournament_teams e join tournaments t on t.id=e.tournament_id where e.id=?
+                """,String.class,reference);
+        };
     }
 
     @Transactional
