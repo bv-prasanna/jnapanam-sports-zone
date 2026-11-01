@@ -19,6 +19,26 @@ class VenueBillingServiceTest {
     private final PaymentRefundRepository refunds=mock(PaymentRefundRepository.class);
     private final VenueBillingService service=new VenueBillingService(jdbc,orders,bookings,refunds,new ObjectMapper());
 
+    @Test void merchantDraftCanBeSavedWithoutGstin(){
+        var draft=new VenueBillingService.BillingProfile("Jnapanam Sports Zone",null,
+           "", "29",null,null);
+        assertDoesNotThrow(()->service.updateProfile(draft));
+        verify(jdbc).update(contains("insert into venue_billing_profile"),any(Object[].class));
+    }
+
+    @Test void anotherCustomerCannotReadReceiptOrRequestInvoice(){
+        UUID paymentId=UUID.randomUUID(),ownerId=UUID.randomUUID(),attackerId=UUID.randomUUID();
+        PaymentOrder order=mock(PaymentOrder.class);
+        com.jnapanam.sportszone.identity.model.User owner=mock(com.jnapanam.sportszone.identity.model.User.class);
+        when(owner.getId()).thenReturn(ownerId);
+        when(order.getUser()).thenReturn(owner);
+        when(orders.findById(paymentId)).thenReturn(Optional.of(order));
+        assertThrows(com.jnapanam.sportszone.common.exception.NotFoundException.class,
+            ()->service.receipt(attackerId,paymentId,false));
+        assertThrows(com.jnapanam.sportszone.common.exception.NotFoundException.class,
+            ()->service.requestOwnInvoice(attackerId,paymentId));
+    }
+
     @Test void invoiceCannotBeIssuedBeforeCapture(){
         UUID id=UUID.randomUUID();
         PaymentOrder order=mock(PaymentOrder.class);
