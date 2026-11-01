@@ -1,4 +1,17 @@
 const en = {
+  mobileBilling:{
+    title:'Billing & invoices',loginDescription:'Sign in to manage billing and view invoices.',
+    details:'Billing details',future:'For future invoices. Existing issued documents stay unchanged.',
+    address:'Full billing address',addressPlaceholder:'Building, street, city, PIN',state:'State',
+    gstin:'GSTIN (optional)',gstinPlaceholder:'Only for registered buyers',save:'Save billing details',
+    saved:'Billing address saved for future invoices.',issued:'GST invoice issued. Open the secure portal to download it.',
+    webError:'Could not open the portal. Sign in at jnapanam.in to download your invoice.',
+    documents:'Payment receipts and GST documents',noPayments:'No paid transactions found.',
+    view:'View billing documents',forReceipt:'Documents for {{number}}',
+    download:'Download receipt / invoice PDF',request:'Request GST invoice (no email)',
+    noEmail:'No invoice email is sent by default. Download the PDF from the secure web portal.',
+    noInvoice:'An invoice has not been issued yet. Your payment receipt is available in your account.'
+  },
   mobileTraining:{
     places:'places',coach:'Coach',enrol:'Enrol',full:'Batch full',noMatching:'No matching training',
     chooseAnother:'Choose another sport or facility.',myEnrollments:'My enrolments',age:'Age',
