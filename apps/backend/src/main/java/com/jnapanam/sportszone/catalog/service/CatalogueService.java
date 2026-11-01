@@ -43,14 +43,15 @@ public class CatalogueService {
 
     @Transactional
     public SportResponse createSport(SportRequest request) {
-        if (sports.existsByCodeIgnoreCase(request.code())) throw new ConflictException("Sport code already exists");
-        return SportResponse.from(sports.save(new Sport(request.code(), request.name(), request.description(), request.iconKey(), request.displayOrder())));
+        String code = request.code() == null || request.code().isBlank() ? generateCode("SPORT", request.name()) : request.code();
+        if (sports.existsByCodeIgnoreCase(code)) throw new ConflictException("Sport code already exists");
+        return SportResponse.from(sports.save(new Sport(code, request.name(), request.description(), request.iconKey(), request.displayOrder())));
     }
 
     @Transactional
     public SportResponse updateSport(UUID id, SportRequest request) {
         Sport sport = requireSport(id);
-        if (!sport.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Sport code cannot be changed");
+        if (request.code() != null && !request.code().isBlank() && !sport.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Sport code cannot be changed");
         sport.update(request.name(), request.description(), request.iconKey(), request.displayOrder());
         return SportResponse.from(sport);
     }
@@ -92,16 +93,17 @@ public class CatalogueService {
 
     @Transactional
     public FacilityResponse createFacility(FacilityRequest request) {
-        if (facilities.existsByCodeIgnoreCase(request.code())) throw new ConflictException("Facility code already exists");
+        String code = request.code() == null || request.code().isBlank() ? generateCode("FACILITY", request.name()) : request.code();
+        if (facilities.existsByCodeIgnoreCase(code)) throw new ConflictException("Facility code already exists");
         Sport sport = requireSport(request.sportCode());
-        Facility facility = new Facility(sport, request.code(), request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
+        Facility facility = new Facility(sport, code, request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
         return FacilityResponse.from(facilities.save(facility));
     }
 
     @Transactional
     public FacilityResponse updateFacility(UUID id, FacilityRequest request) {
         Facility facility = requireFacility(id);
-        if (!facility.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Facility code cannot be changed");
+        if (request.code() != null && !request.code().isBlank() && !facility.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Facility code cannot be changed");
         facility.update(requireSport(request.sportCode()), request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
         return FacilityResponse.from(facility);
     }
@@ -112,6 +114,13 @@ public class CatalogueService {
         Facility facility = requireFacility(id);
         facility.changeStatus(request.status(), request.suspendedFrom(), request.suspendedUntil(), request.reason());
         return FacilityResponse.from(facility);
+    }
+
+    private static String generateCode(String prefix, String name) {
+        String slug = name == null ? "" : name.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "_").replaceAll("^_+|_+$", "");
+        if (slug.isBlank()) slug = prefix;
+        slug = slug.substring(0, Math.min(slug.length(), 22));
+        return slug + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
     }
 
     public Sport requireSport(UUID id) { return sports.findById(id).orElseThrow(() -> new NotFoundException("Sport not found")); }

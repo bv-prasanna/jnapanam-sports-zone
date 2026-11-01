@@ -130,14 +130,16 @@ public class TournamentService {
         return createFor(organizerId, request);
     }
 
+    private static String generatedCode(String name) { String slug=name.toUpperCase(java.util.Locale.ROOT).replaceAll("[^A-Z0-9]+","_").replaceAll("^_+|_+$",""); if(slug.isBlank())slug="TOURNAMENT"; return slug.substring(0,Math.min(slug.length(),22))+"_"+UUID.randomUUID().toString().replace("-", "").substring(0,12).toUpperCase(java.util.Locale.ROOT); }
+
     private TournamentResponse createFor(UUID organizerId, TournamentRequest request) {
         validateDates(request);
-        if (tournaments.existsByCodeIgnoreCase(request.code())) throw new ConflictException("Tournament code already exists");
+        String code=(request.code()==null||request.code().isBlank())?generatedCode(request.name()):request.code();if(tournaments.existsByCodeIgnoreCase(code))throw new ConflictException("Tournament code already exists");
         User organizer = user(organizerId);
         if (!eligibleOrganizer(organizer)) throw new ConflictException("Select an approved organizer, administrator, or super administrator");
         Sport sport = sports.findByCodeIgnoreCase(request.sportCode())
                 .orElseThrow(() -> new NotFoundException("Sport not found"));
-        Tournament tournament = new Tournament(request.code(), request.name(), request.description(), sport, organizer,
+        Tournament tournament = new Tournament(code, request.name(), request.description(), sport, organizer,
                 request.format(), request.registrationOpens(), request.registrationCloses(), request.startDate(),
                 request.endDate(), request.teamSize(), request.maxTeams(), request.entryFee());
         return response(tournaments.save(tournament));
@@ -147,7 +149,7 @@ public class TournamentService {
     public TournamentResponse update(UUID id, TournamentRequest request) {
         validateDates(request);
         Tournament tournament = tournament(id);
-        if (!tournament.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Tournament code cannot be changed");
+        if (request.code()!=null && !request.code().isBlank() && !tournament.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Tournament code cannot be changed");
         User organizer = user(request.organizerUserId());
         if (!eligibleOrganizer(organizer)) throw new ConflictException("Select an approved organizer, administrator, or super administrator");
         Sport sport = sports.findByCodeIgnoreCase(request.sportCode()).orElseThrow(() -> new NotFoundException("Sport not found"));
