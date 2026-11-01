@@ -3,3 +3,20 @@
 .page :is(input,select,textarea){box-sizing:border-box;max-width:100%}
 .page :is(button,input,select,textarea):focus-visible{outline:3px solid #52a8db;outline-offset:2px}
 .page :is(.card,.form,.list,.editor,.tableWrap){border-radius:var(--admin-radius,12px)}
+
+
+/* Recurring facility pricing is the standard workflow. Individual dated slots are advanced. */
+.guide{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;background:#edf6fc;border:1px solid #bcd8ea;border-radius:12px;padding:16px 18px;margin:6px 0 18px}
+.guide strong{color:var(--admin-primary);font-weight:850;font-size:15px}
+.guide p{color:var(--admin-ink);margin:5px 0 0;max-width:660px;font-size:13px;line-height:1.55}
+.quickActions{display:flex;gap:8px;flex-wrap:wrap}
+.quickActions button,.slotNotice button{min-height:40px;border:1px solid var(--admin-primary);background:#fff;color:var(--admin-primary);font-size:13px;font-weight:800;border-radius:9px;padding:9px 13px}
+.quickActions button:hover,.slotNotice button:hover{background:#dceefb}
+.slotNotice{border:1px solid #bdd6e7;border-radius:10px;background:#f2f8fc;padding:12px 14px;display:grid;gap:8px}
+.slotNotice strong{color:var(--admin-primary);font-size:14px}
+.slotNotice p{font-weight:400;line-height:1.5;margin:0;color:var(--admin-ink);font-size:13px}
+.slotNotice button{justify-self:start}
+.advancedDates{border:1px solid var(--admin-line);border-radius:10px;padding:12px 14px}
+.advancedDates summary{cursor:pointer;color:var(--admin-primary);font-size:13px;font-weight:800}
+.advancedDates[open] .two{margin-top:12px}
+@media(max-width:650px){.guide{align-items:stretch}.quickActions{width:100%}.quickActions button{flex:1}.slotNotice button{width:100%}.advancedDates{padding:12px}}
