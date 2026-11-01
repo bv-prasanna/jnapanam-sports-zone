@@ -16,6 +16,17 @@ public class VenueBillingPdfController {
     public VenueBillingPdfController(VenueBillingService billing,VenueInvoicePdfService pdf,ObjectMapper json){
         this.billing=billing;this.pdf=pdf;this.json=json;
     }
+    @GetMapping(value="/{paymentId}/billing/receipt/pdf",produces="application/pdf")
+    public ResponseEntity<byte[]> receiptPdf(Authentication authentication,@PathVariable UUID paymentId){
+        boolean admin=authentication.getAuthorities().stream()
+            .anyMatch(a->Set.of("ROLE_SUPER_ADMIN","ROLE_ADMIN").contains(a.getAuthority()));
+        Map<String,Object> receipt=billing.receipt(UUID.fromString(authentication.getName()),paymentId,admin);
+        byte[] bytes=pdf.renderPaymentReceipt(receipt);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\"jnapanam-payment-receipt.pdf\"")
+            .body(bytes);
+    }
+
     @GetMapping(value="/{paymentId}/billing/{number}/pdf",produces="application/pdf")
     public ResponseEntity<byte[]> pdf(Authentication authentication,@PathVariable UUID paymentId,@PathVariable String number){
         boolean admin=authentication.getAuthorities().stream()
