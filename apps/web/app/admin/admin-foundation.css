@@ -1,0 +1,64 @@
+/* Admin design system: one source for page-level appearance across ALL /admin routes.
+   Scoped so public site, customer portal and operator UI remain unaffected. */
+.adminExperience {
+  --admin-primary:#063b63;--admin-accent:#0877b9;--admin-ink:#17354a;
+  --admin-muted:#607583;--admin-bg:#f4f8fa;--admin-card:#fff;--admin-line:#dce6eb;
+  --admin-radius:12px;--admin-field-height:43px;
+}
+.adminExperience main[class] {
+  box-sizing:border-box;min-width:0;min-height:0!important;width:100%;max-width:none;
+  margin:0;padding:0!important;background:transparent!important;color:var(--admin-ink)!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.adminExperience main :is(h1,h2,h3,h4,legend) {
+  font-family:Arial,Helvetica,sans-serif!important;line-height:1.2;color:var(--admin-ink);
+}
+.adminExperience main h1 {
+  font-size:clamp(25px,2.6vw,34px)!important;font-weight:850!important;
+  line-height:1.14!important;max-width:none!important;letter-spacing:-.025em;
+  margin:4px 0 9px!important;
+}
+.adminExperience main h2 {font-size:clamp(19px,2vw,23px);font-weight:800}
+.adminExperience main h3 {font-size:17px;font-weight:800}
+.adminExperience main>header {display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0 0 22px!important;max-width:none}
+.adminExperience main>header span:first-child,
+.adminExperience main>header .eyebrow {color:var(--admin-accent)!important;font-weight:900;letter-spacing:.1em;font-size:11px}
+.adminExperience main>header p {color:var(--admin-muted)!important;font-size:14px;line-height:1.5;margin:6px 0}
+.adminExperience main>header a {display:inline-flex;align-items:center;font:700 13px Arial,Helvetica,sans-serif;color:var(--admin-primary);border:1px solid var(--admin-line);border-radius:9px;padding:9px 13px;background:white}
+.adminExperience main>header a:hover {border-color:var(--admin-accent);background:#eef7fc}
+.adminExperience main :is(button,input,select,textarea) {font-family:Arial,Helvetica,sans-serif}
+.adminExperience main button {min-height:40px;border-radius:9px;font-weight:700;cursor:pointer}
+.adminExperience main button:disabled {opacity:.55;cursor:not-allowed}
+.adminExperience main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),select,textarea) {
+  max-width:100%;box-sizing:border-box;border-radius:9px;border-color:#c9d9e4;
+}
+.adminExperience :is(a,button,input,textarea,select):focus-visible {
+  outline:3px solid #52a8db!important;outline-offset:3px;
+}
+.adminExperience main :is(table,fieldset) {font-family:Arial,Helvetica,sans-serif}
+.adminExperience main table {border-collapse:collapse}
+.adminExperience main th {font-size:12px!important;color:#49677b!important;letter-spacing:.025em;background:#edf4f8!important}
+.adminExperience main :is(.admin-table-wrap,.workbench) {border-color:var(--admin-line);border-radius:var(--admin-radius)}
+.adminExperience main :is(.empty-state,.loading-line) {font-size:14px;color:var(--admin-muted)}
+.adminExperience main .admin-content {padding:0;background:transparent;min-width:0}
+.adminExperience main .admin-content>header {margin-bottom:12px}
+.adminExperience main .admin-content h1 {margin:4px 0 10px!important}
+.adminExperience main .metric-grid {grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px}
+.adminExperience main .metric-grid article {border-color:var(--admin-line);box-shadow:0 3px 12px rgba(16,42,58,.04)}
+/* Commerce formerly had giant serif type and orange controls; it now follows the admin theme. */
+.adminExperience main>nav {display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px;max-width:none}
+.adminExperience main>nav button {padding:10px 15px!important;border-radius:9px!important;border:1px solid var(--admin-line)!important;background:white!important;color:var(--admin-primary)!important}
+.adminExperience main>nav button[class*="active"] {background:var(--admin-primary)!important;color:white!important;border-color:var(--admin-primary)!important}
+.adminExperience main button[class*="primary"],
+.adminExperience main button[class*="save"] {background:var(--admin-primary)!important;color:#fff!important;border-color:var(--admin-primary)!important}
+.adminExperience main [class*="section"] legend {font-size:19px;font-weight:800}
+.adminExperience main :is(input,select,textarea):invalid:not(:focus) {box-shadow:none}
+@media(max-width:760px) {
+  .adminExperience main>header {gap:12px}
+  .adminExperience main h1 {font-size:26px!important}
+  .adminExperience main .metric-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .adminExperience main .admin-content>header {flex-wrap:wrap}
+}
+@media(max-width:420px) {
+  .adminExperience main .metric-grid {grid-template-columns:1fr}
+}
