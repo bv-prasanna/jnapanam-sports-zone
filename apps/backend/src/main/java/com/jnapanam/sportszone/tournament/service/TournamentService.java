@@ -130,7 +130,7 @@ public class TournamentService {
         return createFor(organizerId, request);
     }
 
-    private static String generatedCode(String name) { String slug=name.toUpperCase(java.util.Locale.ROOT).replaceAll("[^A-Z0-9]+","_").replaceAll("^_+|_+$",""); if(slug.isBlank())slug="TOURNAMENT"; return slug.substring(0,Math.min(slug.length(),22))+"_"+UUID.randomUUID().toString().substring(0,12).toUpperCase(java.util.Locale.ROOT); }
+    private static String generatedCode(String name) { String slug=name.toUpperCase(java.util.Locale.ROOT).replaceAll("[^A-Z0-9]+","_").replaceAll("^_+|_+$",""); if(slug.isBlank())slug="TOURNAMENT"; return slug.substring(0,Math.min(slug.length(),22))+"_"+UUID.randomUUID().toString().replace("-", "").substring(0,12).toUpperCase(java.util.Locale.ROOT); }
 
     private TournamentResponse createFor(UUID organizerId, TournamentRequest request) {
         validateDates(request);
