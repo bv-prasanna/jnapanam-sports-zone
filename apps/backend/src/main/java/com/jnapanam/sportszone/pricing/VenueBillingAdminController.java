@@ -14,10 +14,10 @@ public class VenueBillingAdminController {
     private final PaymentTaxSnapshotService tax;
     public VenueBillingAdminController(VenueBillingService service,PaymentTaxSnapshotService tax){this.service=service;this.tax=tax;}
 
-    public record PurposeTaxRequest(@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.DecimalMin("0.0") @jakarta.validation.constraints.DecimalMax("100.0") java.math.BigDecimal taxRatePercent,boolean active){}
+    public record PurposeTaxRequest(@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.DecimalMin("0.0") @jakarta.validation.constraints.DecimalMax("100.0") java.math.BigDecimal taxRatePercent,boolean active,String placeOfSupplyStateCode,boolean autoIssueEnabled){}
     @GetMapping("/purpose-taxes") public java.util.List<java.util.Map<String,Object>> purposes(){return tax.policies();}
     @PutMapping("/purpose-taxes/{purpose}") public java.util.Map<String,String> purpose(@PathVariable String purpose,@Valid @RequestBody PurposeTaxRequest request){
-        tax.configure(purpose,request.taxRatePercent(),request.active());return java.util.Map.of("status","SAVED");
+        tax.configure(purpose,request.taxRatePercent(),request.active(),request.placeOfSupplyStateCode(),request.autoIssueEnabled());return java.util.Map.of("status","SAVED");
     }
     @GetMapping("/tax-treatments") public java.util.Map<String,Object> treatments(){return tax.treatmentSettings();}
     @PutMapping("/tax-treatments") public java.util.Map<String,String> treatments(@Valid @RequestBody PaymentTaxSnapshotService.Treatments request){
