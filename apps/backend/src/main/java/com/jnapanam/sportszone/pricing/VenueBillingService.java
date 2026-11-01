@@ -36,7 +36,9 @@ public class VenueBillingService {
         @NotBlank @Size(max=120) String signatory) {}
 
     public record InvoiceDetails(String recipientGstin,String recipientStateCode,String recipientAddress,
-        String componentMode) {}
+        String componentMode,String placeOfSupplyStateCode) {
+        public InvoiceDetails(String recipientGstin,String recipientStateCode,String recipientAddress,String componentMode){this(recipientGstin,recipientStateCode,recipientAddress,componentMode,null);}
+    }
 
     @Transactional(readOnly=true)
     public Map<String,Object> profile(){
@@ -127,17 +129,22 @@ public class VenueBillingService {
         if(details.recipientGstin()!=null&&!details.recipientGstin().isBlank()
            &&!details.recipientGstin().matches("[0-9]{2}[A-Z0-9]{13}"))
             throw new BadRequestException("Invalid recipient GSTIN");
-        if(!details.recipientStateCode().equals(seller.get("stateCode"))&&!"IGST".equals(details.componentMode()))
-            throw new BadRequestException("Inter-state transaction requires IGST mode. Verify place-of-supply with your tax advisor.");
-        if(details.recipientStateCode().equals(seller.get("stateCode"))&&!"CGST_SGST".equals(details.componentMode()))
-            throw new BadRequestException("Intra-state transaction requires CGST + SGST mode. Verify place-of-supply with your tax advisor.");
+        if(details.placeOfSupplyStateCode()==null||!details.placeOfSupplyStateCode().matches("[0-9]{2}"))
+            throw new BadRequestException("Choose the GST place of supply state separately from the customer state");
+        if(!details.placeOfSupplyStateCode().equals(seller.get("stateCode"))&&!"IGST".equals(details.componentMode()))
+            throw new BadRequestException("Place of supply is outside supplier state. Select IGST, subject to tax review.");
+        if(details.placeOfSupplyStateCode().equals(seller.get("stateCode"))&&!"CGST_SGST".equals(details.componentMode()))
+            throw new BadRequestException("Place of supply is within supplier state. Select CGST + SGST, subject to tax review.");
+        Boolean einvoice=jdbc.queryForObject("select coalesce(e_invoice_applicable,false) from venue_billing_profile where id=1",Boolean.class);
+        if(Boolean.TRUE.equals(einvoice))
+            throw new ConflictException("E-invoicing is enabled: an IRP-approved invoice/IRN workflow is required before issue. Do not issue a non-IRP GST invoice.");
         long central=details.componentMode().equals("CGST_SGST")?tax/2:0;
         long state=details.componentMode().equals("CGST_SGST")?tax-central:0;
         long integrated=details.componentMode().equals("IGST")?tax:0;
         Map<String,Object> data=new LinkedHashMap<>();
         data.put("supplier",seller);data.put("recipientName",o.getUser().getFullName());
         data.put("recipientAddress",details.recipientAddress());data.put("recipientGstin",blank(details.recipientGstin()));
-        data.put("recipientStateCode",details.recipientStateCode());data.put("componentMode",details.componentMode());
+        data.put("recipientStateCode",details.recipientStateCode());data.put("placeOfSupplyStateCode",details.placeOfSupplyStateCode());data.put("componentMode",details.componentMode());
         data.put("service",serviceDescription(o));data.put("quantity",1);
         data.put("purpose",o.getPurpose().name());data.put("paymentReceipt",o.getReceiptNumber());
         data.put("originalPricePaise",o.getOriginalAmountPaise());
