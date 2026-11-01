@@ -178,15 +178,32 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --stacktrace \
+            -PreactNativeArchitectures=arm64-v8a \
             -Pandroid.injected.signing.store.file="$RUNNER_TEMP/jnapanam-uat.p12" \
             -Pandroid.injected.signing.store.password=android \
             -Pandroid.injected.signing.key.alias=jnapanam-uat \
             -Pandroid.injected.signing.key.password=android
           test -s app/build/outputs/apk/release/app-release.apk
-      - name: Report APK size
+      - name: Report APK size and native ABI footprint
         shell: bash
         run: |
           find android/app/build/outputs/apk -name '*.apk' -exec ls -lh {} \;
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          for apk in Path("android/app/build/outputs/apk").rglob("*.apk"):
+              with ZipFile(apk) as archive:
+                  by_abi = {}
+                  for entry in archive.infolist():
+                      if entry.filename.startswith("lib/") and entry.filename.endswith(".so"):
+                          abi = entry.filename.split("/")[1]
+                          by_abi[abi] = by_abi.get(abi, 0) + entry.file_size
+                  print(f"{apk.name}: compressed bytes={apk.stat().st_size:,}")
+                  for abi, amount in sorted(by_abi.items()):
+                      print(f"  native libraries {abi}: {amount/1024/1024:.1f} MiB unpacked")
+                  if apk.name=="app-release.apk" and any(abi!="arm64-v8a" for abi in by_abi):
+                      raise SystemExit("UAT release must contain only arm64-v8a native libraries")
+          PY
       - name: Upload debug APK
         if: github.event_name == 'workflow_dispatch' && inputs.build_type == 'debug'
         uses: actions/upload-artifact@v4
