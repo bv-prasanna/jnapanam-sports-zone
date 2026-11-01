@@ -30,7 +30,7 @@ test("facility schedule clearly marks sample hours as unsaved until persisted",a
  assert.match(dialog,/unsaved example/);
  assert.match(dialog,/customers will not see bookable slots/i);
  assert.match(dialog,/Not saved/);
- assert.match(dialog,/Save operating hours/);
+ assert.match(dialog,/Save hours & close/);
  assert.match(dialog,/\/operating-hours/);
 });
 
