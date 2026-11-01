@@ -37,7 +37,11 @@ test('web profile fields are editable on Android without a remounting nested fie
   assert.match(profile,/useFocusEffect/);
   assert.match(auth,/refreshProfile/);
   assert.match(profile,/\/api\/v1\/profile\/address-proof/);
-  assert.match(profile,/openWebProfile/);
+  assert.match(profile,/DocumentPicker\.getDocumentAsync/);
+  assert.match(profile,/\/api\/v1\/profile\/photo/);
+  assert.match(profile,/\/api\/v1\/profile\/address-proof/);
+  assert.match(profile,/body\.append\('file'/);
+  assert.doesNotMatch(profile,/openWebProfile/);
   assert.doesNotMatch(profile,/const Field=/);
 });
 
@@ -66,4 +70,17 @@ test('UAT APK builds arm64 only and logs compressed versus installed native size
   const workflow=await readFile(new URL('../../../.github/workflows/android-apk-cloud.yml',import.meta.url),'utf8');
   assert.match(workflow,/-PreactNativeArchitectures=arm64-v8a/);
   assert.match(workflow,/native libraries/);
+});
+
+test('multipart file uploads preserve device-generated boundary and enforce file limits',async()=>{
+ const api=await source('src/lib/api.ts');
+ const profile=await source('src/app/profile.tsx');
+ const pkg=JSON.parse(await source('package.json'));
+ const lock=JSON.parse(await source('package-lock.json'));
+ assert.match(api,/options\.body instanceof FormData/);
+ assert.match(profile,/asset\.size>5\*1024\*1024/);
+ assert.match(profile,/asset\.size>2\*1024\*1024/);
+ assert.match(profile,/copyToCacheDirectory:true/);
+ assert.ok(pkg.dependencies['expo-document-picker']);
+ assert.ok(lock.packages['node_modules/expo-document-picker']);
 });

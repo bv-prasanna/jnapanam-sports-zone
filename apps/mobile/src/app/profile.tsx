@@ -1,7 +1,8 @@
 import {router, useFocusEffect} from 'expo-router';
+import * as DocumentPicker from 'expo-document-picker';
 import {useCallback, useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Image, Linking, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Image, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {enableEventLocation} from '@/lib/event-location';
 import {EmptyState,ScreenShell} from '@/components/screen-shell';
 import {BrandColors} from '@/constants/brand';
@@ -29,6 +30,9 @@ export default function ProfileScreen(){
  const [changingPassword,setChangingPassword]=useState(false);
  const [passwordError,setPasswordError]=useState('');
  const [photoFailed,setPhotoFailed]=useState(false);
+ const [uploadingPhoto,setUploadingPhoto]=useState(false);
+ const [uploadingProof,setUploadingProof]=useState(false);
+ const [proofType,setProofType]=useState<'DL'|'VOTER_ID'|'PASSPORT'>('DL');
  useEffect(()=>{if(user){setForm(userValues(user));setPhotoFailed(false)}},[user]);
  useFocusEffect(useCallback(()=>{
    if(!user)return;
@@ -66,8 +70,40 @@ export default function ProfileScreen(){
    }catch(e){setPasswordError(userFriendlyError(e,t('errors.generic')))}
    finally{setChangingPassword(false)}
  }
- async function openWebProfile(){
-   try{await Linking.openURL('https://jnapanam.in/profile')}catch{setError(t('errors.generic'))}
+ async function uploadPhoto(){
+   if(uploadingPhoto)return;
+   try{
+     setError('');setFeedback('');
+     const result=await DocumentPicker.getDocumentAsync({type:['image/jpeg','image/png','image/webp'],copyToCacheDirectory:true,multiple:false});
+     if(result.canceled||!result.assets?.[0])return;
+     const asset=result.assets[0];
+     const mime=asset.mimeType||'';
+     if(!['image/jpeg','image/png','image/webp'].includes(mime)){setError(t('mobileProfile.photoInvalid'));return;}
+     if(!asset.size||asset.size>5*1024*1024){setError(t('mobileProfile.photoLimit'));return;}
+     const body=new FormData();
+     body.append('file',{uri:asset.uri,name:asset.name||'profile.jpg',type:mime} as unknown as Blob);
+     setUploadingPhoto(true);
+     const updated=await api<User>('/api/v1/profile/photo',{method:'POST',body});
+     updateUser(updated);setPhotoFailed(false);setFeedback(t('mobileProfile.photoUploaded'));
+   }catch(e){setError(userFriendlyError(e,t('errors.generic')))}
+   finally{setUploadingPhoto(false)}
+ }
+ async function uploadProof(){
+   if(uploadingProof)return;
+   try{
+     setError('');setFeedback('');
+     const result=await DocumentPicker.getDocumentAsync({type:['image/jpeg','image/png','application/pdf'],copyToCacheDirectory:true,multiple:false});
+     if(result.canceled||!result.assets?.[0])return;
+     const asset=result.assets[0];const mime=asset.mimeType||'';
+     if(!['image/jpeg','image/png','application/pdf'].includes(mime)){setError(t('mobileProfile.proofInvalid'));return;}
+     if(!asset.size||asset.size>2*1024*1024){setError(t('mobileProfile.proofLimit'));return;}
+     const body=new FormData();body.append('type',proofType);
+     body.append('file',{uri:asset.uri,name:asset.name||'address-proof',type:mime} as unknown as Blob);
+     setUploadingProof(true);
+     const resultStatus=await api<{status:string}>('/api/v1/profile/address-proof',{method:'POST',body});
+     setProofStatus(resultStatus.status);setFeedback(t('mobileProfile.proofUploaded'));
+   }catch(e){setError(userFriendlyError(e,t('errors.generic')))}
+   finally{setUploadingProof(false)}
  }
  if(!user)return <ScreenShell title={t('navigation.profile')}>
    <EmptyState icon="account-circle-outline" title={t('auth.loginRequired')} description={t('profile.loginDescription')}/>
@@ -87,8 +123,8 @@ export default function ProfileScreen(){
        <View style={styles.identityCopy}><Text style={styles.name}>{user.displayName||user.fullName}</Text><Text style={styles.subText}>{user.email}</Text>
          <Text style={styles.status}>{t('profile.status')}: {user.status}</Text></View>
      </View>
-     <Pressable accessibilityRole="button" style={styles.outline} onPress={()=>void openWebProfile()}>
-       <Text style={styles.outlineText}>{t('mobileProfile.changePhoto')}</Text>
+     <Pressable accessibilityRole="button" style={styles.outline} disabled={uploadingPhoto} onPress={()=>void uploadPhoto()}>
+       <Text style={styles.outlineText}>{uploadingPhoto?t('mobileProfile.uploading'):t('mobileProfile.changePhoto')}</Text>
      </Pressable>
      <Text style={styles.hint}>{t('mobileProfile.photoHelp')}</Text>
    </View>
@@ -115,8 +151,14 @@ export default function ProfileScreen(){
      <Text style={styles.sectionTitle}>{t('mobileProfile.verification')}</Text>
      <Text style={styles.subText}>{t('mobileProfile.proofDescription')}</Text>
      {!!proofStatus&&<Text style={styles.status}>{t('mobileProfile.proofStatus')}: {proofStatus.replace(/_/g,' ')}</Text>}
-     <Pressable style={styles.outline} onPress={()=>void openWebProfile()}>
-       <Text style={styles.outlineText}>{t('mobileProfile.uploadProof')}</Text>
+     <Text style={styles.label}>{t('mobileProfile.proofType')}</Text>
+     <View style={styles.proofOptions}>{(['DL','VOTER_ID','PASSPORT'] as const).map(kind=>
+       <Pressable key={kind} accessibilityRole="radio" accessibilityState={{checked:proofType===kind}}
+         style={[styles.proofOption,proofType===kind&&styles.proofSelected]} onPress={()=>setProofType(kind)}>
+         <Text style={[styles.proofOptionText,proofType===kind&&styles.proofSelectedText]}>{t('mobileProfile.proofKind.'+kind)}</Text>
+       </Pressable>)}</View>
+     <Pressable style={styles.outline} disabled={uploadingProof} onPress={()=>void uploadProof()}>
+       <Text style={styles.outlineText}>{uploadingProof?t('mobileProfile.uploading'):t('mobileProfile.uploadProof')}</Text>
      </Pressable>
    </View>
    <View style={styles.card}>
@@ -147,6 +189,11 @@ export default function ProfileScreen(){
  </ScreenShell>;
 }
 const styles=StyleSheet.create({
+ proofOptions:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:5},
+ proofOption:{borderRadius:9,borderColor:BrandColors.border,borderWidth:1,paddingVertical:9,paddingHorizontal:10,backgroundColor:'#fff'},
+ proofSelected:{backgroundColor:BrandColors.primary,borderColor:BrandColors.primary},
+ proofOptionText:{fontSize:12,fontWeight:'700',color:BrandColors.textPrimary},
+ proofSelectedText:{color:BrandColors.white},
  card:{backgroundColor:BrandColors.surface,borderColor:BrandColors.border,borderWidth:1,borderRadius:17,padding:17,marginBottom:15,gap:9},
  identity:{flexDirection:'row',alignItems:'center',gap:13},
  avatar:{width:64,height:64,borderRadius:32,backgroundColor:BrandColors.background},

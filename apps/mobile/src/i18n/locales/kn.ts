@@ -36,13 +36,14 @@ const kn = {
     operations:'ಇಂದಿನ ಕಾರ್ಯಾಚರಣೆ',shopCounter:'ಅಂಗಡಿ ಕೌಂಟರ್',webAdmin:'ಕ್ರೀಡೆ, ಸೌಲಭ್ಯ, ದರ, ತೆರಿಗೆ, ಸಿಬ್ಬಂದಿ ಮತ್ತು ಅಂಗಡಿ ಸಂರಚನೆ ವೆಬ್ ಅಡ್ಮಿನ್‌ನಲ್ಲಿ ಮಾತ್ರ ಲಭ್ಯ.'
   },
   mobileProfile:{
-    account:'ಖಾತೆಯ ಮಾಹಿತಿ',photo:'ಪ್ರೊಫೈಲ್ ಫೋಟೋ',changePhoto:'ವೆಬ್ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
+    uploading:'ಅಪ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ…',photoUploaded:'ಪ್ರೊಫೈಲ್ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಆಯಿತು.',proofUploaded:'ವಿಳಾಸದ ದಾಖಲೆಯನ್ನು ಪರಿಶೀಲನೆಗೆ ಸಲ್ಲಿಸಲಾಗಿದೆ.',proofType:'ದಾಖಲೆಯ ಪ್ರಕಾರ',proofKind:{DL:'ಚಾಲನಾ ಪರವಾನಗಿ',VOTER_ID:'ಮತದಾರರ ಗುರುತಿನ ಚೀಟಿ',PASSPORT:'ಪಾಸ್‌ಪೋರ್ಟ್'},photoInvalid:'JPG, PNG ಅಥವಾ WebP ಫೋಟೋ ಆಯ್ಕೆಮಾಡಿ.',photoLimit:'ಪ್ರೊಫೈಲ್ ಫೋಟೋ 5 MB ಗಿಂತ ಕಡಿಮೆ ಇರಬೇಕು.',proofInvalid:'JPG, PNG ಅಥವಾ PDF ದಾಖಲೆ ಆಯ್ಕೆಮಾಡಿ.',proofLimit:'ವಿಳಾಸದ ದಾಖಲೆ 2 MB ಗಿಂತ ಕಡಿಮೆ ಇರಬೇಕು.',
+    account:'ಖಾತೆಯ ಮಾಹಿತಿ',photo:'ಪ್ರೊಫೈಲ್ ಫೋಟೋ',changePhoto:'ಪ್ರೊಫೈಲ್ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
     update:'ಪ್ರೊಫೈಲ್ ಉಳಿಸಿ',saving:'ಉಳಿಸಲಾಗುತ್ತಿದೆ…',saved:'ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ.',
     fullName:'ಪೂರ್ಣ ಹೆಸರು',displayName:'ಕರೆಯುವ ಹೆಸರು',email:'ಇಮೇಲ್',
     mobile:'ಮೊಬೈಲ್ (ದೃಢೀಕರಿಸಿಲ್ಲ)',address:'ವಿಳಾಸ',city:'ನಗರ',state:'ರಾಜ್ಯ',pin:'ಪಿನ್ ಕೋಡ್',
     verification:'ವಿಳಾಸದ ದಾಖಲೆಯ ಪರಿಶೀಲನೆ',proofDescription:'ಮೊದಲ ಬುಕಿಂಗ್‌ಗೆ ವಿಳಾಸದ ದಾಖಲೆ ಅಗತ್ಯ.',
-    proofStatus:'ದಾಖಲೆಯ ಸ್ಥಿತಿ',uploadProof:'ವೆಬ್ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ವಿಳಾಸದ ದಾಖಲೆ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
-    photoHelp:'ಫೋಟೋ ಅಥವಾ ವಿಳಾಸದ ದಾಖಲೆ ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ವೆಬ್ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ಲಾಗಿನ್ ಮಾಡಿ.',
+    proofStatus:'ದಾಖಲೆಯ ಸ್ಥಿತಿ',uploadProof:'ವಿಳಾಸದ ದಾಖಲೆ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
+    photoHelp:'JPG, PNG ಅಥವಾ WebP · ಗರಿಷ್ಠ 5 MB.',
     security:'ಖಾತೆಯ ಭದ್ರತೆ',securityHelp:'ಪಾಸ್‌ವರ್ಡ್ ಬದಲಿಸಿದ ಬಳಿಕ ಮತ್ತೆ ಲಾಗಿನ್ ಮಾಡಿ.',
     currentPassword:'ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್',newPassword:'ಹೊಸ ಪಾಸ್‌ವರ್ಡ್',confirmPassword:'ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ದೃಢೀಕರಿಸಿ',
     changePassword:'ಪಾಸ್‌ವರ್ಡ್ ಬದಲಿಸಿ',hidePassword:'ಪಾಸ್‌ವರ್ಡ್ ಫಾರ್ಮ್ ಮುಚ್ಚಿ',showPassword:'ಪಾಸ್‌ವರ್ಡ್ ಬದಲಿಸಿ',

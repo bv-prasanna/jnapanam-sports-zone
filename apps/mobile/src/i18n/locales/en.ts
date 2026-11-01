@@ -36,13 +36,14 @@ const en = {
     operations:'Today’s Operations',shopCounter:'Shop Counter',webAdmin:'Sports, facilities, pricing, taxes, staff management and shop configuration are available in the web Admin Console.'
   },
   mobileProfile:{
-    account:'Account information',photo:'Profile photo',changePhoto:'Upload photo from web profile',
+    uploading:'Uploading…',photoUploaded:'Profile photo uploaded.',proofUploaded:'Address proof submitted for verification.',proofType:'Document type',proofKind:{DL:'Driving licence',VOTER_ID:'Voter ID',PASSPORT:'Passport'},photoInvalid:'Select a JPG, PNG or WebP photo.',photoLimit:'Profile photo must be smaller than 5 MB.',proofInvalid:'Choose a JPG, PNG or PDF document.',proofLimit:'Address proof must be smaller than 2 MB.',
+    account:'Account information',photo:'Profile photo',changePhoto:'Upload profile photo',
     update:'Save profile',saving:'Saving…',saved:'Profile updated successfully.',
     fullName:'Full name',displayName:'Display / calling name',email:'Email',
     mobile:'Mobile (not verified)',address:'Address',city:'City',state:'State',pin:'PIN code',
     verification:'Address proof verification',proofDescription:'An address proof is needed before your first booking.',
-    proofStatus:'Document status',uploadProof:'Upload address proof from web profile',
-    photoHelp:'To upload a photo or address proof, sign in to the web profile.',
+    proofStatus:'Document status',uploadProof:'Upload address proof',
+    photoHelp:'JPG, PNG or WebP, up to 5 MB.',
     security:'Account security',securityHelp:'Change your password and sign in again.',
     currentPassword:'Current password',newPassword:'New password',confirmPassword:'Confirm new password',
     changePassword:'Change password',hidePassword:'Hide password form',showPassword:'Change password',
