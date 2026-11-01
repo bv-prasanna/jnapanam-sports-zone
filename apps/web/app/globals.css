@@ -231,3 +231,13 @@
 .event-media-preview img{width:100%;height:100%;object-fit:contain}
 .event-media-field>.dialog-error,.event-media-field>p{grid-column:1/-1}
 @media(max-width:640px){.admin-crud-dialog[data-managed-module="content"] form{grid-template-columns:1fr}.event-media-field{grid-template-columns:1fr}.event-media-field>label:nth-of-type(2),.event-media-field .event-media-preview{grid-column:1;grid-row:auto}.event-media-field .event-media-preview{height:180px}}
+
+
+/* Accessible, responsive sport icon choices in Admin catalog forms. */
+.role-selector>.sport-icon-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem}
+.sport-icon-picker .sport-icon-choice{display:flex;flex-direction:column;justify-content:center;gap:.35rem;position:relative;min-height:6.1rem;text-align:center;background:#fff;padding:.85rem .45rem;border:1px solid #d8dfe4;border-radius:.8rem;transition:background .15s,border-color .15s,box-shadow .15s}
+.sport-icon-picker .sport-icon-choice input[type="radio"]{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.sport-icon-picker .sport-icon-choice:has(input:checked){background:#edf6ff;border-color:#0877b9;box-shadow:inset 0 0 0 1px #0877b9;color:#063b63}
+.sport-icon-picker .sport-icon-choice:has(input:focus-visible){outline:3px solid #0877b9;outline-offset:3px}
+.sport-icon-picker .sport-icon-choice:hover{border-color:#0877b9}
+@media(max-width:650px){.role-selector>.sport-icon-picker{grid-template-columns:repeat(2,minmax(0,1fr))}}
