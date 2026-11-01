@@ -257,7 +257,7 @@ class ModuleRegressionIntegrationTest {
                         .content("{\"slotId\":\"" + slotId + "\",\"quantity\":1}"))
                 .andExpect(status().isConflict());
         MvcResult bookingResult = mvc.perform(post("/api/v1/bookings/confirm").header("Authorization", bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"holdId\":\"" + holdId + "\"}"))
+                        .content("{\"holdId\":\"" + holdId + "\",\"acceptedTerms\":true}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CONFIRMED")).andReturn();
         String bookingId = field(bookingResult, ID);
         String bookingNumber=field(bookingResult,Pattern.compile("\\\"bookingNumber\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""));
@@ -296,6 +296,7 @@ class ModuleRegressionIntegrationTest {
 
     @Test
     void adminCreatesTrainingAndCustomerEnrollsAttendsAndCancels() throws Exception {
+         jdbc.update("UPDATE feature_visibility SET enabled=TRUE WHERE code='TRAINING'");
         String adminEmail=uniqueEmail("training-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
         String coachEmail=uniqueEmail("coach");register(coachEmail);promote(coachEmail,"COACH");
         String suffix=UUID.randomUUID().toString().substring(0,8).toUpperCase();String facilityCode="TRAIN_"+suffix;
@@ -321,6 +322,7 @@ class ModuleRegressionIntegrationTest {
         mvc.perform(put("/api/v1/admin/training/enrollments/{id}/attendance",enrollmentId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"sessionDate\":\""+start+"\",\"present\":true}")).andExpect(status().isNoContent());
         mvc.perform(post("/api/v1/training/enrollments/{id}/cancel",enrollmentId).header("Authorization",bearer(customer.accessToken()))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
         mvc.perform(get("/api/v1/public/training/batches")).andExpect(status().isOk()).andExpect(jsonPath("$[*].id",hasItem(batchId))).andExpect(jsonPath("$[0].available").value(1));
+         jdbc.update("UPDATE feature_visibility SET enabled=FALSE WHERE code='TRAINING'");
     }
 
     @Test
@@ -560,7 +562,7 @@ class ModuleRegressionIntegrationTest {
         MvcResult hold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"slotId\":\""+slotId+"\",\"quantity\":1}"))
                 .andExpect(status().isCreated()).andReturn();
         MvcResult booking=mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\"}"))
+                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\",\"acceptedTerms\":true}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CONFIRMED")).andExpect(jsonPath("$.paymentStatus").value("UNPAID")).andReturn();
         String bookingId=field(booking,ID);String number=field(booking,Pattern.compile("\\\"bookingNumber\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""));
         mvc.perform(post("/api/v1/operations/bookings/{number}/check-in",number).header("Authorization",bearer(adminToken))).andExpect(status().isConflict());
@@ -577,7 +579,7 @@ class ModuleRegressionIntegrationTest {
         MvcResult secondHold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"slotId\":\""+secondSlot+"\",\"quantity\":1}"))
                 .andExpect(status().isCreated()).andReturn();
         mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"holdId\":\""+field(secondHold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\"}"))
+                .content("{\"holdId\":\""+field(secondHold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\",\"acceptedTerms\":true}"))
                 .andExpect(status().isConflict());
     }
 
@@ -601,7 +603,7 @@ class ModuleRegressionIntegrationTest {
         MvcResult hold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"slotId\":\""+field(slots,ID)+"\",\"quantity\":1}")).andExpect(status().isCreated()).andReturn();
         MvcResult booking=mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_NOW\"}"))
+                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_NOW\",\"acceptedTerms\":true}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING_PAYMENT")).andReturn();
         MvcResult payment=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken()))
                 .header("Idempotency-Key","void-"+UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON)

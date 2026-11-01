@@ -11,4 +11,11 @@ public record FacilityRequest(
         @Size(max = 160) String locationLabel,
         @Min(15) @Max(240) int slotDurationMinutes,
         @Min(1) int capacity,
-        @DecimalMin("0.00") BigDecimal bookingPrice) {}
+        @DecimalMin("0.00") BigDecimal bookingPrice,
+        @Min(0) @Max(120) Integer bufferMinutes,
+        @Size(max = 3000) String termsAndConditions) {
+    public FacilityRequest(String code, String sportCode, String name, String description,
+            String locationLabel, int slotDurationMinutes, int capacity, BigDecimal bookingPrice) {
+        this(code, sportCode, name, description, locationLabel, slotDurationMinutes, capacity, bookingPrice, 0, null);
+    }
+}

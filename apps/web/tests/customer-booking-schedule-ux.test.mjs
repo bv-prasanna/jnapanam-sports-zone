@@ -31,7 +31,7 @@ test("facility schedule clearly marks sample hours as unsaved until persisted",a
  assert.match(dialog,/customers will not see bookable slots/i);
  assert.match(dialog,/Not saved/);
  assert.match(dialog,/Save hours & close/);
- assert.match(dialog,/\/operating-hours/);
+ assert.match(dialog,/\/operating-periods/);
 });
 
 test("schedule footer saves before closing, with discard protection instead of misleading Done",async()=>{
@@ -52,4 +52,30 @@ test("closure changes do not discard edited but unsaved weekly hours",async()=>{
  const dialog=await read("components/facility-schedule-dialog.tsx");
  assert.match(dialog,/await load\(editedHours\)/);
  assert.match(dialog,/if\(!preserveEdits\)\{setEditedHours\(false\)/);
+});
+
+test("split windows, cleaning buffer, capacity and terms are configurable",async()=>{
+ const dialog=await read("components/facility-schedule-dialog.tsx");
+ const admin=await read("app/admin/page.tsx");
+ const booking=await read("app/dashboard/page.tsx");
+ assert.match(dialog,/Add another period/);
+ assert.match(dialog,/replaceOperatingPeriods|operating-periods/);
+ assert.match(admin,/Maximum members per slot/);
+ assert.match(admin,/bufferMinutes/);
+ assert.match(admin,/termsAndConditions/);
+ assert.match(booking,/acceptedTerms:termsAccepted/);
+});
+test("feature visibility is controlled by admin and customer navigation",async()=>{
+ const config=await read("lib/features.ts");
+ const admin=await read("app/admin/features/page.tsx");
+ assert.match(config,/\/api\/v1\/public\/features/);
+ assert.match(admin,/\/api\/v1\/admin\/features/);
+ assert.match(admin,/allowedRoles/);
+});
+
+test("disabled features are removed from customer shortcuts, nav and direct customer views",async()=>{
+ const dashboard=await read("app/dashboard/page.tsx");
+ assert.match(dashboard,/filter\(enabled\)\.map/);
+ assert.match(dashboard,/visibleSection=featureEnabled\(section\)\?section:"overview"/);
+ assert.match(dashboard,/enabled=\{featureEnabled\}/);
 });

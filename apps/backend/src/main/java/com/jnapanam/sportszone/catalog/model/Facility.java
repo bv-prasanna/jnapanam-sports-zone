@@ -17,6 +17,8 @@ public class Facility {
     @Column(name = "location_label", length = 160) private String locationLabel;
     @Column(name = "slot_duration_minutes", nullable = false) private int slotDurationMinutes;
     @Column(nullable = false) private int capacity;
+    @Column(name = "buffer_minutes", nullable = false) private int bufferMinutes;
+    @Column(name = "terms_and_conditions", length = 3000) private String termsAndConditions;
     @Column(name = "booking_price", nullable = false, precision = 12, scale = 2) private BigDecimal bookingPrice;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) private CatalogueStatus status;
     @Column(name = "suspended_from") private LocalDate suspendedFrom;
@@ -57,6 +59,15 @@ public class Facility {
         this.updatedAt = Instant.now();
     }
 
+    public void configureBookingRules(int bufferMinutes, String termsAndConditions) {
+        if (bufferMinutes < 0 || bufferMinutes > 120) throw new IllegalArgumentException("Invalid buffer minutes");
+        this.bufferMinutes = bufferMinutes;
+        this.termsAndConditions = trimToNull(termsAndConditions) == null
+            ? "Gutka, cigarettes, smoking and tobacco are not permitted. Follow the safety and hygiene instructions of the facility operator."
+            : trimToNull(termsAndConditions);
+        this.updatedAt = Instant.now();
+    }
+
     public void changeStatus(CatalogueStatus status, LocalDate from, LocalDate until, String reason) {
         this.status = status;
         this.suspendedFrom = status == CatalogueStatus.TEMPORARILY_SUSPENDED ? from : null;
@@ -73,6 +84,8 @@ public class Facility {
     public String getLocationLabel() { return locationLabel; }
     public int getSlotDurationMinutes() { return slotDurationMinutes; }
     public int getCapacity() { return capacity; }
+    public int getBufferMinutes() { return bufferMinutes; }
+    public String getTermsAndConditions() { return termsAndConditions; }
     public BigDecimal getBookingPrice() { return bookingPrice; }
     public CatalogueStatus getStatus() { return status; }
     public LocalDate getSuspendedFrom() { return suspendedFrom; }

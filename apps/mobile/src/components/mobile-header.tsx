@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Href, router, usePathname } from 'expo-router';
-import { useState } from 'react';
+import { useEffect,useState } from 'react';
+import {api} from '@/lib/api';
 import { useTranslation } from 'react-i18next';
 import { Image, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,9 +31,22 @@ export function MobileHeader() {
   const {user}=useAuth();
   const pathname=usePathname();
   const [open,setOpen]=useState(false);
+  const [featureSettings,setFeatureSettings]=useState<{code:string;enabled:boolean;allowedRoles:string[]}[]|null>(null);
+  useEffect(()=>{let active=true;void api<{code:string;enabled:boolean;allowedRoles:string[]}[]>('/api/v1/public/features')
+    .then(values=>{if(active)setFeatureSettings(values)}).catch(()=>{});
+    return()=>{active=false};
+  },[]);
+  const featureAllowed=(key:string)=>{
+    const code=({bookings:'BOOKINGS',memberships:'MEMBERSHIPS',training:'TRAINING',growth:'GROWTH',
+      tournaments:'TOURNAMENTS',shop:'SHOP',subscriptions:'SUBSCRIPTIONS'} as Record<string,string>)[key];
+    if(!code)return true;
+    if(!featureSettings)return code!=='TRAINING';
+    const feature=featureSettings.find(f=>f.code===code);
+    return !feature||(feature.enabled&&(!user?.roles.length?feature.allowedRoles.includes('CUSTOMER'):user.roles.some(r=>feature.allowedRoles.includes(r))));
+  };
   const canOperate=!!user?.roles.some(r=>['OPERATIONS','ADMIN','SUPER_ADMIN'].includes(r));
   const canShop=!!user?.roles.some(r=>['SHOP_KEEPER','ADMIN','SUPER_ADMIN'].includes(r));
-  const links=[...customerItems,...(canOperate?[operatorItem]:[]),...(canShop?[shopkeeperItem]:[])];
+  const links=[...customerItems.filter(item=>featureAllowed(item.key)),...(canOperate?[operatorItem]:[]),...(canShop?[shopkeeperItem]:[])];
   function navigate(href:Href) {setOpen(false);router.push(href);}
   return <>
     <StatusBar barStyle="light-content" backgroundColor={BrandColors.primary}/>

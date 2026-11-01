@@ -107,3 +107,24 @@ test("dashboard exposes direct working links to pricing, taxes, offers, billing 
   assert.match(pricing,/requestedTab==="taxes"/,"tax nav must open the tax management tab");
   assert.match(pricing,/router\.replace\(`\/admin\/pricing\?tab=\$\{next\}`\)/);
 });
+
+test("admin theme follows the homepage palette, type and branded button states",async()=>{
+ const home=await source("app/globals.css");
+ const admin=await source("app/admin/admin-foundation.css");
+ const shell=await source("app/admin/admin-layout.module.css");
+ const hub=await source("app/admin/admin-dashboard-links.module.css");
+ const features=await source("app/admin/features/page.tsx");
+ assert.match(home,/--olive:#28330f;.*--saffron:#c83a0a;.*--ivory:#fff9ef/);
+ assert.match(admin,/--admin-primary:var\(--olive/);
+ assert.match(admin,/--admin-accent:var\(--saffron/);
+ assert.match(admin,/--admin-cta:var\(--saffron/);
+ assert.match(admin,/--admin-bg:var\(--ivory/);
+ assert.match(shell,/--admin-primary:var\(--olive/);
+ assert.match(shell,/\.navLink\.active\{background:var\(--admin-accent\)/);
+ assert.match(admin,/Georgia/);
+ assert.match(hub,/var\(--admin-accent\)/);
+ assert.match(features,/className="admin-feature-card"/);
+ for(const file of [admin,shell,hub]){
+   assert.doesNotMatch(file,/#063b63|#0877b9|#17354a|#f4f8fa|#101d2a|#164b69|#52a8db/i);
+ }
+});

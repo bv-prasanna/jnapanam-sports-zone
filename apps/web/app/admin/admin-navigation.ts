@@ -34,6 +34,7 @@ export const adminModules:AdminModule[]=[
  {id:"readiness",label:"Release Readiness",href:"/admin/release-readiness",area:"Operations & people",description:"Inspect operational exceptions and release checks."},
  {id:"operations",label:"Operations",href:"/operations",area:"Operations & people",description:"Run day-to-day venue operations."},
  {id:"counter",label:"Shop Counter",href:"/shop-counter",area:"Operations & people",description:"Manage over-the-counter sales and fulfillment."},
+ {id:"features",label:"Feature Visibility",href:"/admin/features",area:"System",description:"Enable customer features and choose permitted user roles."},
  {id:"notifications",label:"Notifications",href:"/admin?view=notifications",area:"System",description:"Manage communication templates."},
  {id:"providers",label:"Notification Providers",href:"/admin/notification-providers",area:"System",description:"Configure email and messaging channels."},
  {id:"content",label:"Content & Events",href:"/admin?view=content",area:"System",description:"Manage website content and announcements."},
