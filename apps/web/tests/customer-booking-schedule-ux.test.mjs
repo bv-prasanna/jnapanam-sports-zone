@@ -33,3 +33,23 @@ test("facility schedule clearly marks sample hours as unsaved until persisted",a
  assert.match(dialog,/Save operating hours/);
  assert.match(dialog,/\/operating-hours/);
 });
+
+test("schedule footer saves before closing, with discard protection instead of misleading Done",async()=>{
+ const dialog=await read("components/facility-schedule-dialog.tsx");
+ const css=await read("app/globals.css");
+ assert.match(dialog,/Save hours & close/);
+ assert.doesNotMatch(dialog,/>Done<\/button>/);
+ assert.match(dialog,/onClick=\{\(\)=>void saveHours\(true\)\}/);
+ assert.match(dialog,/if\(closeAfter\)onClose\(\)/);
+ assert.match(dialog,/function requestClose\(\)\{if\(saving\)return;if\(editedHours\|\|savedDays\.length<7\)/);
+ assert.match(dialog,/confirmDiscard&&/);
+ assert.match(dialog,/Keep editing/);
+ assert.match(dialog,/Discard and close/);
+ assert.match(css,/\.facility-schedule-dialog \.schedule-dialog-actions\{[^}]*position:sticky/);
+});
+
+test("closure changes do not discard edited but unsaved weekly hours",async()=>{
+ const dialog=await read("components/facility-schedule-dialog.tsx");
+ assert.match(dialog,/await load\(editedHours\)/);
+ assert.match(dialog,/if\(!preserveEdits\)\{setEditedHours\(false\)/);
+});
