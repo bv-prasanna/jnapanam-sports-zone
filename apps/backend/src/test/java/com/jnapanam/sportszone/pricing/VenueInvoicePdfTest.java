@@ -5,6 +5,18 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class VenueInvoicePdfTest {
+ @Test void everyCompletedPaymentHasAnOrdinaryDownloadablePdfReceipt(){
+    var receipt=new LinkedHashMap<String,Object>();
+    receipt.put("receiptNumber","JNZ-PAY-DEMO");
+    receipt.put("purpose","BOOKING");
+    receipt.put("status","PAID");
+    receipt.put("paymentAmountPaise",10000L);
+    receipt.put("discountPaise",0L);
+    receipt.put("loyaltyPointsUsed",0L);
+    byte[] bytes=new VenueInvoicePdfService().renderPaymentReceipt(receipt);
+    assertTrue(bytes.length>500);
+    assertEquals("%PDF-",new String(bytes,0,5,StandardCharsets.US_ASCII));
+ }
  @Test void downloadableInvoiceIsActualPdf(){
   var seller=new LinkedHashMap<String,Object>();
   seller.put("legalName","Jnapanam Sports Zone");
