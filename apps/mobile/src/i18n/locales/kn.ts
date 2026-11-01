@@ -1,4 +1,29 @@
 const kn = {
+  mobileTraining:{
+    places:'ಸ್ಥಾನಗಳು',coach:'ತರಬೇತುದಾರ',enrol:'ನೋಂದಾಯಿಸಿ',full:'ಬ್ಯಾಚ್ ಭರ್ತಿಯಾಗಿದೆ',noMatching:'ಹೊಂದುವ ತರಬೇತಿ ಇಲ್ಲ',
+    chooseAnother:'ಬೇರೆ ಕ್ರೀಡೆ ಅಥವಾ ಸೌಲಭ್ಯ ಆಯ್ಕೆಮಾಡಿ.',myEnrollments:'ನನ್ನ ದಾಖಲಾತಿಗಳು',age:'ವಯಸ್ಸು',
+    processing:'ನಡೆಯುತ್ತಿದೆ…',cancelEnrollment:'ದಾಖಲಾತಿ ರದ್ದುಮಾಡಿ',enrolIn:'{{name}} ನಲ್ಲಿ ದಾಖಲಾಗಿ',
+    participant:'ಭಾಗವಹಿಸುವವರ ಹೆಸರು',participantAge:'ಭಾಗವಹಿಸುವವರ ವಯಸ್ಸು',back:'ಹಿಂದೆ',enrolling:'ದಾಖಲಿಸಲಾಗುತ್ತಿದೆ…',
+    confirm:'ದಾಖಲಾತಿ ದೃಢೀಕರಿಸಿ',loginRequired:'ತರಬೇತಿಗೆ ದಾಖಲಿಸಲು ಲಾಗಿನ್ ಮಾಡಿ.',
+    invalidParticipant:'ಸರಿಯಾದ ಹೆಸರು ಮತ್ತು ವಯಸ್ಸು ನಮೂದಿಸಿ.',enrolled:'ದಾಖಲಾತಿ ಸಿದ್ಧವಾಗಿದೆ. ಸ್ಥಾನ ದೃಢೀಕರಿಸಲು ಪಾವತಿಸಿ.',
+    paymentSuccess:'ತರಬೇತಿ ಪಾವತಿ ಯಶಸ್ವಿಯಾಯಿತು.',cancelSuccess:'ತರಬೇತಿ ದಾಖಲಾತಿ ರದ್ದಾಗಿದೆ.'
+  },
+  mobileTournaments:{
+    to:'ಇಂದ',teams:'ತಂಡಗಳು',teamSize:'ತಂಡದ ಗಾತ್ರ',organizer:'ಆಯೋಜಕರು',noUpcoming:'ಮುಂಬರುವ ಪಂದ್ಯಾವಳಿಗಳಿಲ್ಲ',
+    published:'ಪ್ರಕಟಿತ ಪಂದ್ಯಾವಳಿಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.',myTeams:'ನನ್ನ ತಂಡಗಳು',registerFor:'{{name}} ಗೆ ನೋಂದಾಯಿಸಿ',
+    teamName:'ತಂಡದ ಹೆಸರು',membersHelp:'{{count}} ಸದಸ್ಯರನ್ನು ಪ್ರತಿ ಸಾಲಿನಲ್ಲಿ ನಮೂದಿಸಿ: ಹೆಸರು, ಇಮೇಲ್, ಮೊಬೈಲ್',
+    registering:'ನೋಂದಾಯಿಸಲಾಗುತ್ತಿದೆ…',confirm:'ನೋಂದಣಿ ದೃಢೀಕರಿಸಿ',loginRequired:'ತಂಡದ ನೋಂದಣಿಗೆ ಲಾಗಿನ್ ಮಾಡಿ.',
+    invalidName:'ತಂಡದ ಹೆಸರು ನಮೂದಿಸಿ.',invalidMembers:'ಪ್ರತಿ ಸದಸ್ಯರಿಗೆ ಹೆಸರು ಅಗತ್ಯ.',
+    registered:'ತಂಡ ನೋಂದಾಯಿಸಲಾಗಿದೆ. ದೃಢೀಕರಣಕ್ಕೆ ಪಾವತಿಸಿ.',paid:'ಪಂದ್ಯಾವಳಿ ಪಾವತಿ ಯಶಸ್ವಿಯಾಯಿತು.',
+    states:{PAYMENT_PENDING:'ಪಾವತಿ ಬಾಕಿ',ALREADY_REGISTERED:'ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಲಾಗಿದೆ',REGISTRATION_UNAVAILABLE:'ನೋಂದಣಿ ಲಭ್ಯವಿಲ್ಲ',
+      REGISTRATION_NOT_OPEN:'ನೋಂದಣಿ ಇನ್ನೂ ಆರಂಭವಾಗಿಲ್ಲ',REGISTRATION_CLOSED:'ನೋಂದಣಿ ಮುಗಿದಿದೆ',FULL:'ಪಂದ್ಯಾವಳಿ ಭರ್ತಿಯಾಗಿದೆ',REGISTER_TEAM:'ತಂಡ ನೋಂದಾಯಿಸಿ'}
+  },
+  mobileNotifications:{
+    loginDescription:'ಬುಕಿಂಗ್, ಪಾವತಿ ಮತ್ತು ಖಾತೆ ಸಂದೇಶಗಳನ್ನು ನೋಡಲು ಲಾಗಿನ್ ಮಾಡಿ.',eyebrow:'ಸಂದೇಶ ಕೇಂದ್ರ',
+    title:'ಅಧಿಸೂಚನೆಗಳು',description:'ಖಾತೆ, ಬುಕಿಂಗ್, ಪಾವತಿ, ಸದಸ್ಯತ್ವ, ತರಬೇತಿ, ಪಂದ್ಯಾವಳಿ ಮತ್ತು ಅಂಗಡಿ ಮಾಹಿತಿ.',
+    preferences:'ಸಂದೇಶ ವಿತರಣಾ ಆಯ್ಕೆಗಳು',email:'ಇಮೇಲ್',sms:'ಎಸ್‌ಎಂಎಸ್',push:'ಪುಷ್',recent:'ಇತ್ತೀಚಿನ ಸಂದೇಶಗಳು',
+    empty:'ಅಧಿಸೂಚನೆಗಳಿಲ್ಲ',emptyDescription:'ನಿಮ್ಮ ಖಾತೆ ಸಂದೇಶಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.'
+  },
   mobileOperations:{
     accessRequired:'ಕಾರ್ಯಾಚರಣೆ ಪ್ರವೇಶ ಅಗತ್ಯ',accessDescription:'ಕಾರ್ಯಾಚರಣೆ ಖಾತೆಯಿಂದ ಲಾಗಿನ್ ಮಾಡಿ.',
     title:'ಸೌಲಭ್ಯ ಕಾರ್ಯಾಚರಣೆ',description:'ಇಂದಿನ ಸೌಲಭ್ಯ ಬುಕಿಂಗ್‌ಗಳು. ಚೆಕ್-ಇನ್ ಮೊದಲು ಪಾವತಿ ದೃಢವಾಗಿರಬೇಕು.',
