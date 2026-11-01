@@ -110,6 +110,7 @@ public class VenuePricingService {
     @Transactional
     public UUID saveTax(UUID id,TaxRuleInput r) {
         validate(r);
+        rejectOverlappingTaxRules(id,r);
         UUID key=id==null?UUID.randomUUID():id;
         if(id==null){
             jdbc.update("""
@@ -124,6 +125,22 @@ public class VenuePricingService {
             if(count==0)throw new NotFoundException("Tax rule not found");
         }
         return key;
+    }
+
+    private void rejectOverlappingTaxRules(UUID editingId, TaxRuleInput rule){
+        List<Map<String,Object>> existing=jdbc.queryForList("""
+            select id,effective_from,effective_to from venue_tax_rules
+            where active=true and scope=? and target is not distinct from ?
+            """,rule.scope().name(),rule.target());
+        for(Map<String,Object> prior:existing){
+            if(prior.get("id").toString().equals(String.valueOf(editingId)))continue;
+            LocalDate previousStart=prior.get("effective_from")==null?null:((java.sql.Date)prior.get("effective_from")).toLocalDate();
+            LocalDate previousEnd=prior.get("effective_to")==null?null:((java.sql.Date)prior.get("effective_to")).toLocalDate();
+            boolean overlaps=(previousEnd==null||rule.effectiveFrom()==null||!previousEnd.isBefore(rule.effectiveFrom()))
+                         &&(rule.effectiveTo()==null||previousStart==null||!rule.effectiveTo().isBefore(previousStart));
+            if(overlaps)throw new com.jnapanam.sportszone.common.exception.ConflictException(
+                "Another tax rule is already active for this scope and date range. Edit or deactivate it first.");
+        }
     }
 
     @Transactional
