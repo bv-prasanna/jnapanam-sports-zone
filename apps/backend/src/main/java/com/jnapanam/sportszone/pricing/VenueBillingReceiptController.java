@@ -10,6 +10,7 @@ public class VenueBillingReceiptController {
     public VenueBillingReceiptController(VenueBillingService service){this.service=service;}
     @GetMapping("/{paymentId}/billing")
     public Map<String,Object> receipt(Authentication authentication,@PathVariable UUID paymentId){
-        return service.receipt(UUID.fromString(authentication.getName()),paymentId,false);
+        boolean admin=authentication.getAuthorities().stream().anyMatch(a->a.getAuthority().equals("ROLE_ADMIN")||a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+        return service.receipt(UUID.fromString(authentication.getName()),paymentId,admin);
     }
 }
