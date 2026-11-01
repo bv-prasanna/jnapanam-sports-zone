@@ -21,6 +21,8 @@ public class VenueBillingPdfController {
         boolean admin=authentication.getAuthorities().stream()
             .anyMatch(a->Set.of("ROLE_SUPER_ADMIN","ROLE_ADMIN").contains(a.getAuthority()));
         Map<String,Object> receipt=billing.receipt(UUID.fromString(authentication.getName()),paymentId,admin);
+        if(!Set.of("PAID","PARTIALLY_REFUNDED","REFUNDED").contains(String.valueOf(receipt.get("status"))))
+            throw new com.jnapanam.sportszone.common.exception.ConflictException("Payment receipt is available only after payment confirmation");
         byte[] bytes=pdf.renderPaymentReceipt(receipt);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\"jnapanam-payment-receipt.pdf\"")
