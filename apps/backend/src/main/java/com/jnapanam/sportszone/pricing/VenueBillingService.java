@@ -224,13 +224,22 @@ public class VenueBillingService {
         long serial=jdbc.queryForObject("select nextval('venue_billing_document_seq')",Long.class);
         String documentNumber="JNZ"+(fy%100)+"-"+String.format(Locale.ROOT,"%08d",serial);
         if(documentNumber.length()>16)throw new ConflictException("Invoice series exceeded its configured size");
+        UUID documentId=UUID.randomUUID();
         try{
             jdbc.update("""
                 insert into venue_billing_documents(id,payment_order_id,refund_id,kind,state,document_number,
                 fiscal_year,taxable_paise,tax_paise,total_paise,document_data,issued_at)
                 values(?,?,?,?,'ISSUED',?,?,?,?,?,?::jsonb,now())
-                """,UUID.randomUUID(),paymentId,refundId,kind,documentNumber,fy,net,tax,total,json.writeValueAsString(data));
+                """,documentId,paymentId,refundId,kind,documentNumber,fy,net,tax,total,json.writeValueAsString(data));
         }catch(JsonProcessingException ex){throw new IllegalStateException("Unable to serialize invoice data",ex);}
+        // Queued atomically with issuance. Delivery failures never retract a legal document.
+        jdbc.update("""
+          insert into venue_billing_email_deliveries(id,document_id,payment_order_id,recipient)
+          select ?,?,?,u.email from payment_orders p join users u on u.id=p.user_id
+          where p.id=? and u.email is not null and u.email<>'' and
+          exists(select 1 from venue_billing_profile where id=1 and invoice_email_enabled=true)
+          on conflict(document_id) do nothing
+          """,UUID.randomUUID(),documentId,paymentId,paymentId);
         return Map.of("documentNumber",documentNumber,"state","ISSUED","totalPaise",total);
     }
     private static String blank(String s){return s==null||s.isBlank()?null:s.trim();}
