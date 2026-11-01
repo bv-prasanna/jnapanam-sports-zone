@@ -61,6 +61,16 @@ class VenueBillingServiceTest {
             new VenueBillingService.InvoiceDetails(null,"29","Arena Bengaluru","IGST")));
     }
 
+    @Test void fullyRefundedPaymentCannotReceiveNewInvoice(){
+        UUID id=UUID.randomUUID();
+        PaymentOrder order=mock(PaymentOrder.class);
+        when(order.getStatus()).thenReturn(PaymentStatus.REFUNDED);
+        when(orders.findById(id)).thenReturn(Optional.of(order));
+        assertThrows(ConflictException.class,()->service.issueInvoice(id,
+            new VenueBillingService.InvoiceDetails(null,"29","Bengaluru","CGST_SGST","29")));
+        verifyNoInteractions(bookings);
+    }
+
     @Test void aPendingRefundMustNotProduceCreditNote(){
         UUID id=UUID.randomUUID();
         PaymentRefund refund=mock(PaymentRefund.class);
