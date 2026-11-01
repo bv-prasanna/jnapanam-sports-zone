@@ -1,6 +1,6 @@
 import {router} from 'expo-router';
 import {useEffect,useState} from 'react';
-import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {ScreenShell,EmptyState} from '@/components/screen-shell';
 import {BrandColors} from '@/constants/brand';
 import {useAuth} from '@/features/auth/auth-context';
@@ -10,7 +10,7 @@ type Profile={recipientAddress:string;stateCode:string;gstin:string};
 type Payment={id:string;receiptNumber:string;amountPaise:number;status:string;purpose:string};
 type Billing={receiptNumber:string;documents:{documentNumber:string;kind:string;totalPaise:number;taxPaise:number;state:string}[];refunds:{amountPaise:number;status:string}[]};
 const money=(n:number)=>`₹${(n/100).toFixed(2)}`;
-const states=[['29','Karnataka'],['37','Andhra Pradesh'],['33','Tamil Nadu'],['32','Kerala'],['36','Telangana'],['27','Maharashtra'],['07','Delhi'],['24','Gujarat'],['09','Uttar Pradesh'],['19','West Bengal'],['30','Goa'],['38','Ladakh']];
+const states=[['29','Karnataka'],['37','Andhra Pradesh'],['33','Tamil Nadu'],['32','Kerala'],['36','Telangana'],['27','Maharashtra'],['07','Delhi'],['24','Gujarat'],['09','Uttar Pradesh'],['08','Rajasthan'],['19','West Bengal'],['06','Haryana'],['03','Punjab'],['10','Bihar'],['21','Odisha'],['23','Madhya Pradesh'],['22','Chhattisgarh'],['20','Jharkhand'],['18','Assam'],['30','Goa'],['01','Jammu & Kashmir'],['02','Himachal Pradesh'],['05','Uttarakhand'],['04','Chandigarh'],['11','Sikkim'],['12','Arunachal Pradesh'],['13','Nagaland'],['14','Manipur'],['15','Mizoram'],['16','Tripura'],['17','Meghalaya'],['26','Dadra and Nagar Haveli and Daman and Diu'],['31','Lakshadweep'],['34','Puducherry'],['35','Andaman & Nicobar Islands'],['38','Ladakh']];
 
 export default function BillingScreen(){
  const {user}=useAuth();
@@ -22,6 +22,9 @@ export default function BillingScreen(){
  useEffect(()=>{if(!user)return;setBusy(true);Promise.all([api<Partial<Profile>>('/api/v1/billing/me'),api<Payment[]>('/api/v1/payments/me')]).then(([p,rows])=>{setProfile(v=>({...v,...p,gstin:p.gstin||''}));setPayments(rows.filter(x=>['PAID','PARTIALLY_REFUNDED','REFUNDED'].includes(x.status)))}).catch(e=>setError(e instanceof Error?e.message:'Unable to load billing')).finally(()=>setBusy(false))},[user]);
  async function save(){try{setBusy(true);setError('');await api('/api/v1/billing/me',{method:'PUT',body:JSON.stringify({...profile,gstin:profile.gstin||null})});setSuccess('Billing address saved for future invoices.')}catch(e){setError(e instanceof Error?e.message:'Unable to save')}finally{setBusy(false)}}
  async function review(id:string){try{setBusy(true);setSelected(id);setError('');setDetails(await api<Billing>(`/api/v1/payments/${id}/billing`))}catch(e){setError(e instanceof Error?e.message:'Unable to load documents')}finally{setBusy(false)}}
+ async function requestInvoice(){if(!selected)return;try{setBusy(true);setError('');await api(`/api/v1/payments/${selected}/billing/invoice`,{method:'POST'});setDetails(await api<Billing>(`/api/v1/payments/${selected}/billing`));setSuccess('GST invoice issued. Open the secure portal to download it.')}catch(e){setError(e instanceof Error?e.message:'GST invoice unavailable until venue tax details are confirmed.')}finally{setBusy(false)}}
+ async function openDocuments(){if(!selected)return;try{const web=(process.env.EXPO_PUBLIC_WEB_URL||'https://jnapanam.in').replace(/\\/$/,'');await Linking.openURL(`${web}/billing-documents/${encodeURIComponent(selected)}`)}catch{setError('Could not open web portal. Sign in at jnapanam.in to download your receipt or invoice.')}}
+
  if(!user)return <ScreenShell title="Billing & invoices"><EmptyState icon="file-document-outline" title="Login required" description="Sign in to manage billing and view invoices."/><Pressable onPress={()=>router.push('/login')}><Text>Sign in</Text></Pressable></ScreenShell>;
  return <ScreenShell title="Billing & invoices">
  <ScrollView contentContainerStyle={{paddingBottom:40}}>
@@ -35,8 +38,8 @@ export default function BillingScreen(){
  <Pressable disabled={busy||!profile.recipientAddress.trim()} accessibilityRole="button" style={[styles.primary,busy&&styles.disabled]} onPress={()=>void save()}><Text style={styles.primaryText}>Save billing details</Text></Pressable></View>
  <View style={styles.card}><Text style={styles.heading}>Payment receipts and GST documents</Text>
  {payments.length===0?<Text style={styles.note}>No paid transactions found.</Text>:payments.map(p=><Pressable key={p.id} accessibilityRole="button" style={styles.payment} onPress={()=>void review(p.id)}><Text style={styles.headingSmall}>{p.purpose.replaceAll('_',' ')} · {money(p.amountPaise)}</Text><Text style={styles.note}>{p.receiptNumber} · {p.status}</Text><Text style={styles.link}>View billing documents</Text></Pressable>)}
- {selected&&details?<View style={styles.payment}><Text style={styles.headingSmall}>Documents for {details.receiptNumber}</Text>
- {details.documents?.length?details.documents.map(d=><View key={d.documentNumber} style={styles.document}><Text style={styles.label}>{d.kind.replaceAll('_',' ')} {d.documentNumber}</Text><Text>{money(d.totalPaise)} · Tax {money(d.taxPaise)}</Text><Text style={styles.note}>A PDF is emailed automatically when enabled by the venue. You can also download it from your web account.</Text></View>):<Text style={styles.note}>An invoice has not been issued yet. Your payment receipt is available in your account.</Text>}
+ {selected&&details?<View style={styles.payment}><Text style={styles.headingSmall}>Documents for {details.receiptNumber}</Text><Pressable accessibilityRole="button" style={styles.primary} onPress={()=>void openDocuments()}><Text style={styles.primaryText}>Download payment receipt / invoice PDF</Text></Pressable>{!details.documents?.some(d=>d.kind==="INVOICE")&&<Pressable accessibilityRole="button" disabled={busy} style={styles.primary} onPress={()=>void requestInvoice()}><Text style={styles.primaryText}>Request GST invoice (no email)</Text></Pressable>}
+ {details.documents?.length?details.documents.map(d=><View key={d.documentNumber} style={styles.document}><Text style={styles.label}>{d.kind.replaceAll('_',' ')} {d.documentNumber}</Text><Text>{money(d.totalPaise)} · Tax {money(d.taxPaise)}</Text><Text style={styles.note}>No invoice email is sent by default. Download the PDF after signing in to the secure web portal.</Text></View>):<Text style={styles.note}>An invoice has not been issued yet. Your payment receipt is available in your account.</Text>}
  </View>:null}</View></ScrollView></ScreenShell>;
 }
 const styles=StyleSheet.create({
