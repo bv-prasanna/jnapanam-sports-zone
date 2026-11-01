@@ -37,7 +37,7 @@ test("cricket regular daytime and floodlight examples use separate time bands",(
 
 test("one-day exception inherits facility rule and returns to recurring rate after the day",()=>{
   assert.match(priceSource,/exceptionForDate\(rule:Item\)/);
-  assert.match(priceSource,/priority\.\.[\s\S]*?\+1/);
+  assert.match(priceSource,/const priority=Math\.max\([\s\S]*?\)\+1/);
   assert.match(priceSource,/effectiveFrom:e\.target\.value,effectiveTo:e\.target\.value/);
   assert.match(priceSource,/One-day override saved/);
   assert.match(priceSource,/!editing&&!exceptionFor/);
