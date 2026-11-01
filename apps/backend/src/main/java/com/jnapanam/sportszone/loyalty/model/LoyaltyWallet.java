@@ -18,6 +18,7 @@ public class LoyaltyWallet {
     private long lifetimeEarned;
     @Column(name = "lifetime_redeemed", nullable = false)
     private long lifetimeRedeemed;
+    @Column(name = "earned_points_reversal_debt", nullable = false) private long earnedPointsReversalDebt;
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
     @Version
@@ -31,11 +32,21 @@ public LoyaltyWallet(User u) {
 }
 
     public void earn(long p) {
-        if (p > 0) {
-            pointsBalance += p;
-            lifetimeEarned += p;
-            updatedAt = Instant.now();
-        }
+        if(p<=0)return;
+        long repay=Math.min(p,earnedPointsReversalDebt);
+        earnedPointsReversalDebt-=repay;
+        pointsBalance+=p-repay;
+        lifetimeEarned+=p;
+        updatedAt=Instant.now();
+    }
+
+    public void reverseEarned(long p) {
+        if(p<=0)return;
+        long available=Math.min(pointsBalance,p);
+        pointsBalance-=available;
+        earnedPointsReversalDebt+=p-available;
+        lifetimeEarned=Math.max(0,lifetimeEarned-p);
+        updatedAt=Instant.now();
     }
 
     public void redeem(long p) {
@@ -61,6 +72,7 @@ public LoyaltyWallet(User u) {
         updatedAt = Instant.now();
     }
 
+    public long getEarnedPointsReversalDebt(){return earnedPointsReversalDebt;}
     public long getPointsBalance() {
         return pointsBalance;
     }
