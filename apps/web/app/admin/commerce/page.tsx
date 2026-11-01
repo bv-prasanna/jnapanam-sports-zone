@@ -85,7 +85,7 @@ export default function CommerceAdminPage(){
 
   return <main className={styles.page}>
     <header className={styles.header}><div><span>ADMIN COMMERCE</span><h1>Shop management</h1><p>Branding, catalogue, pricing, inventory, loyalty and orders.</p></div></header>
-    <nav className={styles.tabs}>{(["branding","categories","products","import","inventory","orders"] as Tab[]).map(x=><button key={x} className={tab===x?styles.active:""} onClick={()=>setTab(x)}>{title(x)}</button>)}</nav>
+    <nav className={styles.tabs} role="tablist" aria-label="Commerce sections">{(["branding","categories","products","import","inventory","orders"] as Tab[]).map(x=><button type="button" role="tab" aria-selected={tab===x} key={x} className={tab===x?styles.active:""} onClick={()=>setTab(x)}>{title(x)}</button>)}</nav>
     {message&&<div className={styles.message}>{message}</div>}
 
     {tab==="branding"&&settings&&<form className={styles.form} onSubmit={saveSettings}>

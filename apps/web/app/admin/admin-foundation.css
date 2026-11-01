@@ -93,3 +93,13 @@
 .adminExperience main :is(.admin-toolbar,.toolbar) input{min-width:0}
 .adminExperience main :is(.admin-card,.metric-grid article) {overflow-wrap:anywhere}
 @media(max-width:540px){.adminExperience main .admin-toolbar button{width:100%}}
+
+/* Use identical tab, control, table and dialog interaction states across Admin. */
+.adminExperience main [role="tablist"] button[aria-selected=true]{background:var(--admin-primary)!important;border-color:var(--admin-primary)!important;color:#fff!important}
+.adminExperience main [role="tablist"] button[aria-selected=false]{background:#fff;color:var(--admin-primary)}
+.adminExperience main table tbody tr:hover{background:#f3f8fc}
+.adminExperience main :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:14px;line-height:1.45}
+.adminExperience main [role="dialog"]{background:#fff;color:var(--admin-ink);border-radius:16px}
+.adminExperience main :is(button,[role="tab"]):hover:not(:disabled){filter:brightness(.985)}
+.adminExperience main :is(button,[role="tab"]):disabled{opacity:.52;cursor:not-allowed}
+@media(prefers-reduced-motion:reduce){.adminExperience *, .adminExperience *::before, .adminExperience *::after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
