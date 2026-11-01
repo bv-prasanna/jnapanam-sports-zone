@@ -166,7 +166,14 @@ public class VenueBillingService {
             """,Long.class,o.getId());
         if(refunded<=0 || refunded+already>invoiceTotal)
             throw new ConflictException("Refund exceeds original invoice balance");
-        long tax=BigDecimal.valueOf(invoiceTax).multiply(BigDecimal.valueOf(refunded)).divide(BigDecimal.valueOf(invoiceTotal),0,RoundingMode.HALF_UP).longValueExact();
+        long previouslyCreditedTax=jdbc.queryForObject("""
+            select coalesce(sum(tax_paise),0) from venue_billing_documents
+            where payment_order_id=? and kind='CREDIT_NOTE' and state='ISSUED'
+            """,Long.class,o.getId());
+        long availableTax=Math.max(0,invoiceTax-previouslyCreditedTax);
+        long proratedTax=BigDecimal.valueOf(invoiceTax).multiply(BigDecimal.valueOf(refunded))
+            .divide(BigDecimal.valueOf(invoiceTotal),0,RoundingMode.HALF_UP).longValueExact();
+        long tax=refunded+already==invoiceTotal?availableTax:Math.min(availableTax,proratedTax);
         long net=refunded-tax;
         Map<String,Object> data=new LinkedHashMap<>();
         try{Map<?,?> original=json.readValue(String.valueOf(invoice.get("original_data")),Map.class);data.put("supplier",original.get("supplier"));data.put("recipientName",original.get("recipientName"));data.put("recipientAddress",original.get("recipientAddress"));data.put("recipientStateCode",original.get("recipientStateCode"));data.put("recipientGstin",original.get("recipientGstin"));data.put("componentMode",original.get("componentMode"));data.put("cgstPaise","CGST_SGST".equals(original.get("componentMode"))?tax/2:0);data.put("sgstPaise","CGST_SGST".equals(original.get("componentMode"))?tax-tax/2:0);data.put("igstPaise","IGST".equals(original.get("componentMode"))?tax:0);}catch(JsonProcessingException ex){throw new IllegalStateException("Invalid stored invoice snapshot",ex);}
