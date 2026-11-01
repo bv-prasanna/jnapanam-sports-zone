@@ -45,7 +45,7 @@ class ProfilePhotoControllerTest {
         try{
             var file=new MockMultipartFile("file","avatar.png","image/png",png());
             var response=controller.upload(jwt(id),file);
-            verify(jdbc).update(contains("insert into user_profile_photos"),eq(id),eq("image/png"),aryEq(png()));
+            verify(jdbc).update(contains("insert into user_profile_photos"),eq(id),eq("image/png"),org.mockito.AdditionalMatchers.aryEq(png()));
             verify(user).profile(eq(null),contains("/api/v1/public/profile-photos/"+id+".png"));
             assertTrue(response.profilePhotoUrl()==null); // mock user has no persisted field value
         }finally{RequestContextHolder.resetRequestAttributes();}
