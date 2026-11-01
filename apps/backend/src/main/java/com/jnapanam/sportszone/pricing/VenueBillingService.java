@@ -101,6 +101,34 @@ public class VenueBillingService {
         return body;
     }
 
+    /** Customer-requested invoice; no email is sent. Only approved policy and owned payment may issue. */
+    @Transactional
+    public Map<String,Object> requestOwnInvoice(UUID userId,UUID paymentId){
+        PaymentOrder order=orders.findById(paymentId).orElseThrow(()->new NotFoundException("Payment not found"));
+        if(!order.getUser().getId().equals(userId))throw new NotFoundException("Payment not found");
+        if(order.getStatus()!=PaymentStatus.PAID && order.getStatus()!=PaymentStatus.PARTIALLY_REFUNDED
+           && order.getStatus()!=PaymentStatus.REFUNDED)
+            throw new ConflictException("Payment must be completed before requesting a tax invoice");
+        List<Map<String,Object>> available=jdbc.queryForList("""
+          select place_of_supply_state_code from venue_billing_purpose_policies
+          where purpose=? and active=true and place_of_supply_state_code is not null
+          """,order.getPurpose().name());
+        if(available.isEmpty())
+            throw new ConflictException("GST invoice configuration is not active for this service yet. Your payment receipt is available for download.");
+        List<Map<String,Object>> addresses=jdbc.queryForList("""
+          select recipient_address,state_code,gstin from customer_billing_profiles where user_id=?
+          """,userId);
+        if(addresses.isEmpty())
+            throw new ConflictException("Please save your billing address under Billing Details before requesting an invoice");
+        Map<String,Object> address=addresses.get(0);
+        Map<String,Object> merchant=profile();
+        String supplyState=String.valueOf(available.get(0).get("place_of_supply_state_code"));
+        String mode=supplyState.equals(merchant.get("stateCode"))?"CGST_SGST":"IGST";
+        return issueInvoice(paymentId,new InvoiceDetails(
+            (String)address.get("gstin"),(String)address.get("state_code"),
+            (String)address.get("recipient_address"),mode,supplyState));
+    }
+
     @Transactional
     public Map<String,Object> issueInvoice(UUID paymentId,InvoiceDetails details){
         PaymentOrder o=orders.findById(paymentId).orElseThrow(()->new NotFoundException("Payment not found"));
