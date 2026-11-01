@@ -18,15 +18,15 @@ export default function FeatureVisibilityAdmin(){
  }catch(e){setMessage(e instanceof ApiError?e.message:"Unable to save this feature.")}finally{setSaving("")}}
  if(!ready)return <main className="container">Loading…</main>;
  if(!user?.roles.some(r=>r==="ADMIN"||r==="SUPER_ADMIN"))return <main className="container"><h1>Access restricted</h1></main>;
- return <main className="container" style={{padding:"32px 0 64px",maxWidth:1050}}>
- <a href="/admin">← Back to Admin</a><h1>Feature visibility & access</h1>
- <p>Disable features that are not yet offered. Choose which user types can see them. Administrative screens remain available to authorized staff.</p>
+ return <main className="admin-feature-page">
+ <a className="admin-feature-back" href="/admin">← Back to Admin</a><h1>Feature visibility & access</h1>
+ <p className="admin-feature-intro">Disable features that are not yet offered. Choose which user types can see them. Administrative screens remain available to authorized staff.</p>
  {message&&<p role="status">{message}</p>}
- <div style={{display:"grid",gap:16}}>{features.map(f=><section key={f.code} style={{border:"1px solid #d9dfd5",borderRadius:14,padding:20}}>
- <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
- <h2 style={{fontSize:20,margin:0}}>{f.code.replaceAll("_"," ")}</h2>
+ <div className="admin-feature-list">{features.map(f=><section key={f.code} className="admin-feature-card">
+ <div className="admin-feature-heading">
+ <h2>{f.code.replaceAll("_"," ")}</h2>
  <label><input type="checkbox" checked={f.enabled} onChange={e=>change(f.code,{enabled:e.target.checked})}/> Enabled for selected roles</label></div>
- <fieldset style={{border:0,display:"flex",flexWrap:"wrap",gap:14,padding:"16px 0"}}>
+ <fieldset className="admin-feature-roles">
  <legend>Visible to user types</legend>
  {roles.map(role=><label key={role}><input type="checkbox" checked={f.allowedRoles.includes(role)} onChange={e=>change(f.code,{allowedRoles:e.target.checked?[...f.allowedRoles,role]:f.allowedRoles.filter(r=>r!==role)})}/> {role.replaceAll("_"," ")}</label>)}
  </fieldset><button className="btn primary" disabled={saving===f.code||!f.allowedRoles.length} onClick={()=>void save(f)}>{saving===f.code?"Saving…":"Save feature"}</button>

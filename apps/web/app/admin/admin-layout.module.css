@@ -1,27 +1,32 @@
-.shell{--admin-primary:#063b63;--admin-accent:#0877b9;--admin-ink:#17354a;--admin-muted:#607583;--admin-bg:#f4f8fa;--admin-line:#dce6eb;--admin-card:#fff;min-height:100vh;background:var(--admin-bg);color:var(--admin-ink);font-family:Arial,Helvetica,sans-serif}
+.shell{--admin-primary:var(--olive,#28330f);--admin-accent:var(--saffron,#c83a0a);--admin-ink:var(--ink,#20251c);--admin-muted:var(--muted,#66705d);--admin-bg:var(--ivory,#fff9ef);--admin-line:var(--line,#e4d6be);--admin-card:#fffdf8;min-height:100vh;background:var(--admin-bg);color:var(--admin-ink);font-family:Arial,Helvetica,sans-serif}
 .skip{position:fixed;top:-80px;left:12px;z-index:110;background:#fff;color:var(--admin-primary);padding:12px;border-radius:8px}.skip:focus{top:8px}
-.topBar{height:72px;position:sticky;top:0;z-index:70;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 26px;background:#fff;border-bottom:1px solid var(--admin-line);box-shadow:0 3px 15px #0b32420a}
+.topBar{height:72px;position:sticky;top:0;z-index:70;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 26px;background:#fffdf8;border-bottom:1px solid var(--admin-line);box-shadow:0 3px 15px #28330f0d}
 .brandGroup{display:flex;align-items:center;gap:13px;min-width:0}
 .brand{display:flex;align-items:center;gap:11px;min-width:0;text-decoration:none}
 .brandIcon{flex:0 0 40px;width:40px;height:40px;border-radius:11px;background:var(--admin-primary);color:white;font-weight:900;font-size:23px;display:grid;place-items:center}
-.brand strong{display:block;color:var(--admin-primary);font-size:16px;line-height:1.2}
+.brand strong{display:block;color:var(--admin-primary);font:750 17px/1.2 Georgia,'Times New Roman',serif}
 .brand small{display:block;margin-top:3px;color:var(--admin-muted);font-size:12px}
 .account{display:flex;align-items:center;gap:16px}
 .userIdentity{display:flex;align-items:center;gap:8px}
 .userIdentity strong{display:block;font-size:13px;line-height:1.3}
 .userIdentity small{font-size:11px;color:var(--admin-muted)}
-.avatar{width:34px;height:34px;border-radius:50%;background:#e5f2fa;color:var(--admin-primary);font-size:12px;font-weight:900;display:grid;place-items:center}
+.avatar{width:34px;height:34px;border-radius:50%;background:#f3e7d2;color:var(--admin-primary);font-size:12px;font-weight:900;display:grid;place-items:center}
 .accountLink,.logout{padding:9px 13px;border:1px solid var(--admin-line);border-radius:8px;background:#fff;color:var(--admin-primary);font-weight:700;font-size:13px;text-decoration:none}
-.logout:hover,.accountLink:hover{background:#edf7fc;border-color:var(--admin-accent)}
+.logout:hover,.accountLink:hover{background:#fff4e8;border-color:var(--admin-accent)}
 .body{display:grid;grid-template-columns:254px minmax(0,1fr);min-height:calc(100vh - 72px)}
-.sidebar{position:sticky;top:72px;align-self:start;height:calc(100vh - 72px);overflow-y:auto;background:#101d2a;color:#e7eff6;padding:15px 11px 26px;scrollbar-width:thin}
+.sidebar{position:sticky;top:72px;align-self:start;height:calc(100vh - 72px);overflow-y:auto;background:#28330f;color:#fff9ef;padding:15px 11px 26px;scrollbar-width:thin}
 .navGroup{padding:10px 0 12px;border-bottom:1px solid #ffffff18}
-.navGroup h2{font-family:Arial,Helvetica,sans-serif!important;color:#9db8c9!important;font-size:11px!important;letter-spacing:.11em;text-transform:uppercase;margin:0 12px 9px!important;font-weight:850}
-.navLink{display:block;padding:10px 12px;margin:2px 0;border-radius:9px;color:#e5edf3;text-decoration:none;font-size:13px;font-weight:600;line-height:1.4}
-.navLink:hover{background:#ffffff16;color:#fff}
-.navLink.active{background:#164b69;color:#fff;font-weight:850;box-shadow:inset 3px 0 0 #56b7ef}
+.navGroup h2{font-family:Arial,Helvetica,sans-serif!important;color:#e4d6be!important;font-size:11px!important;letter-spacing:.11em;text-transform:uppercase;margin:0 12px 9px!important;font-weight:850}
+.navLink{display:block;padding:10px 12px;margin:2px 0;border-radius:9px;color:#fff9ef;text-decoration:none;font-size:13px;font-weight:600;line-height:1.4}
+.navLink:hover{background:#ffffff22;color:#fff}
+.navLink.active{background:var(--admin-accent);color:#fff;font-weight:850;box-shadow:inset 3px 0 0 var(--gold,#d99a32)}
 .content{min-width:0;width:100%;box-sizing:border-box;padding:clamp(18px,2.5vw,32px);background:var(--admin-bg)}
 .menuToggle{display:none;min-width:40px;height:40px;border:1px solid var(--admin-line);background:#fff;border-radius:9px;color:var(--admin-primary);font-size:22px}
 .scrim{display:none}
 @media(max-width:1000px){.body{grid-template-columns:216px minmax(0,1fr)}.content{padding:18px}.topBar{padding:0 17px}}
-@media(max-width:760px){.body{display:block}.topBar{height:64px}.menuToggle{display:block}.brand strong{font-size:14px}.brandIcon{width:34px;height:34px;flex-basis:34px}.userIdentity{display:none}.account{gap:6px}.accountLink{display:none}.sidebar{position:fixed;top:64px;bottom:0;left:0;z-index:80;width:min(285px,85vw);height:calc(100dvh - 64px);transform:translateX(-110%);transition:transform .2s;padding-bottom:70px}.sidebarOpen{transform:translateX(0)}.scrim{display:block;position:fixed;inset:64px 0 0;background:#0819238f;z-index:75;border:0;width:100%;height:calc(100vh - 64px)}.content{padding:16px}.navLink{padding:12px}}
+@media(max-width:760px){.body{display:block}.topBar{height:64px}.menuToggle{display:block}.brand strong{font-size:14px}.brandIcon{width:34px;height:34px;flex-basis:34px}.userIdentity{display:none}.account{gap:6px}.accountLink{display:none}.sidebar{position:fixed;top:64px;bottom:0;left:0;z-index:80;width:min(285px,85vw);height:calc(100dvh - 64px);transform:translateX(-110%);transition:transform .2s;padding-bottom:70px}.sidebarOpen{transform:translateX(0)}.scrim{display:block;position:fixed;inset:64px 0 0;background:#15191499;z-index:75;border:0;width:100%;height:calc(100vh - 64px)}.content{padding:16px}.navLink{padding:12px}}
+
+/* Buttons, nav and focus states match home-page colors. */
+.logout{background:var(--admin-accent);color:#fff;border-color:var(--admin-accent)}
+.logout:hover{background:#aa3007;color:#fff;border-color:#aa3007}
+.shell :is(a,button):focus-visible{outline:3px solid var(--gold,#d99a32);outline-offset:3px}
