@@ -90,6 +90,7 @@ export default function ProfileScreen() {
     </Pressable>
     <Text style={styles.detail}>{geoStatus}</Text>
     <Pressable style={styles.primary} onPress={() => router.push('/subscriptions')}><Text style={styles.primaryText}>Manage recurring subscriptions</Text></Pressable>
+    <Pressable style={styles.primary} onPress={() => router.push('/billing')}><Text style={styles.primaryText}>Billing details and GST invoices</Text></Pressable>
     <Pressable style={styles.logout} onPress={async () => { await logout(); router.replace('/'); }}>
       <Text style={styles.logoutText}>{t('auth.logout')}</Text>
     </Pressable>
