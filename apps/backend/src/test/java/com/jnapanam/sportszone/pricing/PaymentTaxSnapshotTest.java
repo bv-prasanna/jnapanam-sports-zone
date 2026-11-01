@@ -29,7 +29,7 @@ class PaymentTaxSnapshotTest {
             "couponTaxTreatment","INVOICE_DISCOUNT","loyaltyTaxTreatment","PAYMENT_TENDER")));
         service.snapshot(o);
         assertEquals(10620L,o.getBillingGrossPaise());
-        assertEquals(1020L,o.getBillingTaxPaise()==null?0:o.getBillingTaxPaise());
+        assertEquals(1620L,o.getBillingTaxPaise());
         assertEquals(9000L,o.getBillingTaxablePaise());
         assertEquals(200L,o.getBillingLoyaltyTenderPaise());
         assertEquals(10420L,o.getAmountPaise());
