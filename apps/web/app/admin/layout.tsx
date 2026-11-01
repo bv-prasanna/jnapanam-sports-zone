@@ -16,6 +16,7 @@ const entries:Entry[]=[
   {label:"Memberships",href:"/admin?view=memberships",category:"Arena"},
   {label:"Training",href:"/admin?view=training",category:"Arena"},
   {label:"Tournaments",href:"/admin?view=tournaments",category:"Arena"},
+  {label:"Player Growth",href:"/admin/player-growth",category:"Arena"},
   {label:"Users",href:"/admin/users",category:"Operations & people"},
   {label:"Verification",href:"/admin/verification",category:"Operations & people"},
   {label:"Operator Assignments",href:"/admin/operator-assignments",category:"Operations & people"},
