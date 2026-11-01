@@ -13,7 +13,7 @@ export default function BillingDocumentsPage(){
  async function requestInvoice(){try{setBusy(true);setError("");await api(`/api/v1/payments/${id}/billing/invoice`,{method:"POST"});setReceipt(await api<Receipt>(`/api/v1/payments/${id}/billing`))}catch(e){setError(e instanceof Error?e.message:"GST invoice cannot be issued until the merchant's tax configuration and your billing details are complete.")}finally{setBusy(false)}}
  useEffect(()=>{if(!id)return;api<Receipt>(`/api/v1/payments/${id}/billing`).then(setReceipt).catch(e=>setError(e instanceof Error?e.message:"Unable to load receipt"))},[id]);
 
- if(!receipt)return <main className={styles.paper}><p role="status">Loading billing documents…</p></main>;
+ if(!receipt)return <main className={styles.paper}>{error?<p role="alert">{error}</p>:<p role="status">Loading billing documents…</p>}</main>;
  return <main className={styles.paper}>
  <header className={styles.toolbar}><h1>Jnapanam Billing Documents</h1><button type="button" onClick={()=>window.print()}>Print / Save as PDF</button></header>
  {error&&<p role="alert" style={{color:"#a32323",padding:12}}>{error}</p>}
