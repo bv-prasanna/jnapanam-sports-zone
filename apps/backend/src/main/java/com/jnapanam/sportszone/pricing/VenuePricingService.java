@@ -35,7 +35,7 @@ public class VenuePricingService {
         boolean inclusive, LocalDate effectiveFrom, LocalDate effectiveTo) {}
 
     public record Preview(BigDecimal unitBase, BigDecimal unitPrice, BigDecimal taxableValue,
-        BigDecimal tax, BigDecimal total, String priceRuleId, String taxRuleId, int quantity) {}
+        BigDecimal tax, BigDecimal total, String priceRuleId, String taxRuleId, int quantity, BigDecimal taxRatePercent, boolean taxInclusive) {}
 
     @Transactional(readOnly=true)
     public List<Map<String,Object>> prices() {
@@ -167,8 +167,10 @@ public class VenuePricingService {
           """,this::taxRow,slot.getDate(),slot.getDate(),sport,fac,slotId);
         var result=VenuePriceCalculator.calculate(facility.getBookingPrice(),quantity,sport,fac,slotId,
             slot.getDate(),slot.getStartTime(),pricing,tax);
+        VenuePriceCalculator.Tax applied=tax.stream().filter(t->t.id().equals(result.taxRuleId())).findFirst().orElse(null);
         return new Preview(result.unitBase(),result.unitAfterAdjustment(),result.net(),result.tax(),
-            result.total(),result.priceRuleId(),result.taxRuleId(),quantity);
+            result.total(),result.priceRuleId(),result.taxRuleId(),quantity,
+            applied==null?BigDecimal.ZERO:applied.ratePercent(),applied!=null&&applied.inclusive());
     }
 
     private VenuePriceCalculator.Rule priceRow(ResultSet r,int n)throws SQLException {
