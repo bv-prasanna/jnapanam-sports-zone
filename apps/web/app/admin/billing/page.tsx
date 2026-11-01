@@ -19,6 +19,7 @@ export default function BillingAdmin(){
  const [receipt,setReceipt]=useState<Receipt|null>(null);
  const [recipientAddress,setRecipientAddress]=useState("");
  const [recipientStateCode,setRecipientStateCode]=useState("29");
+ const [placeOfSupplyStateCode,setPlaceOfSupplyStateCode]=useState("29");
  const [recipientGstin,setRecipientGstin]=useState("");
  const [componentMode,setComponentMode]=useState("CGST_SGST");
  const [error,setError]=useState(""),[success,setSuccess]=useState(""),[busy,setBusy]=useState(false);
@@ -29,7 +30,7 @@ export default function BillingAdmin(){
 
  async function saveTreatments(event:React.FormEvent){event.preventDefault();try{setBusy(true);setError("");await api("/api/v1/admin/billing/tax-treatments",{method:"PUT",body:JSON.stringify(taxSettings)});setSuccess("Tax treatments and email delivery preferences saved. Existing payments remain unchanged.")}catch(e){setError(e instanceof Error?e.message:"Unable to save tax settings")}finally{setBusy(false)}}
  async function savePurpose(purpose:string){const row=purposeRates[purpose]||{taxRatePercent:"0",active:false};try{setBusy(true);setError("");await api(`/api/v1/admin/billing/purpose-taxes/${purpose}`,{method:"PUT",body:JSON.stringify({taxRatePercent:Number(row.taxRatePercent),active:row.active})});setSuccess(purpose+" tax settings saved for future payments.")}catch(e){setError(e instanceof Error?e.message:"Unable to save rate")}finally{setBusy(false)}}
- async function issue(){if(!selected||!window.confirm("Confirm that supplier GSTIN, tax mode, SAC and place of supply have been verified. Issue a permanent invoice?"))return;try{setBusy(true);setError("");const result=await api<{documentNumber:string}>(`/api/v1/admin/billing/invoices/${selected}/issue`,{method:"POST",body:JSON.stringify({recipientAddress,recipientStateCode,recipientGstin:recipientGstin||null,componentMode})});setSuccess("Invoice issued: "+result.documentNumber);await loadReceipt(selected)}catch(e){setError(e instanceof Error?e.message:"Unable to issue invoice")}finally{setBusy(false)}}
+ async function issue(){if(!selected||!window.confirm("Confirm that supplier GSTIN, tax mode, SAC and place of supply have been verified. Issue a permanent invoice?"))return;try{setBusy(true);setError("");const result=await api<{documentNumber:string}>(`/api/v1/admin/billing/invoices/${selected}/issue`,{method:"POST",body:JSON.stringify({recipientAddress,recipientStateCode,placeOfSupplyStateCode,recipientGstin:recipientGstin||null,componentMode})});setSuccess("Invoice issued: "+result.documentNumber);await loadReceipt(selected)}catch(e){setError(e instanceof Error?e.message:"Unable to issue invoice")}finally{setBusy(false)}}
  async function credit(refundId:string){if(!window.confirm("Confirm this processed refund qualifies for an issued GST credit note?"))return;try{setBusy(true);setError("");const result=await api<{documentNumber:string}>(`/api/v1/admin/billing/refunds/${refundId}/credit-note`,{method:"POST"});setSuccess("Credit note issued: "+result.documentNumber);await loadReceipt(selected)}catch(e){setError(e instanceof Error?e.message:"Unable to issue credit note")}finally{setBusy(false)}}
  return <main className={styles.page}>
  <header className={styles.head}><div><p className={styles.eyebrow}>FINANCE OPERATIONS</p><h1>GST Billing & Refund Documents</h1><p>Configure legal supplier details, review paid bookings, and issue approved invoices or credit notes.</p></div></header>
@@ -62,8 +63,9 @@ export default function BillingAdmin(){
  <label>Select paid booking<select value={selected} onChange={e=>void loadReceipt(e.target.value)}><option value="">Select payment receipt</option>{payments.map(p=><option key={p.id} value={p.id}>{p.receiptNumber} · ₹{(p.amountPaise/100).toFixed(2)} · {p.status}</option>)}</select></label>
  {receipt&&<><p>Booking: <strong>{receipt.bookingNumber||"—"}</strong> · Collected ₹{(receipt.paymentAmountPaise/100).toFixed(2)}</p>
  <label>Recipient address<input value={recipientAddress} onChange={e=>setRecipientAddress(e.target.value)} placeholder="Full address to appear on invoice"/></label>
- <label>Recipient state / place of supply<select value={recipientStateCode} onChange={e=>setRecipientStateCode(e.target.value)}>{states.map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
+ <label>Recipient address state<select value={recipientStateCode} onChange={e=>setRecipientStateCode(e.target.value)}>{states.map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
  <label>Recipient GSTIN (registered buyers only)<input value={recipientGstin} maxLength={15} onChange={e=>setRecipientGstin(e.target.value.toUpperCase())}/></label>
+ <label>GST place of supply<select value={placeOfSupplyStateCode} onChange={e=>setPlaceOfSupplyStateCode(e.target.value)}>{states.map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
  <label>Tax component allocation<select value={componentMode} onChange={e=>setComponentMode(e.target.value)}><option value="CGST_SGST">CGST + SGST (intra-state, when applicable)</option><option value="IGST">IGST (inter-state, when applicable)</option></select></label>
  <p className={styles.help}>Verify place-of-supply treatment and discount/loyalty allocation before issuing. Documents cannot be edited after issue.</p>
  <button className={styles.primary} type="button" disabled={busy||!!receipt.documents?.some(d=>d.kind==="INVOICE")} onClick={()=>void issue()}>Issue GST invoice</button>
