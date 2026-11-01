@@ -61,7 +61,7 @@ public class VenueInvoicePdfService {
     private static float wrapped(PDPageContentStream c,PDFont font,int size,float x,float y,String text,int length)throws IOException{
         String input=safe(text);while(input.length()>length){int split=input.lastIndexOf(' ',length);if(split<12)split=length;y=line(c,font,size,x,y,input.substring(0,split));input=input.substring(split).trim();}return line(c,font,size,x,y,input);
     }
-    private static String safe(String value){return value==null?"-":value.replace('₹','R').replaceAll("[^\\x20-\\x7E]"," ").substring(0,Math.min(value.length(),150));}
+    private static String safe(String value){if(value==null)return "-";String cleaned=value.replace("₹","Rs.").replaceAll("[^\\x20-\\x7E]"," ").replaceAll("\\s+"," ").trim();return cleaned.substring(0,Math.min(cleaned.length(),110));}
     private static String str(Object v){return v==null?"-":String.valueOf(v);}
     private static String money(Object o){
         long paise=o instanceof Number?nLong((Number)o):0L;
