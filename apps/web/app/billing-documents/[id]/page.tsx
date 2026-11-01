@@ -24,9 +24,9 @@ export default function BillingDocumentsPage(){
  {doc.kind==="CREDIT_NOTE"&&<p>Against invoice: <strong>{String(d.originalInvoice||"—")}</strong> · Refund: {String(d.refundId||"—")}</p>}
  <table className={styles.table}><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>
  <tr><td>Taxable value</td><td>{rs(doc.taxablePaise)}</td></tr>
- <tr><td>CGST {doc.kind==="INVOICE"&&d.taxRatePercent? `(combined tax rate: ${d.taxRatePercent}%)`:""}</td><td>{rs(d.cgstPaise)}</td></tr>
- <tr><td>SGST</td><td>{rs(d.sgstPaise)}</td></tr>
- <tr><td>IGST</td><td>{rs(d.igstPaise)}</td></tr>
+ <tr><td>CGST {d.componentMode==="CGST_SGST"&&d.taxRatePercent? `(${Number(d.taxRatePercent)/2}%)`:""}</td><td>{rs(d.cgstPaise)}</td></tr>
+ <tr><td>SGST {d.componentMode==="CGST_SGST"&&d.taxRatePercent? `(${Number(d.taxRatePercent)/2}%)`:""}</td><td>{rs(d.sgstPaise)}</td></tr>
+ <tr><td>IGST {d.componentMode==="IGST"&&d.taxRatePercent? `(${d.taxRatePercent}%)`:""}</td><td>{rs(d.igstPaise)}</td></tr>
  <tr className={styles.total}><th>Total</th><th>{rs(doc.totalPaise)}</th></tr></tbody></table>
  <footer>Authorised signatory: {seller.signatory||"—"} · {doc.state}</footer>
  </article>})}
