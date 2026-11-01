@@ -45,7 +45,7 @@ export default function AppTabs() {
     <Tabs.Screen name="shop-counter" options={{title:'Shop counter',href:shopkeeper?'/shop-counter':null}}/>
     <Tabs.Screen name="operations" options={{title:'Operations',href:staff?'/operations':null}}/>
     <Tabs.Screen name="admin" options={{title:'Admin',href:admin?'/admin':null}}/>
-    <Tabs.Screen name="profile" options={{title:t('navigation.profile')}}/>
+    <Tabs.Screen name="profile" options={{title:t('navigation.profile')}}/><Tabs.Screen name="billing" options={{href:null}}/>
     <Tabs.Screen name="login" options={{href:null}}/>
     <Tabs.Screen name="register" options={{href:null}}/>
     <Tabs.Screen name="explore" options={{href:null}}/>
