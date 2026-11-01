@@ -39,12 +39,39 @@ public class VenuePricingService {
 
     @Transactional(readOnly=true)
     public List<Map<String,Object>> prices() {
-        return jdbc.queryForList("select id,name,scope,target,adjustment,value,priority,effective_from,effective_to,start_time,end_time,weekdays,active from venue_price_rules order by updated_at desc");
+        return jdbc.queryForList("""
+            select id,name,scope,target,adjustment,value,priority,effective_from,effective_to,
+            start_time,end_time,weekdays,active,case
+              when scope='SITE' then 'Entire site'
+              when scope='SPORT' then (select name from sports where code=target)
+              when scope='FACILITY' then (select name from facilities where code=target)
+              when scope='SLOT' then (
+                select f.name || ' · ' || to_char(s.slot_date,'DD Mon YYYY') || ' · ' ||
+                to_char(s.start_time,'HH24:MI') || '–' || to_char(s.end_time,'HH24:MI')
+                from booking_slots s join facilities f on f.id=s.facility_id
+                where s.id::text=target
+              )
+              end as "targetLabel"
+            from venue_price_rules order by updated_at desc
+            """);
     }
 
     @Transactional(readOnly=true)
     public List<Map<String,Object>> taxes() {
-        return jdbc.queryForList("select id,name,scope,target,rate_percent,inclusive,effective_from,effective_to,active from venue_tax_rules order by updated_at desc");
+        return jdbc.queryForList("""
+            select id,name,scope,target,rate_percent,inclusive,effective_from,effective_to,active,case
+              when scope='SITE' then 'Entire site'
+              when scope='SPORT' then (select name from sports where code=target)
+              when scope='FACILITY' then (select name from facilities where code=target)
+              when scope='SLOT' then (
+                select f.name || ' · ' || to_char(s.slot_date,'DD Mon YYYY') || ' · ' ||
+                to_char(s.start_time,'HH24:MI') || '–' || to_char(s.end_time,'HH24:MI')
+                from booking_slots s join facilities f on f.id=s.facility_id
+                where s.id::text=target
+              )
+              end as "targetLabel"
+            from venue_tax_rules order by updated_at desc
+            """);
     }
 
     private void scope(VenuePriceCalculator.Scope scope, String target) {
