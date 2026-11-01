@@ -6,35 +6,8 @@ import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {useApp} from "@/components/app-provider";
 import styles from "./admin-layout.module.css";
 import "./admin-foundation.css";
+import {adminAreas,adminModules} from "./admin-navigation";
 
-type Entry={label:string;href:string;category:"Overview"|"Arena"|"Finance & commerce"|"Operations & people"|"System";superAdmin?:boolean};
-const entries:Entry[]=[
-  {label:"Dashboard",href:"/admin",category:"Overview"},
-  {label:"Bookings",href:"/admin/bookings",category:"Arena"},
-  {label:"Sports",href:"/admin?view=sports",category:"Arena"},
-  {label:"Facilities",href:"/admin?view=facilities",category:"Arena"},
-  {label:"Memberships",href:"/admin?view=memberships",category:"Arena"},
-  {label:"Training",href:"/admin?view=training",category:"Arena"},
-  {label:"Tournaments",href:"/admin?view=tournaments",category:"Arena"},
-  {label:"Player Growth",href:"/admin/player-growth",category:"Arena"},
-  {label:"Users",href:"/admin/users",category:"Operations & people"},
-  {label:"Verification",href:"/admin/verification",category:"Operations & people"},
-  {label:"Operator Assignments",href:"/admin/operator-assignments",category:"Operations & people"},
-  {label:"Release Readiness",href:"/admin/release-readiness",category:"Operations & people"},
-  {label:"Operations",href:"/operations",category:"Operations & people"},
-  {label:"Shop Counter",href:"/shop-counter",category:"Operations & people"},
-  {label:"Commerce",href:"/admin/commerce",category:"Finance & commerce"},
-  {label:"Pricing & Taxes",href:"/admin/pricing",category:"Finance & commerce"},
-  {label:"GST Billing & Refunds",href:"/admin/billing",category:"Finance & commerce"},
-  {label:"Payments",href:"/admin?view=payments",category:"Finance & commerce"},
-  {label:"Promotions",href:"/admin?view=promotions",category:"Finance & commerce"},
-  {label:"Recurring Subscriptions",href:"/admin/subscriptions",category:"Finance & commerce"},
-  {label:"Notifications",href:"/admin?view=notifications",category:"System"},
-  {label:"Notification Providers",href:"/admin/notification-providers",category:"System"},
-  {label:"Content & Events",href:"/admin?view=content",category:"System"},
-  {label:"Audit Log",href:"/admin?view=audit",category:"System"},
-  {label:"UAT OTP Numbers",href:"/admin/uat-otp",category:"System",superAdmin:true},
-];
 
 function AdminShell({children}:PropsWithChildren){
   const router=useRouter(),pathname=usePathname(),search=useSearchParams();
@@ -43,7 +16,10 @@ function AdminShell({children}:PropsWithChildren){
   const allowed=!!user?.roles.some(role=>role==="ADMIN"||role==="SUPER_ADMIN");
   const superAdmin=!!user?.roles.includes("SUPER_ADMIN");
   const current=pathname==="/admin"&&search.get("view")
-    ?"/admin?view="+search.get("view"):pathname;
+    ?"/admin?view="+search.get("view")
+    :pathname==="/admin/pricing"
+      ?"/admin/pricing?tab="+(search.get("tab")==="taxes"?"taxes":"pricing-rules")
+      :pathname;
   const fullName=user?.fullName||"Admin";
   const initials=fullName.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0).toUpperCase()).join("");
   useEffect(()=>{
@@ -72,10 +48,10 @@ function AdminShell({children}:PropsWithChildren){
       {menuOpen&&<button type="button" className={styles.scrim} onClick={()=>setMenuOpen(false)} aria-label="Close navigation overlay"/>}
       <aside id="jnapanam-admin-navigation" className={styles.sidebar+(menuOpen?" "+styles.sidebarOpen:"")}>
         <nav aria-label="Admin modules">
-          {(["Overview","Arena","Finance & commerce","Operations & people","System"] as const).map(category=>
+          {adminAreas.map(category=>
             <div className={styles.navGroup} key={category}>
               <h2>{category}</h2>
-              {entries.filter(x=>x.category===category&&(!x.superAdmin||superAdmin)).map(item=>{
+              {adminModules.filter(x=>x.area===category&&(!x.superAdmin||superAdmin)).map(item=>{
                 const active=current===item.href || (item.href==="/admin"&&current==="/admin");
                 return <Link key={item.href} href={item.href} onClick={()=>setMenuOpen(false)}
                   className={styles.navLink+(active?" "+styles.active:"")}

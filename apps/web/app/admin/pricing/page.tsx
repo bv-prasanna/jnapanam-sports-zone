@@ -3,6 +3,7 @@
 import {FormEvent,useCallback,useEffect,useState} from "react";
 import {api} from "@/lib/api";
 import styles from "./pricing.module.css";
+import {useRouter,useSearchParams} from "next/navigation";
 
 type Scope="SITE"|"SPORT"|"FACILITY"|"SLOT";
 type Kind="taxes"|"pricing-rules";
@@ -15,7 +16,9 @@ const days=["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDA
 const dateOnly=(v?:string)=>v?v.slice(0,10):"";
 const timeOnly=(v?:string)=>v?v.slice(0,5):"";
 export default function PricingAdminPage(){
- const [kind,setKind]=useState<Kind>("pricing-rules");
+ const router=useRouter(),searchParams=useSearchParams();
+ const requestedTab=searchParams.get("tab");
+ const [kind,setKind]=useState<Kind>(requestedTab==="taxes"?"taxes":"pricing-rules");
  const [records,setRecords]=useState<Item[]>([]);
  const [sports,setSports]=useState<Option[]>([]),[facilities,setFacilities]=useState<Option[]>([]),[slots,setSlots]=useState<Slot[]>([]);
  const [slotFacility,setSlotFacility]=useState(""),[slotDate,setSlotDate]=useState(new Date().toLocaleDateString("en-CA"));
@@ -24,8 +27,10 @@ export default function PricingAdminPage(){
  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState("");
  const load=useCallback(async()=>{try{setError("");const [data,s,f]=await Promise.all([api<Item[]>(`/api/v1/admin/${kind}`),api<Option[]>("/api/v1/admin/catalog/sports"),api<Option[]>("/api/v1/admin/catalog/facilities")]);setRecords(data);setSports(s);setFacilities(f)}catch(e){setError(e instanceof Error?e.message:"Unable to load pricing configuration")}},[kind]);
  useEffect(()=>{void load()},[load]);
+ useEffect(()=>{const next:Kind=requestedTab==="taxes"?"taxes":"pricing-rules";setKind(next);setEditing(null);setVisible(false);setError("")},[requestedTab]);
  useEffect(()=>{if(form.scope!=="SLOT"||!slotFacility||!slotDate){setSlots([]);return}let active=true;api<Slot[]>(`/api/v1/public/facilities/${slotFacility}/slots?date=${slotDate}`).then(v=>{if(active)setSlots(v)}).catch(()=>{if(active)setSlots([])});return()=>{active=false}},[form.scope,slotFacility,slotDate]);
  function reset(){setForm(empty());setEditing(null);setVisible(false);setError("")}
+ function selectTab(next:Kind){setKind(next);reset();router.replace(`/admin/pricing?tab=${next}`)}
  function edit(r:Item){setForm({name:r.name,scope:r.scope,target:r.target||"",value:String(r.value??0),adjustment:r.adjustment||"ADD_PERCENT",priority:String(r.priority??0),startTime:timeOnly(r.start_time),endTime:timeOnly(r.end_time),effectiveFrom:dateOnly(r.effective_from),effectiveTo:dateOnly(r.effective_to),ratePercent:String(r.rate_percent??0),inclusive:Boolean(r.inclusive),weekdays:r.weekdays?r.weekdays.split(",").filter(Boolean):[]});setEditing(r.id);setVisible(true);setSuccess("")}
  const set=(key:keyof ReturnType<typeof empty>,value:unknown)=>setForm(v=>({...v,[key]:value}));
  async function save(event:FormEvent){event.preventDefault();try{setBusy(true);setError("");setSuccess("");if(form.scope!=="SITE"&&!form.target)throw new Error("Choose a sport, facility or slot.");
@@ -38,7 +43,7 @@ export default function PricingAdminPage(){
  const targets=form.scope==="SPORT"?sports.map(x=>({value:String(x.code),label:x.name})):form.scope==="FACILITY"?facilities.map(x=>({value:String(x.code),label:x.name})):slots.map(x=>({value:x.id,label:`${x.startTime?.slice(0,5)}–${x.endTime?.slice(0,5)}`}));
  return <main className={styles.page}>
  <header className={styles.head}><div><p className={styles.eyebrow}>ARENA REVENUE MANAGEMENT</p><h1>Pricing & Taxes</h1><p>Set site-wide, sport, court or individual slot rules. Existing booking prices remain locked.</p></div><button type="button" className={styles.primary} onClick={()=>{reset();setVisible(true)}}>+ Add rule</button></header>
- <div className={styles.tabs} role="tablist" aria-label="Rule type"><button type="button" role="tab" aria-selected={kind==="pricing-rules"} onClick={()=>{setKind("pricing-rules");reset()}}>Dynamic Pricing</button><button type="button" role="tab" aria-selected={kind==="taxes"} onClick={()=>{setKind("taxes");reset()}}>Tax Management</button></div>
+ <div className={styles.tabs} role="tablist" aria-label="Rule type"><button type="button" role="tab" aria-selected={kind==="pricing-rules"} onClick={()=>selectTab("pricing-rules")}>Dynamic Pricing</button><button type="button" role="tab" aria-selected={kind==="taxes"} onClick={()=>selectTab("taxes")}>Tax Management</button></div>
  {success&&<p role="status" className={styles.success}>{success}</p>}{error&&!visible&&<p role="alert" className={styles.error}>{error}</p>}
  <div className={styles.tableWrap}><table><thead><tr><th>Rule</th><th>Applies to</th><th>{kind==="taxes"?"Tax":"Adjustment"}</th><th>Effective dates</th><th>Status</th><th>Actions</th></tr></thead><tbody>{records.length?records.map(r=><tr key={r.id}><td><strong>{r.name}</strong></td><td>{scopes.find(x=>x[0]===r.scope)?.[1]}{r.target?" · "+(r.targetLabel||"Unavailable target"):""}</td><td>{kind==="taxes"?`${r.rate_percent}% ${r.inclusive?"included":"extra"}`:`${r.adjustment?.replaceAll("_"," ")}: ${r.value}`}</td><td>{dateOnly(r.effective_from)||"Any"} – {dateOnly(r.effective_to)||"Any"}</td><td>{r.active?"Active":"Inactive"}</td><td><button type="button" onClick={()=>edit(r)}>Edit</button> {r.active&&<button type="button" disabled={busy} onClick={()=>void disable(r)}>Deactivate</button>}</td></tr>):<tr><td colSpan={6}>No configured rules yet. Add a rule to begin.</td></tr>}</tbody></table></div>
  {visible&&<section className={styles.editor} aria-label={editing?"Edit rule":"Create rule"}><div className={styles.editorHead}><h2>{editing?"Edit":"Add"} {kind==="taxes"?"tax":"pricing"} rule</h2><button type="button" onClick={reset} aria-label="Close editor">✕</button></div><form onSubmit={e=>void save(e)} className={styles.form}>

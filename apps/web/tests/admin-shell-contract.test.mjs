@@ -19,16 +19,19 @@ test("admin has exactly one ownership point for the sidebar and top navigation",
 
 test("shared sidebar contains every primary admin module exactly once",async()=>{
   const layout=await source("app/admin/layout.tsx");
+  const registry=await source("app/admin/admin-navigation.ts");
+  assert.match(layout,/adminModules\.filter/,"sidebar must use the shared module registry");
   const routes=[
     "/admin/bookings","/admin/users","/admin/verification","/admin/commerce",
-    "/admin/pricing","/admin/billing","/admin/operator-assignments",
+    "/admin/pricing?tab=pricing-rules","/admin/pricing?tab=taxes",
+    "/admin?view=promotions","/admin/billing","/admin/operator-assignments",
     "/admin/release-readiness","/admin/subscriptions","/admin/notification-providers",
     "/admin/uat-otp","/admin?view=sports","/admin?view=facilities",
     "/admin?view=memberships","/admin?view=training","/admin?view=tournaments",
   ];
   for(const route of routes){
     const escaped=route.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-    const count=(layout.match(new RegExp('href:"'+escaped+'"',"g"))||[]).length;
+    const count=(registry.match(new RegExp('href:"'+escaped+'"',"g"))||[]).length;
     assert.equal(count,1,`nav route ${route} must be owned once by the shared shell`);
   }
 });
@@ -88,4 +91,19 @@ test("all admin page-level CSS modules honor common geometry and typographic sca
     assert.match(css,/var\(--admin-ink\)/,
       moduleName+" should use common text tokens");
   }
+});
+
+test("dashboard exposes direct working links to pricing, taxes, offers, billing and operator assignments",async()=>{
+  const dashboard=await source("app/admin/page.tsx");
+  const hub=await source("app/admin/admin-dashboard-links.tsx");
+  const registry=await source("app/admin/admin-navigation.ts");
+  const pricing=await source("app/admin/pricing/page.tsx");
+  assert.match(dashboard,/view==="dashboard"&&<AdminDashboardLinks/,"dashboard hub must remain visible even when metrics API fails");
+  assert.match(hub,/visibleAdminModules/);
+  assert.match(hub,/href=\{module\.href\}/);
+  for(const name of ["Dynamic Pricing","Tax Management","Offers & Coupons","Operator Assignments","GST Billing & Refunds"]){
+    assert.ok(registry.includes('label:"'+name+'"'),name+" must be present in shared module registry");
+  }
+  assert.match(pricing,/requestedTab==="taxes"/,"tax nav must open the tax management tab");
+  assert.match(pricing,/router\.replace\(`\/admin\/pricing\?tab=\$\{next\}`\)/);
 });
