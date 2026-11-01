@@ -28,7 +28,7 @@ class VenuePricingBatchQuoteTest {
         var result=controller.quotes(new VenuePricingPublicController.BatchQuoteRequest(List.of(first,second)));
         assertEquals(new BigDecimal("708.00"),result.get(first.toString()).total());
         assertEquals(new BigDecimal("472.00"),result.get(second.toString()).total());
-        verify(repository,times(1)).findAllById(any());
+        verify(repository,times(1)).findAllForPricing(any());
     }
     @Test void singleQuoteUsesEagerFacilityAndSportLookup(){
         UUID id=UUID.randomUUID();
