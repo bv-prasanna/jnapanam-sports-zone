@@ -43,7 +43,8 @@ public class CatalogueService {
 
     @Transactional
     public SportResponse createSport(SportRequest request) {
-        String code = generateCode("SPORT", request.name());
+        String code = request.code() == null || request.code().isBlank() ? generateCode("SPORT", request.name()) : request.code();
+        if (sports.existsByCodeIgnoreCase(code)) throw new ConflictException("Sport code already exists");
         return SportResponse.from(sports.save(new Sport(code, request.name(), request.description(), request.iconKey(), request.displayOrder())));
     }
 
@@ -92,7 +93,8 @@ public class CatalogueService {
 
     @Transactional
     public FacilityResponse createFacility(FacilityRequest request) {
-        String code = generateCode("FACILITY", request.name());
+        String code = request.code() == null || request.code().isBlank() ? generateCode("FACILITY", request.name()) : request.code();
+        if (facilities.existsByCodeIgnoreCase(code)) throw new ConflictException("Facility code already exists");
         Sport sport = requireSport(request.sportCode());
         Facility facility = new Facility(sport, code, request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
         return FacilityResponse.from(facilities.save(facility));
