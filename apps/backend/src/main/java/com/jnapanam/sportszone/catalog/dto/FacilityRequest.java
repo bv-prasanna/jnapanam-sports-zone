@@ -12,7 +12,7 @@ public record FacilityRequest(
         @Min(15) @Max(240) int slotDurationMinutes,
         @Min(1) int capacity,
         @DecimalMin("0.00") BigDecimal bookingPrice,
-        @Min(0) @Max(120) int bufferMinutes,
+        @Min(0) @Max(120) Integer bufferMinutes,
         @Size(max = 3000) String termsAndConditions) {
     public FacilityRequest(String code, String sportCode, String name, String description,
             String locationLabel, int slotDurationMinutes, int capacity, BigDecimal bookingPrice) {
