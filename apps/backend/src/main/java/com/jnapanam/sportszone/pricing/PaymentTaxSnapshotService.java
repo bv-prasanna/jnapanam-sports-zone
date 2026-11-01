@@ -27,17 +27,25 @@ public class PaymentTaxSnapshotService {
 
     @Transactional(readOnly=true)
     public List<Map<String,Object>> policies(){
-        return jdbc.queryForList("select purpose,tax_rate_percent as \"taxRatePercent\",active from venue_billing_purpose_policies order by purpose");
+        return jdbc.queryForList("select purpose,tax_rate_percent as \"taxRatePercent\",active,place_of_supply_state_code as \"placeOfSupplyStateCode\",auto_issue_enabled as \"autoIssueEnabled\" from venue_billing_purpose_policies order by purpose");
     }
     @Transactional
-    public void configure(String purpose,BigDecimal rate,boolean active){
-        if(!Set.of("MEMBERSHIP","TRAINING","TOURNAMENT").contains(purpose))throw new BadRequestException("Invalid billing purpose");
-        if(rate==null||rate.signum()<0||rate.compareTo(new BigDecimal("100"))>0)throw new BadRequestException("Invalid rate");
+    public void configure(String purpose,BigDecimal rate,boolean active,String placeOfSupplyStateCode,boolean autoIssueEnabled){
+        if(!Set.of("BOOKING","MEMBERSHIP","TRAINING","TOURNAMENT").contains(purpose))
+            throw new BadRequestException("Invalid billing purpose");
+        if(rate==null||rate.signum()<0||rate.compareTo(new BigDecimal("100"))>0)
+            throw new BadRequestException("Invalid tax rate");
+        if(placeOfSupplyStateCode!=null&&!placeOfSupplyStateCode.matches("[0-9]{2}"))
+            throw new BadRequestException("Place-of-supply state code must have two digits");
+        if(autoIssueEnabled&&(!active||placeOfSupplyStateCode==null))
+            throw new BadRequestException("Activate the policy and configure place of supply before enabling auto-issue");
         jdbc.update("""
-          insert into venue_billing_purpose_policies(purpose,tax_rate_percent,active) values(?,?,?)
+          insert into venue_billing_purpose_policies(purpose,tax_rate_percent,active,place_of_supply_state_code,auto_issue_enabled)
+          values(?,?,?,?,?)
           on conflict(purpose) do update set tax_rate_percent=excluded.tax_rate_percent,
-          active=excluded.active,updated_at=now()
-          """,purpose,rate,active);
+          active=excluded.active,place_of_supply_state_code=excluded.place_of_supply_state_code,
+          auto_issue_enabled=excluded.auto_issue_enabled,updated_at=now()
+          """,purpose,rate,active,placeOfSupplyStateCode,autoIssueEnabled);
     }
     @Transactional
     public void configureTreatments(Treatments t){
