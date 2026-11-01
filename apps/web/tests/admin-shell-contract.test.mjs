@@ -56,3 +56,36 @@ test("admin staff routes reuse admin navigation without disrupting operator and 
   assert.match(operations,/<PortalSideNavigation active="operations"\/>/);
   assert.match(shop,/return admin\?<AdminLayout>/);
 });
+
+test("every admin route uses the common layout without its own website header or second sidebar",async()=>{
+  const pages=[
+    "page.tsx","users/page.tsx","verification/page.tsx","bookings/page.tsx",
+    "commerce/page.tsx","pricing/page.tsx","billing/page.tsx",
+    "subscriptions/page.tsx","notification-providers/page.tsx",
+    "operator-assignments/page.tsx","release-readiness/page.tsx",
+    "uat-otp/page.tsx","player-growth/page.tsx"
+  ];
+  for(const page of pages){
+    const contents=await source("app/admin/"+page);
+    assert.doesNotMatch(contents,/import\s*\{\s*(?:SiteHeader|SiteFooter|PortalSideNavigation)/,
+      page+" must not inject public or customer navigation into Admin");
+    assert.doesNotMatch(contents,/<aside[^>]*className=/,page+" must not embed its own sidebar");
+  }
+});
+
+test("all admin page-level CSS modules honor common geometry and typographic scale",async()=>{
+  const modules=[
+    "users/users.module.css","bookings/bookings.module.css","commerce/commerce.module.css",
+    "pricing/pricing.module.css","release-readiness/release-readiness.module.css",
+    "notification-providers/notification-providers.module.css",
+    "operator-assignments/operator-assignments.module.css",
+    "subscriptions/admin-subscriptions.module.css","uat-otp/uat-otp.module.css"
+  ];
+  for(const moduleName of modules){
+    const css=await source("app/admin/"+moduleName);
+    assert.match(css,/\.page\{width:100%;max-width:none;min-width:0;min-height:0/,
+      moduleName+" should not establish a competing layout");
+    assert.match(css,/var\(--admin-ink\)/,
+      moduleName+" should use common text tokens");
+  }
+});
