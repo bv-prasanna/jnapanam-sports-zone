@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - fix/mobile-uat-navigation-profile-localization-20261101
       - feat/release1-requirements-completion
       - fix/register-route-regression-test-20261026
     paths:
