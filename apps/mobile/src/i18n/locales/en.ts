@@ -1,4 +1,5 @@
 const en = {
+  sports:{cricket:'Cricket',badminton:'Badminton',swimming:'Swimming',football:'Football',chess:'Chess',carrom:'Carrom',gym:'Gym',aerobics:'Aerobics',table_tennis:'Table Tennis'},
   mobileMenu:{
     title:'Menu',open:'Open menu',openHint:'Shows available customer and staff screens',close:'Close menu',
     customer:'CUSTOMER',staff:'STAFF',home:'Home',bookings:'Bookings',memberships:'Memberships',
@@ -65,6 +66,7 @@ const en = {
     upcomingEvent: 'UPCOMING EVENT', championship: 'Jnapanam Badminton Championship', registrationsOpeningSoon: 'Registrations opening soon',
   },
   bookings: {
+    refreshPrices:'Please refresh slot prices before booking.',includingTax:'incl. tax',priceUnavailable:'Price is temporarily unavailable',openChoices:'Open available choices',
     loginDescription: 'Sign in to view and create your bookings.',
     emptyTitle: 'No bookings yet',
     emptyDescription: 'Your confirmed and pending bookings will appear here.',

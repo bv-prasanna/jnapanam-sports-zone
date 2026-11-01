@@ -59,7 +59,11 @@ const terminalStatuses = new Set(['CANCELLED', 'COMPLETED', 'NO_SHOW']);
 function dateValue(offset: number) {
   const value = new Date();
   value.setDate(value.getDate() + offset);
-  return value.toISOString().slice(0, 10);
+  // Use local calendar date, not UTC (which shifts early-morning India dates backwards).
+  const year=value.getFullYear();
+  const month=String(value.getMonth()+1).padStart(2,'0');
+  const day=String(value.getDate()).padStart(2,'0');
+  return year+'-'+month+'-'+day;
 }
 
 type SelectOption = { value: string; label: string; subtitle?: string };
@@ -79,6 +83,7 @@ function SelectField({
   onChange(value: string): void;
   disabled?: boolean;
 }) {
+  const {t}=useTranslation();
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
   return (
@@ -88,7 +93,7 @@ function SelectField({
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${selected?.label || placeholder}`}
-        accessibilityHint="Opens the list of available choices"
+        accessibilityHint={t("bookings.openChoices")}
         accessibilityState={{disabled: Boolean(disabled)}}
         onPress={() => setOpen(true)}
         style={[styles.selectField, disabled && styles.disabled]}
@@ -213,7 +218,7 @@ export default function BookingsScreen() {
   }
 
   async function book(slotId: string, paymentOption: 'PAY_NOW' | 'PAY_AT_VENUE') {
-    if (!quotes[slotId]) { setError("Please refresh slot prices before booking."); return; }
+    if (!quotes[slotId]) { setError(t("bookings.refreshPrices")); return; }
     const key = `${slotId}-${paymentOption}`;
     setProcessing(key);
     setError('');
@@ -304,7 +309,7 @@ export default function BookingsScreen() {
               label={t('bookings.chooseSport')}
               placeholder={t('bookings.sportPlaceholder')}
               value={sportCode}
-              options={sports.map((sport) => ({ value: sport.code, label: sport.name }))}
+              options={sports.map((sport) => ({ value: sport.code, label: t("sports."+sport.code.toLowerCase(),{defaultValue:sport.name}) }))}
               onChange={(value) => {
                 setSportCode(value);
                 setFacilityId('');
@@ -386,7 +391,7 @@ export default function BookingsScreen() {
                         {t('bookings.availableCount', { count: slot.available })}
                       </Text>
                       <Text style={styles.available} accessibilityLabel={quotes[slot.id] ? `Final slot price ₹${quotes[slot.id].total.toFixed(2)} including tax ₹${quotes[slot.id].tax.toFixed(2)}` : "Price unavailable"}>
-                        {quotes[slot.id] ? `₹${quotes[slot.id].total.toFixed(2)} (incl. tax ₹${quotes[slot.id].tax.toFixed(2)})` : "Price loading / unavailable"}
+                        {quotes[slot.id] ? `₹${quotes[slot.id].total.toFixed(2)} (${t("bookings.includingTax")} ₹${quotes[slot.id].tax.toFixed(2)})` : t("bookings.priceUnavailable")}
                       </Text>
                     </View>
                   </View>

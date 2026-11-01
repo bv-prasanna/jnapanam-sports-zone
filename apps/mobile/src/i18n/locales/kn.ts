@@ -1,4 +1,5 @@
 const kn = {
+  sports:{cricket:'ಕ್ರಿಕೆಟ್',badminton:'ಬ್ಯಾಡ್ಮಿಂಟನ್',swimming:'ಈಜು',football:'ಫುಟ್‌ಬಾಲ್',chess:'ಚೆಸ್',carrom:'ಕ್ಯಾರಂ',gym:'ಜಿಮ್',aerobics:'ಏರೋಬಿಕ್ಸ್',table_tennis:'ಟೇಬಲ್ ಟೆನ್ನಿಸ್'},
   mobileMenu:{
     title:'ಮೆನು',open:'ಮೆನು ತೆರೆಯಿರಿ',openHint:'ಲಭ್ಯವಿರುವ ಪರದೆಗಳನ್ನು ತೋರಿಸುತ್ತದೆ',close:'ಮೆನು ಮುಚ್ಚಿ',
     customer:'ಗ್ರಾಹಕರಿಗೆ',staff:'ಸಿಬ್ಬಂದಿಗೆ',home:'ಮುಖಪುಟ',bookings:'ಬುಕಿಂಗ್‌ಗಳು',memberships:'ಸದಸ್ಯತ್ವಗಳು',
@@ -65,6 +66,7 @@ const kn = {
     upcomingEvent: 'ಮುಂಬರುವ ಕಾರ್ಯಕ್ರಮ', championship: 'ಜ್ಞಾಪನಂ ಬ್ಯಾಡ್ಮಿಂಟನ್ ಚಾಂಪಿಯನ್‌ಶಿಪ್', registrationsOpeningSoon: 'ನೋಂದಣಿ ಶೀಘ್ರದಲ್ಲೇ ಆರಂಭವಾಗಲಿದೆ',
   },
   bookings: {
+    refreshPrices:'ಬುಕಿಂಗ್ ಮೊದಲು ಸಮಯದ ದರ ಮರುಲೋಡ್ ಮಾಡಿ.',includingTax:'ತೆರಿಗೆ ಸೇರಿ',priceUnavailable:'ದರ ತಾತ್ಕಾಲಿಕವಾಗಿ ಲಭ್ಯವಿಲ್ಲ',openChoices:'ಲಭ್ಯವಿರುವ ಆಯ್ಕೆಗಳನ್ನು ತೆರೆಯಿರಿ',
     loginDescription: 'ನಿಮ್ಮ ಬುಕಿಂಗ್‌ಗಳನ್ನು ನೋಡಲು ಮತ್ತು ರಚಿಸಲು ಲಾಗಿನ್ ಮಾಡಿ.',
     emptyTitle: 'ಇನ್ನೂ ಬುಕಿಂಗ್‌ಗಳಿಲ್ಲ',
     emptyDescription: 'ನಿಮ್ಮ ದೃಢೀಕೃತ ಮತ್ತು ಬಾಕಿ ಇರುವ ಬುಕಿಂಗ್‌ಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.',

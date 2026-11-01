@@ -100,7 +100,7 @@ export default function HomeScreen() {
                       color={BrandColors.accent}
                     />
                   </View>
-                  <Text style={styles.sportName}>{sport.name}</Text>
+                  <Text style={styles.sportName}>{t("sports."+sport.code.toLowerCase(),{defaultValue:sport.name})}</Text>
                   {!!sport.description && <Text style={styles.sportSubtitle} numberOfLines={2}>{sport.description}</Text>}
                   <View style={styles.cardLink}>
                     <Text style={styles.cardLinkText}>{t('home.bookNow')}</Text>
