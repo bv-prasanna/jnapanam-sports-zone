@@ -72,3 +72,10 @@ test("feature visibility is controlled by admin and customer navigation",async()
  assert.match(admin,/\/api\/v1\/admin\/features/);
  assert.match(admin,/allowedRoles/);
 });
+
+test("disabled features are removed from customer shortcuts, nav and direct customer views",async()=>{
+ const dashboard=await read("app/dashboard/page.tsx");
+ assert.match(dashboard,/filter\(enabled\)\.map/);
+ assert.match(dashboard,/visibleSection=featureEnabled\(section\)\?section:"overview"/);
+ assert.match(dashboard,/enabled=\{featureEnabled\}/);
+});
