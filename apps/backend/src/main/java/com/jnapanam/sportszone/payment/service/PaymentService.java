@@ -331,7 +331,7 @@ public class PaymentService {
                         || (b.getStatus() != BookingStatus.PENDING_PAYMENT && b.getStatus() != BookingStatus.CONFIRMED)
                         || (b.getStatus() == BookingStatus.PENDING_PAYMENT && expired(b.getPaymentExpiresAt())))
                     throw new ConflictException("Booking is not awaiting payment");
-                yield b.getSlot().getFacility().getBookingPrice().multiply(BigDecimal.valueOf(b.getQuantity()));
+                yield b.getPriceTotalPaise() == null ? b.getSlot().getFacility().getBookingPrice().multiply(BigDecimal.valueOf(b.getQuantity())) : BigDecimal.valueOf(b.getPriceTotalPaise(),2);
             }
             case MEMBERSHIP -> {
                 CustomerMembership m = memberships.findById(ref)
