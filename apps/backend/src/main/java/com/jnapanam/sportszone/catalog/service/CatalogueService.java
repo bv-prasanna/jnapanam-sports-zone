@@ -120,7 +120,7 @@ public class CatalogueService {
         String slug = name == null ? "" : name.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "_").replaceAll("^_+|_+$", "");
         if (slug.isBlank()) slug = prefix;
         slug = slug.substring(0, Math.min(slug.length(), 22));
-        return slug + "_" + UUID.randomUUID().toString().substring(0, 12).toUpperCase(Locale.ROOT);
+        return slug + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
     }
 
     public Sport requireSport(UUID id) { return sports.findById(id).orElseThrow(() -> new NotFoundException("Sport not found")); }
