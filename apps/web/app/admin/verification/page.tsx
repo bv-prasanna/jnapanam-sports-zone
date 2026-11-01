@@ -31,13 +31,13 @@ export default function Verification(){
    if(!w)setError("Allow popups to preview documents.");window.setTimeout(()=>URL.revokeObjectURL(url),60000);
   }catch(e){setError(e instanceof Error?e.message:"Unable to view document");}
  }
- return <main style={{padding:28,maxWidth:1300,margin:"auto"}}><span className="eyebrow">ADMIN · VERIFICATION</span><h1>Verification</h1><p>Review customer-submitted documents and verification requests.</p>
- <div style={{display:"flex",gap:12,flexWrap:"wrap",margin:"18px 0"}}>
- <button className="btn outline" onClick={()=>setSection("documents")}>Documents ({pending} pending)</button>
- <button className="btn outline" onClick={()=>setSection("users")}>User verification</button></div>
- {section==="users"?<p>User verification workflows will be added separately. Customer identity documents can be reviewed under Documents.</p>:<>
- <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20}}><strong>Pending reviews: {pending}</strong><label>Show <select value={filter} onChange={e=>setFilter(e.target.value)}>{["PENDING","APPROVED","REJECTED","ALL"].map(s=><option key={s} value={s}>{s}</option>)}</select></label><button className="btn outline" onClick={()=>void load()}>Refresh</button></div>
+ return <main className="admin-basic-page"><header className="admin-page-heading"><div><span className="eyebrow">ADMIN · VERIFICATION</span><h1>Verification</h1><p>Review customer-submitted documents and verification requests.</p></div></header>
+ <div className="admin-tabs" role="tablist" aria-label="Verification type">
+ <button type="button" role="tab" aria-selected={section==="documents"} onClick={()=>setSection("documents")}>Documents ({pending} pending)</button>
+ <button type="button" role="tab" aria-selected={section==="users"} onClick={()=>setSection("users")}>User verification</button></div>
+ {section==="users"?<section className="admin-card"><h2>User verification</h2><p>Review submitted identity documents under Documents. Separate user verification workflows are not available in this release.</p></section>:<section className="admin-card">
+ <div className="admin-toolbar"><strong>Pending reviews: {pending}</strong><label>Show <select value={filter} onChange={e=>setFilter(e.target.value)}>{["PENDING","APPROVED","REJECTED","ALL"].map(s=><option key={s} value={s}>{s}</option>)}</select></label><button className="btn outline" onClick={()=>void load()}>Refresh</button></div>
  {error&&<div className="form-error" role="alert">{error}</div>}
  <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Customer</th><th>Email</th><th>Document</th><th>Uploaded</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows.map(d=><tr key={d.id}><td>{d.customer}</td><td>{d.email}</td><td>{d.type}</td><td>{new Date(d.uploadedAt).toLocaleString()}</td><td>{d.status}</td><td><button className="btn outline" onClick={()=>void view(d.id)}>View</button> {d.status==="PENDING"&&<><button className="btn outline" disabled={busy===d.id} onClick={()=>void review(d.id,"APPROVED")}>Approve</button> <button className="btn outline" disabled={busy===d.id} onClick={()=>void review(d.id,"REJECTED")}>Reject</button></>}</td></tr>)}</tbody></table>{rows.length===0&&<p className="empty-state">No documents match this filter.</p>}</div>
- </>}</main>;
+ </section>}</main>;
 }

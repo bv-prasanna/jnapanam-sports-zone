@@ -81,7 +81,7 @@ export default function AdminBookingExplorer(){
 
   if(!ready||!allowed)return <main className={styles.page}>Checking access…</main>;
   return <main className={styles.page}>
-    <header className={styles.header}><div><span>ADMIN</span><h1>Booking Explorer</h1><p>Find bookings, inspect payment details and take permitted booking actions.</p></div><Link href="/admin" className={styles.back}>← Admin console</Link></header>
+    <header className={styles.header}><div><span>ADMIN</span><h1>Booking Explorer</h1><p>Find bookings, inspect payment details and take permitted booking actions.</p></div></header>
     <section className={styles.presets}>{(["TODAY","TOMORROW","WEEK","MONTH","CUSTOM"] as RangePreset[]).map(x=><button key={x} className={preset===x?styles.active:""} onClick={()=>applyPreset(x)}>{x==="WEEK"?"This week":x==="MONTH"?"This month":x[0]+x.slice(1).toLowerCase()}</button>)}</section>
     <section className={styles.filters}>
       <label>Sport<select value={sport} onChange={e=>{setSport(e.target.value);setFacilityId("")}}><option value="">All sports</option>{sports.map(s=><option key={s.code} value={s.name}>{s.name}</option>)}</select></label>

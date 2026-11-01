@@ -3,9 +3,6 @@ import {useCallback,useEffect,useMemo,useState} from "react";
 import {useRouter} from "next/navigation";
 import {api,ApiError} from "@/lib/api";
 import {useApp} from "@/components/app-provider";
-import {SiteHeader} from "@/components/site-header";
-import {PortalSideNavigation} from "@/components/portal-side-navigation";
-import shell from "@/components/portal-shell.module.css";
 import styles from "./release-readiness.module.css";
 type Ticket={id:string;ticket_number?:string;subject?:string;priority?:string;status?:string;customer_name?:string};
 type Payment={id:string;receiptNumber?:string;purpose?:string;status?:string;amountPaise?:number;createdAt?:string};
@@ -35,7 +32,7 @@ export default function OperationsExceptions(){
    return {open,pending:payments.filter(p=>["CREATED","PENDING"].includes(String(p.status))).length,paidAmount:paid.reduce((sum,p)=>sum+Number(p.amountPaise||0),0)};
  },[tickets,payments]);
  if(!ready||!allowed)return <main className={styles.page}>Checking administrator access…</main>;
- return <><SiteHeader/><div className={shell.shell}><PortalSideNavigation active="exceptions"/><main className={styles.page}>
+ return <main className={styles.page}>
    <header className={styles.heading}><div><span>ADMIN · OPERATIONS</span><h1>Operations & Exceptions</h1><p>Customer support and payment records for operational follow-up. This is not deployment health/readiness.</p></div><button onClick={()=>void load()} type="button" disabled={loading}>{loading?"Loading…":"Refresh"}</button></header>
    {error&&<p role="alert" className={styles.error}>{error}</p>}
    <div className={styles.metrics}>
@@ -54,5 +51,5 @@ export default function OperationsExceptions(){
      {payments.length===0&&<p className={styles.empty}>No payment records are recorded.</p>}
      {payments.length>100&&<p className={styles.note}>Showing the first 100 records. Open Payments in the admin console for full details.</p>}
    </section>
- </main></div></>;
+ </main>;
 }

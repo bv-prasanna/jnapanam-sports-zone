@@ -1,57 +1,71 @@
 "use client";
 
-import { MouseEvent, PropsWithChildren, useEffect } from "react";
+import {PropsWithChildren, Suspense, useEffect, useState} from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useApp } from "@/components/app-provider";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
+import {useApp} from "@/components/app-provider";
 import styles from "./admin-layout.module.css";
+import "./admin-foundation.css";
+import {adminAreas,adminModules} from "./admin-navigation";
 
-export default function AdminLayout({children}:PropsWithChildren){
-  const router=useRouter();
-  const pathname=usePathname();
+
+function AdminShell({children}:PropsWithChildren){
+  const router=useRouter(),pathname=usePathname(),search=useSearchParams();
   const {user,ready,signOut}=useApp();
-  const admin=!!user?.roles.some(role=>role==="ADMIN"||role==="SUPER_ADMIN");
-  const profile=user as unknown as {profilePhotoUrl?:string;photoUrl?:string;avatarUrl?:string}|null;
-  const photo=profile?.profilePhotoUrl||profile?.photoUrl||profile?.avatarUrl;
-  const initials=(user?.fullName||"Admin").split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join("");
-
+  const [menuOpen,setMenuOpen]=useState(false);
+  const allowed=!!user?.roles.some(role=>role==="ADMIN"||role==="SUPER_ADMIN");
+  const superAdmin=!!user?.roles.includes("SUPER_ADMIN");
+  const current=pathname==="/admin"&&search.get("view")
+    ?"/admin?view="+search.get("view")
+    :pathname==="/admin/pricing"
+      ?"/admin/pricing?tab="+(search.get("tab")==="taxes"?"taxes":"pricing-rules")
+      :pathname;
+  const fullName=user?.fullName||"Admin";
+  const initials=fullName.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0).toUpperCase()).join("");
   useEffect(()=>{
-    if(!ready||admin)return;
-    if(!user){router.replace("/login");return;}
-    if(user.roles.includes("OPERATIONS")){router.replace("/operations");return;}
-    if(user.roles.includes("SHOP_KEEPER")){router.replace("/shop-counter");return;}
-    router.replace("/dashboard");
-  },[ready,admin,user,router]);
-
-  function routeLegacyNavigation(event:MouseEvent<HTMLDivElement>){
-    if(pathname!=="/admin")return;
-    const target=event.target as HTMLElement;
-    const button=target.closest("button");
-    if(!button)return;
-    const text=(button.textContent||"").trim().toLowerCase();
-    if(text==="bookings"||text.startsWith("bookings ")||text.includes("open details")&&text.includes("booking")){
-      event.preventDefault();event.stopPropagation();router.push("/admin/bookings");return;
-    }
-    if(text==="users"||text.startsWith("users ")){
-      event.preventDefault();event.stopPropagation();router.push("/admin/users");
-    }
-  }
-
-  if(!ready||!admin)return <div className="portal-loading">Checking administrator access…</div>;
-  return <div className={styles.shell}>
-    <section className={styles.staffBar} aria-label="Administrator quick navigation">
-      <div className={styles.identity}>{photo?<img src={photo} alt="Profile"/>:<span className={styles.avatar}>{initials||"A"}</span>}<div><strong>{user?.fullName}</strong><small>{user?.roles.join(" · ")}</small></div></div>
-      <nav className={styles.links} aria-label="Account actions">
-        <Link href="/dashboard?section=profile">My Profile</Link>
-        <button type="button" onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button>
-      </nav>
-    </section>
-    {pathname!=="/admin"&&<div className={styles.secondaryLayout}><aside className={styles.sideNav} aria-label="Admin modules"><strong>Admin modules</strong>{[
-      ["Dashboard","/admin"],["Verification","/admin/verification"],["Users","/admin/users"],["Bookings","/admin/bookings"],["Operator Assignments","/admin/operator-assignments"],
-      ["Release Readiness","/admin/release-readiness"],["Operations","/operations"],["Shop Counter","/shop-counter"],
-      ["Commerce","/admin/commerce"],["Pricing & Taxes","/admin/pricing"],["GST Billing & Refunds","/admin/billing"],["Recurring Subscriptions","/admin/subscriptions"],["Notification Providers","/admin/notification-providers"],
-      ...(user?.roles.includes("SUPER_ADMIN")?[["UAT OTP Numbers","/admin/uat-otp"]]:[])
-    ].map(([label,href])=><Link key={href} href={href} aria-current={pathname===href?"page":undefined}>{label}</Link>)}</aside><div className={styles.subPage}>{children}</div></div>}
-    {pathname==="/admin"&&<div onClickCapture={routeLegacyNavigation}>{children}</div>}
+    if(!ready||allowed)return;
+    if(!user)router.replace("/login");
+    else if(user.roles.includes("OPERATIONS"))router.replace("/operations");
+    else if(user.roles.includes("SHOP_KEEPER"))router.replace("/shop-counter");
+    else router.replace("/dashboard");
+  },[ready,allowed,user,router]);
+  useEffect(()=>setMenuOpen(false),[pathname,search]);
+  if(!ready||!allowed)return <div className="portal-loading" role="status">Checking administrator access…</div>;
+  return <div className={styles.shell+" adminExperience"}>
+    <a href="#admin-main-content" className={styles.skip}>Skip to main content</a>
+    <header className={styles.topBar}>
+      <div className={styles.brandGroup}>
+        <button className={styles.menuToggle} type="button" aria-label={menuOpen?"Close navigation":"Open navigation"} aria-expanded={menuOpen} aria-controls="jnapanam-admin-navigation" onClick={()=>setMenuOpen(v=>!v)}>{menuOpen?"✕":"☰"}</button>
+        <Link href="/admin" className={styles.brand} onClick={()=>setMenuOpen(false)}><span className={styles.brandIcon} aria-hidden="true">J</span><span><strong>Jnapanam Sports Zone</strong><small>Administration</small></span></Link>
+      </div>
+      <div className={styles.account}>
+        <div className={styles.userIdentity}><span className={styles.avatar} aria-hidden="true">{initials||"A"}</span><div><strong>{fullName}</strong><small>{superAdmin?"Super Admin":"Admin"}</small></div></div>
+        <Link href="/dashboard?section=profile" className={styles.accountLink}>My profile</Link>
+        <button type="button" className={styles.logout} onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button>
+      </div>
+    </header>
+    <div className={styles.body}>
+      {menuOpen&&<button type="button" className={styles.scrim} onClick={()=>setMenuOpen(false)} aria-label="Close navigation overlay"/>}
+      <aside id="jnapanam-admin-navigation" className={styles.sidebar+(menuOpen?" "+styles.sidebarOpen:"")}>
+        <nav aria-label="Admin modules">
+          {adminAreas.map(category=>
+            <div className={styles.navGroup} key={category}>
+              <h2>{category}</h2>
+              {adminModules.filter(x=>x.area===category&&(!x.superAdmin||superAdmin)).map(item=>{
+                const active=current===item.href || (item.href==="/admin"&&current==="/admin");
+                return <Link key={item.href} href={item.href} onClick={()=>setMenuOpen(false)}
+                  className={styles.navLink+(active?" "+styles.active:"")}
+                  aria-current={active?"page":undefined}>{item.label}</Link>;
+              })}
+            </div>
+          )}
+          <div className={styles.navGroup}><h2>Account</h2><Link className={styles.navLink} href="/dashboard">Customer portal</Link></div>
+        </nav>
+      </aside>
+      <div className={styles.content} id="admin-main-content" tabIndex={-1}>{children}</div>
+    </div>
   </div>;
+}
+export default function AdminLayout({children}:PropsWithChildren){
+  return <Suspense fallback={<div className="portal-loading" role="status">Loading admin console…</div>}><AdminShell>{children}</AdminShell></Suspense>;
 }
