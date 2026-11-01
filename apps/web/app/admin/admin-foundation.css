@@ -85,3 +85,11 @@
 .adminExperience .admin-table{width:100%;min-width:620px}
 .adminExperience .admin-table th,.adminExperience .admin-table td{padding:12px;vertical-align:top;text-align:left;border-bottom:1px solid #e7eef2}
 @media(max-width:640px){.adminExperience .admin-toolbar{align-items:stretch;flex-direction:column}.adminExperience .admin-page-heading{gap:9px}.adminExperience .admin-tabs button{flex:1;white-space:normal}}
+
+/* Consistent density for multi-policy and dashboard summary sections. */
+.adminExperience .admin-settings-section{border-top:1px solid var(--admin-line);padding-top:16px;margin-top:16px}
+.adminExperience .admin-metric-spacing{margin-bottom:16px}
+.adminExperience main :is(.admin-toolbar,.toolbar) button{white-space:normal}
+.adminExperience main :is(.admin-toolbar,.toolbar) input{min-width:0}
+.adminExperience main :is(.admin-card,.metric-grid article) {overflow-wrap:anywhere}
+@media(max-width:540px){.adminExperience main .admin-toolbar button{width:100%}}

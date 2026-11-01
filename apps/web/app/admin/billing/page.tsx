@@ -53,7 +53,7 @@ export default function BillingAdmin(){
  <div className={styles.actions}><button type="submit" className={styles.primary} disabled={busy}>Save billing policy</button></div></form>
  <h3>Tax and auto-invoice policies for each purchase type</h3>
  <p className={styles.help}>Membership, training and tournament rates are extracted from advertised tax-inclusive prices. Booking tax is quoted from the slot rule. Auto-issuance must be approved for the relevant service and place-of-supply.</p>
- {["BOOKING","MEMBERSHIP","TRAINING","TOURNAMENT"].map(purpose=>{const value=purposeRates[purpose]||{taxRatePercent:"0",active:false,placeOfSupplyStateCode:"",autoIssueEnabled:false};return <div key={purpose} className={styles.form} style={{borderTop:"1px solid #dce5eb",paddingTop:12,marginTop:12}}>
+ {["BOOKING","MEMBERSHIP","TRAINING","TOURNAMENT"].map(purpose=>{const value=purposeRates[purpose]||{taxRatePercent:"0",active:false,placeOfSupplyStateCode:"",autoIssueEnabled:false};return <div key={purpose} className={`${styles.form} admin-settings-section`}>
  <strong>{purpose.charAt(0)+purpose.slice(1).toLowerCase()}</strong>
  <label>GST rate (%)<input type="number" min="0" max="100" step="0.001" value={value.taxRatePercent} onChange={e=>setPurposeRates(prev=>({...prev,[purpose]:{...value,taxRatePercent:e.target.value}}))}/></label>
  <label className={styles.check}><input type="checkbox" checked={value.active} onChange={e=>setPurposeRates(prev=>({...prev,[purpose]:{...value,active:e.target.checked}}))}/> Activate for new payments</label>
