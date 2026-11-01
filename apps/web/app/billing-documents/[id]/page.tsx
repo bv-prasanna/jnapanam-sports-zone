@@ -20,7 +20,7 @@ export default function BillingDocumentsPage(){
  <header><span>{doc.kind==="INVOICE"?"TAX INVOICE":"GST CREDIT NOTE"}</span><h2>{doc.documentNumber}</h2><button type="button" onClick={()=>void download(doc.documentNumber)}>Download PDF</button><p>Issued: {doc.issuedAt?new Date(doc.issuedAt).toLocaleDateString("en-IN"):"—"}</p></header>
  <div className={styles.cols}>
  <div><h3>Supplier</h3><strong>{seller.legalName||"Jnapanam Sports Zone"}</strong><p>{seller.registeredAddress}</p><p>GSTIN: {seller.gstin}</p><p>State code: {seller.stateCode}</p><p>SAC: {seller.serviceAccountingCode}</p></div>
- <div><h3>Bill to</h3><strong>{String(d.recipientName||"Customer")}</strong><p>{String(d.recipientAddress||"")}</p><p>GSTIN: {String(d.recipientGstin||"Unregistered")}</p><p>Place of supply state: {String(d.recipientStateCode||"—")}</p></div></div>
+ <div><h3>Bill to</h3><strong>{String(d.recipientName||"Customer")}</strong><p>{String(d.recipientAddress||"")}</p><p>GSTIN: {String(d.recipientGstin||"Unregistered")}</p><p>Recipient state: {String(d.recipientStateCode||"—")}</p><p>Place of supply: {String(d.placeOfSupplyStateCode||"—")}</p></div></div>
  <p>Service: {String(d.service||d.reason||"Sports facility booking")}</p>
  {doc.kind==="CREDIT_NOTE"&&<p>Against invoice: <strong>{String(d.originalInvoice||"—")}</strong> · Refund: {String(d.refundId||"—")}</p>}
  <table className={styles.table}><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>
