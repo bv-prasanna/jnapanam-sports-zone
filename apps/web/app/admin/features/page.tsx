@@ -1,0 +1,34 @@
+"use client";
+import {useEffect,useState} from "react";
+import {api,ApiError} from "@/lib/api";
+import {useApp} from "@/components/app-provider";
+import type {FeatureSetting} from "@/lib/features";
+
+const roles=["CUSTOMER","OPERATIONS","SHOP_KEEPER","COACH","ORGANIZER","ADMIN","SUPER_ADMIN"];
+export default function FeatureVisibilityAdmin(){
+ const {user,ready}=useApp();
+ const [features,setFeatures]=useState<FeatureSetting[]>([]);
+ const [saving,setSaving]=useState("");
+ const [message,setMessage]=useState("");
+ useEffect(()=>{if(user?.roles.some(r=>r==="ADMIN"||r==="SUPER_ADMIN"))void api<FeatureSetting[]>("/api/v1/admin/features").then(setFeatures).catch(()=>setMessage("Unable to load feature settings."))},[user]);
+ function change(code:string,updates:Partial<FeatureSetting>){setFeatures(items=>items.map(f=>f.code===code?{...f,...updates}:f))}
+ async function save(f:FeatureSetting){setMessage("");setSaving(f.code);try{
+   const result=await api<FeatureSetting>(`/api/v1/admin/features/${f.code}`,{method:"PUT",body:JSON.stringify({enabled:f.enabled,allowedRoles:f.allowedRoles})});
+   change(f.code,result);setMessage(`${f.code} visibility updated.`);
+ }catch(e){setMessage(e instanceof ApiError?e.message:"Unable to save this feature.")}finally{setSaving("")}}
+ if(!ready)return <main className="container">Loading…</main>;
+ if(!user?.roles.some(r=>r==="ADMIN"||r==="SUPER_ADMIN"))return <main className="container"><h1>Access restricted</h1></main>;
+ return <main className="container" style={{padding:"32px 0 64px",maxWidth:1050}}>
+ <a href="/admin">← Back to Admin</a><h1>Feature visibility & access</h1>
+ <p>Disable features that are not yet offered. Choose which user types can see them. Administrative screens remain available to authorized staff.</p>
+ {message&&<p role="status">{message}</p>}
+ <div style={{display:"grid",gap:16}}>{features.map(f=><section key={f.code} style={{border:"1px solid #d9dfd5",borderRadius:14,padding:20}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+ <h2 style={{fontSize:20,margin:0}}>{f.code.replaceAll("_"," ")}</h2>
+ <label><input type="checkbox" checked={f.enabled} onChange={e=>change(f.code,{enabled:e.target.checked})}/> Enabled for selected roles</label></div>
+ <fieldset style={{border:0,display:"flex",flexWrap:"wrap",gap:14,padding:"16px 0"}}>
+ <legend>Visible to user types</legend>
+ {roles.map(role=><label key={role}><input type="checkbox" checked={f.allowedRoles.includes(role)} onChange={e=>change(f.code,{allowedRoles:e.target.checked?[...f.allowedRoles,role]:f.allowedRoles.filter(r=>r!==role)})}/> {role.replaceAll("_"," ")}</label>)}
+ </fieldset><button className="btn primary" disabled={saving===f.code||!f.allowedRoles.length} onClick={()=>void save(f)}>{saving===f.code?"Saving…":"Save feature"}</button>
+ </section>)}</div></main>;
+}

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import {useApp} from "@/components/app-provider";
 import styles from "./portal-side-navigation.module.css";
+import {useFeatureVisibility} from "@/lib/features";
 type Item={key:string;label:string;href:string;admin?:boolean;operations?:boolean};
 const items:Item[]=[
  {key:"dashboard",label:"My Dashboard",href:"/dashboard"},
@@ -22,12 +23,13 @@ const items:Item[]=[
 ];
 export function PortalSideNavigation({active}:{active:string}){
  const {user}=useApp();
+ const featureEnabled=useFeatureVisibility(user?.roles||[]);
  if(!user)return null;
  const privileged=user.roles.some(r=>r==="ADMIN"||r==="SUPER_ADMIN");
  const operator=privileged||user.roles.includes("OPERATIONS");
  return <aside className={styles.sidebar}>
    <div className={styles.identity}><small>Welcome</small><strong>{user.displayName||user.fullName}</strong><span>{user.roles.join(" · ").replaceAll("_"," ")}</span></div>
-   <nav aria-label="Account and operations navigation">{items.filter(x=>(!x.admin||privileged)&&(!x.operations||operator)).map(x=>
+   <nav aria-label="Account and operations navigation">{items.filter(x=>(!x.admin||privileged)&&(!x.operations||operator)&&featureEnabled(x.key)).map(x=>
      <Link className={active===x.key?styles.active:""} aria-current={active===x.key?"page":undefined} key={x.key} href={x.href}>{x.label}</Link>
    )}</nav>
  </aside>;
