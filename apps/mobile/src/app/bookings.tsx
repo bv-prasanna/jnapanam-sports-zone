@@ -202,12 +202,9 @@ export default function BookingsScreen() {
       );
       setSlots(result);
       setQuotes({});
-      const settled = await Promise.allSettled(result.map(slot => api<SlotQuote>(`/api/v1/public/pricing/slots/${slot.id}?quantity=1`)));
-      const calculated: Record<string, SlotQuote> = {};
-      settled.forEach((entry, index) => { if (entry.status === "fulfilled") calculated[result[index].id] = entry.value; });
+      const calculated = result.length ? await api<Record<string, SlotQuote>>("/api/v1/public/pricing/slots/quotes", {method:"POST",body:JSON.stringify({slotIds: result.map(slot=>slot.id)})}) : {};
       setQuotes(calculated);
       if (!result.length) setMessage(t('bookings.noSlots'));
-      else if (settled.some(entry => entry.status === "rejected")) setError("Some slot prices are unavailable. Refresh before booking.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('bookings.loadError'));
     } finally {
