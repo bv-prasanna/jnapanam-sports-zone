@@ -45,12 +45,12 @@ public class SlotService {
       // Never sell an overlapping new slot while an old reservation/hold is still active.
       if(existing.stream().anyMatch(s -> s.getHeldCount()+s.getBookedCount()>0
               && s.getStartTime().isBefore(candidate.getEndTime())
-              && s.getEndTime().isAfter(candidate.getStartTime()))) continue;
+              && s.getEndTime().plusMinutes(facility.getBufferMinutes()).isAfter(candidate.getStartTime()))) continue;
       bookable.add(candidate);
     }
   }
   slots.saveAll(bookable);
-  LocalDateTime now = LocalDateTime.now();
+  LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Kolkata"));
   return bookable.stream().filter(slot -> date.isAfter(now.toLocalDate()) || slot.getStartTime().isAfter(now.toLocalTime()))
       .sorted(Comparator.comparing(BookingSlot::getStartTime)).map(SlotResponse::from).toList();
  }
@@ -74,7 +74,10 @@ public class SlotService {
  private static void addRange(Map<LocalTime,BookingSlot> target, Facility facility,LocalDate date,
                               LocalTime start,LocalTime end,int duration,int buffer,int capacity) {
   if(duration<=0 || buffer<0) throw new BadRequestException("Invalid slot duration or buffer");
-  for(LocalTime cursor=start; !cursor.plusMinutes(duration).isAfter(end); cursor=cursor.plusMinutes(duration+buffer)) {
+  int cursorMinutes=start.toSecondOfDay()/60;
+  int endMinutes=end.toSecondOfDay()/60;
+  for(;cursorMinutes+duration<=endMinutes;cursorMinutes+=duration+buffer) {
+    LocalTime cursor=LocalTime.of(cursorMinutes/60,cursorMinutes%60);
     // A slot's end marks the end of play; its buffer is not customer-bookable.
     target.put(cursor,new BookingSlot(facility,date,cursor,cursor.plusMinutes(duration),capacity));
   }
