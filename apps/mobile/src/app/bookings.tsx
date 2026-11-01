@@ -228,7 +228,7 @@ export default function BookingsScreen() {
       });
       const booking = await api<Booking>('/api/v1/bookings/confirm', {
         method: 'POST',
-        body: JSON.stringify({ holdId: hold.id, paymentOption }),
+        body: JSON.stringify({ holdId: hold.id, paymentOption, expectedTotalPaise: Math.round(quotes[slotId].total * 100) }),
       });
 
       if (paymentOption === 'PAY_NOW') {
