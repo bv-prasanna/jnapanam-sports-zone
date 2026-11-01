@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {useTranslation} from 'react-i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -58,6 +59,7 @@ function queueLabel(state: QueueState) {
 }
 
 export default function OperationsScreen() {
+  const {t}=useTranslation();
   const { user } = useAuth();
   const allowed = !!user?.roles.some((role) => staffRoles.includes(role));
   const isAdmin = !!user?.roles.some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
@@ -174,36 +176,36 @@ export default function OperationsScreen() {
   }
 
   if (!allowed) {
-    return <View style={styles.center}><Text style={styles.title}>Operations access required</Text><Text style={styles.muted}>Sign in with an Operations, Admin, or Super Admin account.</Text></View>;
+    return <View style={styles.center}><Text style={styles.title}>{t("mobileOperations.accessRequired")}</Text><Text style={styles.muted}>{t("mobileOperations.accessDescription")}</Text></View>;
   }
 
   return <ScrollView style={styles.screen} contentContainerStyle={styles.content}
     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
     <View style={styles.heading}>
-      <View><Text style={styles.eyebrow}>TODAY · {today}</Text><Text style={styles.title}>Facility operations</Text></View>
+      <View><Text style={styles.eyebrow}>TODAY · {today}</Text><Text style={styles.title}>{t("mobileOperations.title")}</Text></View>
       <Pressable style={styles.refresh} onPress={() => void load()}><MaterialCommunityIcons name="refresh" size={24} color={BrandColors.primary} /></Pressable>
     </View>
-    <Text style={styles.muted}>Today’s queue for the selected sport/facility. Payment must be cleared before the customer can enter.</Text>
+    <Text style={styles.muted}>{t("mobileOperations.description")}</Text>
 
-    <Text style={styles.filterTitle}>Sport</Text>
+    <Text style={styles.filterTitle}>{t("mobileOperations.sport")}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-      {['ALL', ...sports].map((sport) => <FilterChip key={sport} label={sport === 'ALL' ? 'All sports' : sport} selected={sportFilter === sport} onPress={() => { setSportFilter(sport); setFacilityFilter('ALL'); }} />)}
+      {['ALL', ...sports].map((sport) => <FilterChip key={sport} label={sport === 'ALL' ? t("mobileOperations.allSports") : sport} selected={sportFilter === sport} onPress={() => { setSportFilter(sport); setFacilityFilter('ALL'); }} />)}
     </ScrollView>
-    <Text style={styles.filterTitle}>Facility</Text>
+    <Text style={styles.filterTitle}>{t("mobileOperations.facility")}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-      {['ALL', ...facilities].map((facility) => <FilterChip key={facility} label={facility === 'ALL' ? 'All facilities' : facility} selected={facilityFilter === facility} onPress={() => setFacilityFilter(facility)} />)}
+      {['ALL', ...facilities].map((facility) => <FilterChip key={facility} label={facility === 'ALL' ? t("mobileOperations.allFacilities") : facility} selected={facilityFilter === facility} onPress={() => setFacilityFilter(facility)} />)}
     </ScrollView>
 
     <View style={styles.summaryRow}>
-      <View style={styles.summary}><Text style={styles.summaryValue}>{paymentDue}</Text><Text style={styles.summaryLabel}>Payment due</Text></View>
-      <View style={styles.summary}><Text style={styles.summaryValue}>{ready}</Text><Text style={styles.summaryLabel}>Ready</Text></View>
-      <View style={styles.summary}><Text style={styles.summaryValue}>{checkedIn}</Text><Text style={styles.summaryLabel}>Checked in</Text></View>
+      <View style={styles.summary}><Text style={styles.summaryValue}>{paymentDue}</Text><Text style={styles.summaryLabel}>{t("mobileOperations.paymentDue")}</Text></View>
+      <View style={styles.summary}><Text style={styles.summaryValue}>{ready}</Text><Text style={styles.summaryLabel}>{t("mobileOperations.ready")}</Text></View>
+      <View style={styles.summary}><Text style={styles.summaryValue}>{checkedIn}</Text><Text style={styles.summaryLabel}>{t("mobileOperations.checkedIn")}</Text></View>
     </View>
     <View style={styles.search}><MaterialCommunityIcons name="magnify" size={22} color={BrandColors.textSecondary} />
-      <TextInput value={query} onChangeText={setQuery} placeholder="Booking no., customer, mobile, facility" style={styles.searchInput} /></View>
+      <TextInput value={query} onChangeText={setQuery} placeholder={t("mobileOperations.search")} style={styles.searchInput} /></View>
     {!!error && <Text style={styles.error}>{error}</Text>}
-    <Text style={styles.count}>{visible.length} today’s bookings</Text>
-    {loading ? <ActivityIndicator color={BrandColors.accent} /> : visible.length === 0 ? <Text style={styles.empty}>{query ? 'No matching booking for today.' : 'No active bookings for this sport/facility today.'}</Text> : visible.map((booking) => {
+    <Text style={styles.count}>{t("mobileOperations.bookingCount",{count:visible.length})}</Text>
+    {loading ? <ActivityIndicator color={BrandColors.accent} /> : visible.length === 0 ? <Text style={styles.empty}>{query ? t("mobileOperations.noMatching") : t("mobileOperations.noActive")}</Text> : visible.map((booking) => {
       const state = queueState(booking);
       const checkedInNow = !!booking.checkedInAt;
       const checkedOut = !!booking.checkedOutAt;
@@ -219,14 +221,14 @@ export default function OperationsScreen() {
         <Text style={styles.detail}>{booking.sportName || 'Sport'} · {booking.startTime || '—'}–{booking.endTime || '—'}</Text>
         <Text style={styles.customer}>{booking.customerName || booking.customerEmail || 'Customer'} {booking.customerMobile ? `· ${booking.customerMobile}` : ''}</Text>
         <View style={styles.actions}>
-          {active && !paid && !checkedInNow && <Action label="Collect payment" icon="cash-check" busy={busy === booking.id + 'payment'} onPress={() => askPayment(booking)} />}
-          {active && !checkedInNow && paid && <Action label="Verify & check in" icon="account-check-outline" busy={busy === booking.id + 'check-in'} onPress={() => confirm(booking, 'check-in')} />}
-          {active && checkedInNow && !checkedOut && <Action label="Check out" icon="logout-variant" busy={busy === booking.id + 'check-out'} onPress={() => confirm(booking, 'check-out')} />}
-          {active && !checkedInNow && <Action label="No-show" icon="account-off-outline" danger busy={busy === booking.id + 'no-show'} onPress={() => confirm(booking, 'no-show')} />}
-          {isAdmin && active && checkedInNow && !checkedOut && <Action label="Reverse check-in" icon="undo-variant" busy={busy === booking.id + 'check-in/reverse'} onPress={() => confirm(booking, 'check-in/reverse')} />}
+          {active && !paid && !checkedInNow && <Action label={t("mobileOperations.collect")} icon="cash-check" busy={busy === booking.id + 'payment'} onPress={() => askPayment(booking)} />}
+          {active && !checkedInNow && paid && <Action label={t("mobileOperations.checkin")} icon="account-check-outline" busy={busy === booking.id + 'check-in'} onPress={() => confirm(booking, 'check-in')} />}
+          {active && checkedInNow && !checkedOut && <Action label={t("mobileOperations.checkout")} icon="logout-variant" busy={busy === booking.id + 'check-out'} onPress={() => confirm(booking, 'check-out')} />}
+          {active && !checkedInNow && <Action label={t("mobileOperations.noShow")} icon="account-off-outline" danger busy={busy === booking.id + 'no-show'} onPress={() => confirm(booking, 'no-show')} />}
+          {isAdmin && active && checkedInNow && !checkedOut && <Action label={t("mobileOperations.reverse")} icon="undo-variant" busy={busy === booking.id + 'check-in/reverse'} onPress={() => confirm(booking, 'check-in/reverse')} />}
           {isAdmin && active && (paid
-            ? <Action label="Cancel & refund" icon="cash-refund" danger busy={busy === booking.id + 'cancel-and-refund'} onPress={() => confirm(booking, 'cancel-and-refund')} />
-            : <Action label="Cancel" icon="calendar-remove-outline" danger busy={busy === booking.id + 'cancel'} onPress={() => confirm(booking, 'cancel')} />)}
+            ? <Action label={t("mobileOperations.refund")} icon="cash-refund" danger busy={busy === booking.id + 'cancel-and-refund'} onPress={() => confirm(booking, 'cancel-and-refund')} />
+            : <Action label={t("mobileOperations.cancel")} icon="calendar-remove-outline" danger busy={busy === booking.id + 'cancel'} onPress={() => confirm(booking, 'cancel')} />)}
         </View>
       </View>;
     })}
@@ -245,7 +247,7 @@ function Action({ label, icon, danger, busy, onPress }: { label: string; icon: k
 }
 
 const styles = StyleSheet.create({
-  screen:{flex:1,backgroundColor:BrandColors.background},content:{padding:20,paddingTop:52,paddingBottom:110,gap:14},center:{flex:1,padding:28,alignItems:'center',justifyContent:'center',backgroundColor:BrandColors.background,gap:8},
+  screen:{flex:1,backgroundColor:BrandColors.background},content:{padding:20,paddingTop:18,paddingBottom:34,gap:14},center:{flex:1,padding:28,alignItems:'center',justifyContent:'center',backgroundColor:BrandColors.background,gap:8},
   heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},eyebrow:{color:BrandColors.accent,fontSize:12,fontWeight:'900',letterSpacing:1.3},title:{color:BrandColors.textPrimary,fontSize:30,fontWeight:'900',marginTop:4},muted:{color:BrandColors.textSecondary,fontSize:15,lineHeight:22},
   filterTitle:{color:BrandColors.textPrimary,fontSize:12,fontWeight:'900',marginBottom:-7},filters:{gap:8,paddingRight:10},filterChip:{borderWidth:1,borderColor:BrandColors.border,backgroundColor:BrandColors.surface,borderRadius:18,paddingHorizontal:13,paddingVertical:8},filterChipSelected:{borderColor:BrandColors.primary,backgroundColor:BrandColors.primary},filterChipText:{fontSize:12,fontWeight:'800',color:BrandColors.textSecondary},filterChipTextSelected:{color:BrandColors.white},
   refresh:{width:44,height:44,borderRadius:22,backgroundColor:BrandColors.surface,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:BrandColors.border},summaryRow:{flexDirection:'row',gap:8},summary:{flex:1,backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:14,padding:12},summaryValue:{fontSize:22,fontWeight:'900',color:BrandColors.primary},summaryLabel:{fontSize:11,fontWeight:'800',color:BrandColors.textSecondary,marginTop:2},

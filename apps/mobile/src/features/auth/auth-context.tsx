@@ -14,6 +14,8 @@ type AuthValue = {
   requestRegistrationOtp(input: RegisterInput): Promise<void>;
   verifyRegistrationOtp(input:RegisterInput,otp:string): Promise<void>;
   logout(): Promise<void>;
+  refreshProfile(): Promise<void>;
+  updateUser(user: User): void;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -82,7 +84,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [clearSession]);
 
-  const value = useMemo(() => ({ user, initializing, login, requestRegistrationOtp, verifyRegistrationOtp, logout }), [user, initializing, login, requestRegistrationOtp, verifyRegistrationOtp, logout]);
+  const refreshProfile=useCallback(async()=>{const updated=await loadMe();setUser(updated);},[]);
+  const updateUser=useCallback((updated:User)=>setUser(updated),[]);
+  const value = useMemo(() => ({ user, initializing, login, requestRegistrationOtp, verifyRegistrationOtp, logout, refreshProfile, updateUser }), [user, initializing, login, requestRegistrationOtp, verifyRegistrationOtp, logout, refreshProfile, updateUser]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -65,3 +65,5 @@ jobs:
         run: npm ci
       - name: Type-check
         run: npx tsc --noEmit
+      - name: Mobile UAT route and profile regression checks
+        run: node --test tests/*.test.mjs
