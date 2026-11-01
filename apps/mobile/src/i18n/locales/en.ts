@@ -1,4 +1,42 @@
 const en = {
+  mobileBilling:{
+    title:'Billing & invoices',loginDescription:'Sign in to manage billing and view invoices.',
+    details:'Billing details',future:'For future invoices. Existing issued documents stay unchanged.',
+    address:'Full billing address',addressPlaceholder:'Building, street, city, PIN',state:'State',
+    gstin:'GSTIN (optional)',gstinPlaceholder:'Only for registered buyers',save:'Save billing details',
+    saved:'Billing address saved for future invoices.',issued:'GST invoice issued. Open the secure portal to download it.',
+    webError:'Could not open the portal. Sign in at jnapanam.in to download your invoice.',
+    documents:'Payment receipts and GST documents',noPayments:'No paid transactions found.',
+    view:'View billing documents',forReceipt:'Documents for {{number}}',
+    download:'Download receipt / invoice PDF',request:'Request GST invoice (no email)',
+    noEmail:'No invoice email is sent by default. Download the PDF from the secure web portal.',
+    noInvoice:'An invoice has not been issued yet. Your payment receipt is available in your account.'
+  },
+  mobileTraining:{
+    places:'places',coach:'Coach',enrol:'Enrol',full:'Batch full',noMatching:'No matching training',
+    chooseAnother:'Choose another sport or facility.',myEnrollments:'My enrolments',age:'Age',
+    processing:'Processing…',cancelEnrollment:'Cancel enrolment',enrolIn:'Enrol in {{name}}',
+    participant:'Participant name',participantAge:'Participant age',back:'Back',enrolling:'Enrolling…',
+    confirm:'Confirm enrolment',loginRequired:'Please sign in to enrol in training.',
+    invalidParticipant:'Enter the participant name and a valid age.',enrolled:'Enrolment created. Complete payment to confirm the place.',
+    paymentSuccess:'Training payment completed successfully.',cancelSuccess:'Training enrolment cancelled.'
+  },
+  mobileTournaments:{
+    to:'to',teams:'teams',teamSize:'Team size',organizer:'Organized by',noUpcoming:'No upcoming tournaments',
+    published:'Published tournaments will appear here.',myTeams:'My teams',registerFor:'Register for {{name}}',
+    teamName:'Team name',membersHelp:'Enter {{count}} members, one per line: Name, email, mobile',
+    registering:'Registering…',confirm:'Confirm registration',loginRequired:'Sign in to register a team.',
+    invalidName:'Enter a team name.',invalidMembers:'Every member must have a name.',
+    registered:'Team registered. Complete payment to confirm registration.',paid:'Tournament payment completed successfully.',
+    states:{PAYMENT_PENDING:'Payment pending',ALREADY_REGISTERED:'Already registered',REGISTRATION_UNAVAILABLE:'Registration unavailable',
+      REGISTRATION_NOT_OPEN:'Registration not open',REGISTRATION_CLOSED:'Registration closed',FULL:'Tournament full',REGISTER_TEAM:'Register team'}
+  },
+  mobileNotifications:{
+    loginDescription:'Sign in to see booking, payment and account messages.',eyebrow:'MESSAGE CENTRE',
+    title:'Notifications',description:'Account, booking, payment, membership, training, tournament and shop updates.',
+    preferences:'Delivery preferences',email:'Email',sms:'SMS',push:'Push',recent:'Recent messages',
+    empty:'No notifications',emptyDescription:'Your account messages will appear here.'
+  },
   mobileOperations:{
     accessRequired:'Operations access required',accessDescription:'Sign in with an Operations account.',
     title:'Facility operations',description:'Today’s facility queue. Payment must be confirmed before check-in.',

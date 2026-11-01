@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
+import {useTranslation} from 'react-i18next';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { EmptyState } from '@/components/screen-shell';
 import { BrandColors } from '@/constants/brand';
@@ -10,20 +11,21 @@ type Notice={id:string;category:string;subject:string;message:string;readAt?:str
 type Preferences={emailEnabled:boolean;smsEnabled:boolean;pushEnabled:boolean};
 
 export default function NotificationsScreen(){
+ const {t,i18n}=useTranslation();
  const {user}=useAuth();const[items,setItems]=useState<Notice[]>([]);const[prefs,setPrefs]=useState<Preferences>({emailEnabled:true,smsEnabled:true,pushEnabled:true});
  const[loading,setLoading]=useState(true);const[refreshing,setRefreshing]=useState(false);const[error,setError]=useState('');
  const load=useCallback(async()=>{if(!user){setLoading(false);return}try{const[n,p]=await Promise.all([api<Notice[]>('/api/v1/notifications/me'),api<Preferences>('/api/v1/notifications/preferences')]);setItems(n);setPrefs(p);setError('')}catch(cause){setError(cause instanceof ApiError?cause.message:'Unable to load notifications.')}finally{setLoading(false);setRefreshing(false)}},[user]);
  useEffect(()=>{void load()},[load]);
  async function read(id:string){try{await api('/api/v1/notifications/'+id+'/read',{method:'PATCH'});setItems(current=>current.map(item=>item.id===id?{...item,readAt:new Date().toISOString()}:item))}catch(cause){setError(cause instanceof ApiError?cause.message:'Unable to mark notification as read.')}}
  async function preference(key:keyof Preferences,value:boolean){const next={...prefs,[key]:value};setPrefs(next);try{setPrefs(await api<Preferences>('/api/v1/notifications/preferences',{method:'PUT',body:JSON.stringify(next)}))}catch(cause){setPrefs(prefs);setError(cause instanceof ApiError?cause.message:'Unable to update notification preferences.')}}
- if(!user)return <View style={styles.center}><EmptyState icon="bell-outline" title="Login required" description="Login to see booking, payment and account messages."/></View>;
+ if(!user)return <View style={styles.center}><EmptyState icon="bell-outline" title={t("auth.loginRequired")} description={t("mobileNotifications.loginDescription")}/></View>;
  return <ScrollView style={styles.screen} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);void load()}}/>}>
-  <Text style={styles.eyebrow}>MESSAGE CENTRE</Text><Text style={styles.title}>Notifications</Text>
-  <Text style={styles.subtitle}>Account, booking, payment, membership, training, tournament and shop updates.</Text>
+  <Text style={styles.eyebrow}>{t('mobileNotifications.eyebrow')}</Text><Text style={styles.title}>{t('mobileNotifications.title')}</Text>
+  <Text style={styles.subtitle}>{t('mobileNotifications.description')}</Text>
   {!!error&&<Text style={styles.error}>{error}</Text>}
-  <View style={styles.preferences}><Text style={styles.section}>Delivery preferences</Text><Preference label="Email" value={prefs.emailEnabled} onChange={v=>void preference('emailEnabled',v)}/><Preference label="SMS" value={prefs.smsEnabled} onChange={v=>void preference('smsEnabled',v)}/><Preference label="Push" value={prefs.pushEnabled} onChange={v=>void preference('pushEnabled',v)}/></View>
-  <Text style={styles.section}>Recent messages</Text>
-  {loading?<ActivityIndicator color={BrandColors.accent}/>:items.length?items.map(item=><Pressable key={item.id} onPress={()=>!item.readAt&&void read(item.id)} style={[styles.card,!item.readAt&&styles.unread]}><View style={styles.row}><View style={styles.icon}><MaterialCommunityIcons name={icon(item.category)} size={22} color={BrandColors.primary}/></View><View style={styles.flex}><Text style={styles.subject}>{item.subject}</Text><Text style={styles.message}>{item.message}</Text><Text style={styles.date}>{new Date(item.createdAt).toLocaleString()}</Text></View>{!item.readAt&&<View style={styles.dot}/>}</View></Pressable>):<EmptyState icon="bell-outline" title="No notifications" description="Your transactional messages will appear here."/>}
+  <View style={styles.preferences}><Text style={styles.section}>{t('mobileNotifications.preferences')}</Text><Preference label={t("mobileNotifications.email")} value={prefs.emailEnabled} onChange={v=>void preference('emailEnabled',v)}/><Preference label={t("mobileNotifications.sms")} value={prefs.smsEnabled} onChange={v=>void preference('smsEnabled',v)}/><Preference label={t("mobileNotifications.push")} value={prefs.pushEnabled} onChange={v=>void preference('pushEnabled',v)}/></View>
+  <Text style={styles.section}>{t('mobileNotifications.recent')}</Text>
+  {loading?<ActivityIndicator color={BrandColors.accent}/>:items.length?items.map(item=><Pressable key={item.id} onPress={()=>!item.readAt&&void read(item.id)} style={[styles.card,!item.readAt&&styles.unread]}><View style={styles.row}><View style={styles.icon}><MaterialCommunityIcons name={icon(item.category)} size={22} color={BrandColors.primary}/></View><View style={styles.flex}><Text style={styles.subject}>{item.subject}</Text><Text style={styles.message}>{item.message}</Text><Text style={styles.date}>{new Date(item.createdAt).toLocaleString(i18n.language==='kn'?'kn-IN':'en-IN')}</Text></View>{!item.readAt&&<View style={styles.dot}/>}</View></Pressable>):<EmptyState icon="bell-outline" title={t("mobileNotifications.empty")} description={t("mobileNotifications.emptyDescription")}/>}
  </ScrollView>
 }
 function Preference({label,value,onChange}:{label:string;value:boolean;onChange(value:boolean):void}){return <View style={styles.preference}><Text style={styles.preferenceLabel}>{label}</Text><Switch value={value} onValueChange={onChange} trackColor={{true:BrandColors.accent}}/></View>}
