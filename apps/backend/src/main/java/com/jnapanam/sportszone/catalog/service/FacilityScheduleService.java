@@ -21,14 +21,36 @@ public class FacilityScheduleService {
         this.catalogue = catalogue; this.hours = hours; this.closures = closures; this.overrides = overrides;
     }
 
+    /** Backward compatible single-period endpoint: replaces that weekday, never appends silently. */
     @Transactional
     public OperatingHourResponse setOperatingHour(UUID facilityId, OperatingHourRequest request) {
-        validateHours(request);
-        Facility facility = catalogue.requireFacility(facilityId);
-        FacilityOperatingHour value = hours.findByFacilityIdAndDayOfWeek(facilityId, request.dayOfWeek())
-                .orElseGet(() -> new FacilityOperatingHour(facility, request.dayOfWeek(), request.openTime(), request.closeTime(), request.closed()));
-        value.change(request.openTime(), request.closeTime(), request.closed());
-        return OperatingHourResponse.from(hours.save(value));
+        return replaceOperatingPeriods(facilityId, request.dayOfWeek(), List.of(request)).get(0);
+    }
+
+    /** Atomically replace all non-overlapping operating windows for one weekday. */
+    @Transactional
+    public List<OperatingHourResponse> replaceOperatingPeriods(UUID facilityId, DayOfWeek day,
+                                                                List<OperatingHourRequest> requests) {
+        Facility facility = catalogue.requireFacilityLocked(facilityId);
+        if (day == null || requests == null || requests.isEmpty())
+            throw new BadRequestException("Specify at least one operating period or a closed weekday");
+        for (OperatingHourRequest request : requests) {
+            if (request == null || request.dayOfWeek() != day)
+                throw new BadRequestException("Every period must use the selected weekday");
+            validateHours(request);
+        }
+        List<OperatingHourRequest> sorted = requests.stream()
+                .sorted(Comparator.comparing(r -> r.closed() ? LocalTime.MIN : r.openTime())).toList();
+        if (sorted.stream().anyMatch(OperatingHourRequest::closed) && sorted.size() != 1)
+            throw new BadRequestException("A closed weekday cannot also have opening periods");
+        for (int i = 1; i < sorted.size(); i++)
+            if (sorted.get(i - 1).closeTime().isAfter(sorted.get(i).openTime()))
+                throw new BadRequestException("Operating periods cannot overlap");
+        hours.deleteAll(hours.findByFacilityIdAndDayOfWeekOrderByOpenTimeAsc(facilityId, day));
+        hours.flush();
+        List<FacilityOperatingHour> replacements = sorted.stream()
+                .map(r -> new FacilityOperatingHour(facility, day, r.openTime(), r.closeTime(), r.closed())).toList();
+        return hours.saveAll(replacements).stream().map(OperatingHourResponse::from).toList();
     }
 
     @Transactional

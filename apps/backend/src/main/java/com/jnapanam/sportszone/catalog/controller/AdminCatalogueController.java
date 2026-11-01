@@ -48,6 +48,12 @@ public class AdminCatalogueController {
         return schedules.setOperatingHour(facilityId, request);
     }
 
+    @PutMapping("/facilities/{facilityId}/operating-periods/{day}")
+    public List<OperatingHourResponse> replaceOperatingPeriods(@PathVariable UUID facilityId,
+            @PathVariable java.time.DayOfWeek day, @Valid @RequestBody List<@Valid OperatingHourRequest> periods) {
+        return schedules.replaceOperatingPeriods(facilityId, day, periods);
+    }
+
     @PostMapping("/facilities/{facilityId}/closures")
     public ResponseEntity<ClosureResponse> addClosure(@PathVariable UUID facilityId, @Valid @RequestBody ClosureRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(schedules.addClosure(facilityId, request));

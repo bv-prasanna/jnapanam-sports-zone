@@ -6,7 +6,7 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "facility_operating_hours", uniqueConstraints = @UniqueConstraint(name = "uq_facility_day", columnNames = {"facility_id", "day_of_week"}))
+@Table(name = "facility_operating_hours")
 public class FacilityOperatingHour {
     @Id private UUID id;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "facility_id") private Facility facility;

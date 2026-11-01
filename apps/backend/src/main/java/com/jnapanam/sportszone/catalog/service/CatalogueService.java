@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.repository.Lock;
 
 @Service
 public class CatalogueService {
@@ -97,6 +98,7 @@ public class CatalogueService {
         if (facilities.existsByCodeIgnoreCase(code)) throw new ConflictException("Facility code already exists");
         Sport sport = requireSport(request.sportCode());
         Facility facility = new Facility(sport, code, request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
+        facility.configureBookingRules(request.bufferMinutes(), request.termsAndConditions());
         return FacilityResponse.from(facilities.save(facility));
     }
 
@@ -105,6 +107,7 @@ public class CatalogueService {
         Facility facility = requireFacility(id);
         if (request.code() != null && !request.code().isBlank() && !facility.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Facility code cannot be changed");
         facility.update(requireSport(request.sportCode()), request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
+        facility.configureBookingRules(request.bufferMinutes(), request.termsAndConditions());
         return FacilityResponse.from(facility);
     }
 
@@ -126,6 +129,7 @@ public class CatalogueService {
     public Sport requireSport(UUID id) { return sports.findById(id).orElseThrow(() -> new NotFoundException("Sport not found")); }
     public Sport requireSport(String code) { return sports.findByCodeIgnoreCase(code).orElseThrow(() -> new NotFoundException("Sport not found")); }
     public Facility requireFacility(UUID id) { return facilities.findById(id).orElseThrow(() -> new NotFoundException("Facility not found")); }
+    public Facility requireFacilityLocked(UUID id) { return facilities.findLocked(id).orElseThrow(() -> new NotFoundException("Facility not found")); }
     public Facility requireFacility(String code) { return facilities.findByCodeIgnoreCase(code).orElseThrow(() -> new NotFoundException("Facility not found")); }
 
     static void validateStatus(StatusRequest request) {
