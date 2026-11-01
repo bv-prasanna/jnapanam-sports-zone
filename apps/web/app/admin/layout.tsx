@@ -35,7 +35,7 @@ function AdminShell({children}:PropsWithChildren){
     <a href="#admin-main-content" className={styles.skip}>Skip to main content</a>
     <header className={styles.topBar}>
       <div className={styles.brandGroup}>
-        <button className={styles.menuToggle} type="button" aria-label={menuOpen?"Close navigation":"Open navigation"} aria-expanded={menuOpen} aria-controls="jnapanam-admin-navigation" onClick={()=>setMenuOpen(v=>!v)}>{menuOpen?"✕":"☰"}</button>
+        <button className={styles.menuToggle} type="button" aria-label={menuOpen?"Close navigation":"Open navigation"} aria-expanded={menuOpen} aria-controls="jnapanam-admin-navigation" onClick={()=>setMenuOpen(v=>!v)}>{menuOpen?"✕ Close":"☰ Menu"}</button>
         <Link href="/admin" className={styles.brand} onClick={()=>setMenuOpen(false)}><span className={styles.brandIcon} aria-hidden="true">J</span><span><strong>Jnapanam Sports Zone</strong><small>Administration</small></span></Link>
       </div>
       <div className={styles.account}>
