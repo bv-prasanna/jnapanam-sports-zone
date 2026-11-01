@@ -134,7 +134,7 @@ public class TournamentService {
 
     private TournamentResponse createFor(UUID organizerId, TournamentRequest request) {
         validateDates(request);
-        String code=generatedCode(request.name());
+        String code=(request.code()==null||request.code().isBlank())?generatedCode(request.name()):request.code();if(tournaments.existsByCodeIgnoreCase(code))throw new ConflictException("Tournament code already exists");
         User organizer = user(organizerId);
         if (!eligibleOrganizer(organizer)) throw new ConflictException("Select an approved organizer, administrator, or super administrator");
         Sport sport = sports.findByCodeIgnoreCase(request.sportCode())
