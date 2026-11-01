@@ -53,6 +53,33 @@ public class VenueInvoicePdfService {
             return out.toByteArray();
         }catch(IOException ex){throw new IllegalStateException("Unable to render billing document PDF",ex);}
     }
+    /** Proof of payment, explicitly not a GST tax invoice. Available even before GST setup. */
+    public byte[] renderPaymentReceipt(Map<String,Object> receipt) {
+        try(PDDocument pdf=new PDDocument();ByteArrayOutputStream out=new ByteArrayOutputStream()){
+            PDPage page=new PDPage(org.apache.pdfbox.pdmodel.common.PDRectangle.A4);
+            pdf.addPage(page);
+            try(PDPageContentStream c=new PDPageContentStream(pdf,page)){
+                PDFont heading=new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
+                PDFont body=new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+                float y=780;
+                y=line(c,heading,19,50,y,"JNapanam Sports Zone");
+                y=line(c,heading,15,50,y-15,"PAYMENT RECEIPT");
+                y=line(c,body,11,50,y,"Receipt number: "+str(receipt.get("receiptNumber")));
+                y=line(c,body,11,50,y,"Service: "+str(receipt.get("purpose")));
+                if(receipt.get("bookingNumber")!=null)
+                    y=line(c,body,11,50,y,"Booking: "+str(receipt.get("bookingNumber")));
+                y=line(c,body,11,50,y,"Payment status: "+str(receipt.get("status")));
+                y=line(c,body,11,50,y,"Payment date: "+str(receipt.get("paidAt")));
+                y=line(c,body,11,50,y-20,"Amount paid: "+money(receipt.get("paymentAmountPaise")));
+                y=line(c,body,10,50,y,"Promotion discount: "+money(receipt.get("discountPaise")));
+                y=line(c,body,10,50,y,"Loyalty points used: "+str(receipt.get("loyaltyPointsUsed")));
+                line(c,body,10,50,y-25,"This receipt confirms payment; it is not a GST tax invoice.");
+            }
+            pdf.save(out);
+            return out.toByteArray();
+        }catch(IOException ex){throw new IllegalStateException("Unable to render payment receipt PDF",ex);}
+    }
+
     private static float line(PDPageContentStream c,PDFont f,int size,float x,float y,String value)throws IOException{
         if(y<45)throw new IOException("Document overflows one-page invoice template");
         c.beginText();c.setFont(f,size);c.newLineAtOffset(x,y);
