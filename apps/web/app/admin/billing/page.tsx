@@ -44,7 +44,7 @@ export default function BillingAdmin(){
  <label>Tax component allocation<select value={componentMode} onChange={e=>setComponentMode(e.target.value)}><option value="CGST_SGST">CGST + SGST (intra-state, when applicable)</option><option value="IGST">IGST (inter-state, when applicable)</option></select></label>
  <p className={styles.help}>Verify place-of-supply treatment and discount/loyalty allocation before issuing. Documents cannot be edited after issue.</p>
  <button className={styles.primary} type="button" disabled={busy||!!receipt.documents?.some(d=>d.kind==="INVOICE")} onClick={()=>void issue()}>Issue GST invoice</button>
- <h3>Issued documents</h3>{receipt.documents?.length?receipt.documents.map(d=><p key={d.documentNumber}>{d.kind.replace("_"," ")}: {d.documentNumber} · {d.state}</p>):<p>No documents issued.</p>}
+ <a href={`/billing-documents/${selected}`} target="_blank" rel="noopener noreferrer">View / print receipt and issued documents</a><h3>Issued documents</h3>{receipt.documents?.length?receipt.documents.map(d=><p key={d.documentNumber}>{d.kind.replace("_"," ")}: {d.documentNumber} · {d.state}</p>):<p>No documents issued.</p>}
  <h3>Processed refunds</h3>{receipt.refunds?.length?receipt.refunds.map(r=><p key={r.id}>₹{(r.amountPaise/100).toFixed(2)} · {r.status} {r.status==="PROCESSED"&&<button disabled={busy} type="button" onClick={()=>void credit(r.id)}>Issue credit note</button>}</p>):<p>No refunds.</p>}
  </>}</div></section></main>;
 }
