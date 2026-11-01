@@ -220,6 +220,10 @@ public class PaymentService {
         // even when the test repository has not yet included it in findByPaymentOrderId.
         if (total < refund.getAmountPaise()) total = refund.getAmountPaise();
         order.refundStatus(total);
+        if(total >= order.getAmountPaise()){
+            loyaltyService.reverseRedemption(order.getUser(),order);
+            loyaltyService.reverseEarn(order.getUser(),order);
+        }
         if (total >= order.getAmountPaise() && order.getPurpose() == PaymentPurpose.BOOKING)
             bookings.findById(order.getReferenceId()).ifPresent(Booking::refunded);
         notificationService.refund(order.getUser().getId(), order.getReceiptNumber(), refund.getAmountPaise());
