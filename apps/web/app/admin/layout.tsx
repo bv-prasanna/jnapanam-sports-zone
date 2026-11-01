@@ -34,7 +34,6 @@ const entries:Entry[]=[
   {label:"Audit Log",href:"/admin?view=audit",category:"System"},
   {label:"UAT OTP Numbers",href:"/admin/uat-otp",category:"System",superAdmin:true},
 ];
-export const adminNavEntries=entries;
 
 function AdminShell({children}:PropsWithChildren){
   const router=useRouter(),pathname=usePathname(),search=useSearchParams();
