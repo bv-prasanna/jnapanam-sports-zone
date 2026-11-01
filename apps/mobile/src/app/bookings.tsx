@@ -28,6 +28,8 @@ type Facility = {
   sportName: string;
   locationLabel?: string;
   bookingPrice: number;
+  termsAndConditions?: string;
+  bufferMinutes?: number;
 };
 
 type Sport = { code: string; name: string };
@@ -146,6 +148,7 @@ export default function BookingsScreen() {
   const [sportCode, setSportCode] = useState('');
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [facilityId, setFacilityId] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [quotes, setQuotes] = useState<Record<string, SlotQuote>>({});
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -218,6 +221,9 @@ export default function BookingsScreen() {
   }
 
   async function book(slotId: string, paymentOption: 'PAY_NOW' | 'PAY_AT_VENUE') {
+    if (facilities.find(item => item.id === facilityId)?.termsAndConditions && !termsAccepted) {
+      setError('Please accept the facility rules before booking.'); return;
+    }
     if (!quotes[slotId]) { setError(t("bookings.refreshPrices")); return; }
     const key = `${slotId}-${paymentOption}`;
     setProcessing(key);
@@ -230,7 +236,7 @@ export default function BookingsScreen() {
       });
       const booking = await api<Booking>('/api/v1/bookings/confirm', {
         method: 'POST',
-        body: JSON.stringify({ holdId: hold.id, paymentOption, expectedTotalPaise: Math.round(quotes[slotId].total * 100) }),
+        body: JSON.stringify({ holdId: hold.id, paymentOption, expectedTotalPaise: Math.round(quotes[slotId].total * 100), acceptedTerms: termsAccepted }),
       });
 
       if (paymentOption === 'PAY_NOW') {
@@ -328,6 +334,7 @@ export default function BookingsScreen() {
               }))}
               onChange={(value) => {
                 setFacilityId(value);
+                setTermsAccepted(false);
                 setSlots([]);
               }}
             />
@@ -375,6 +382,15 @@ export default function BookingsScreen() {
           )}
         </Pressable>
 
+        {!!facilities.find(item => item.id === facilityId)?.termsAndConditions && (
+          <Pressable accessibilityRole="checkbox" accessibilityState={{checked:termsAccepted}}
+            onPress={() => setTermsAccepted(v => !v)}
+            style={{marginTop:14,padding:14,borderRadius:12,backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border}}>
+            <Text style={{fontWeight:'900',color:BrandColors.textPrimary}}>{termsAccepted ? '☑' : '☐'} Facility rules & conditions</Text>
+            <Text style={{color:BrandColors.textSecondary,marginTop:6,lineHeight:20}}>{facilities.find(item => item.id === facilityId)?.termsAndConditions}</Text>
+            <Text style={{color:BrandColors.textPrimary,marginTop:6}}>I have read and agree to these rules.</Text>
+          </Pressable>
+        )}
         {!!slots.length && (
           <>
             <Text style={styles.sectionTitle}>{t('bookings.availableSlots')}</Text>
@@ -397,7 +413,7 @@ export default function BookingsScreen() {
                   </View>
                   <View style={styles.actionRow}>
                     <Pressable
-                      disabled={!slot.available || !quotes[slot.id] || !!processing}
+                      disabled={!slot.available || !quotes[slot.id] || !!processing || (!!facilities.find(item => item.id === facilityId)?.termsAndConditions && !termsAccepted)}
                       style={[styles.payButton, (!slot.available || !quotes[slot.id] || !!processing) && styles.disabled]}
                       onPress={() => void book(slot.id, 'PAY_NOW')}
                     >
@@ -408,7 +424,7 @@ export default function BookingsScreen() {
                       )}
                     </Pressable>
                     <Pressable
-                      disabled={!slot.available || !quotes[slot.id] || !!processing}
+                      disabled={!slot.available || !quotes[slot.id] || !!processing || (!!facilities.find(item => item.id === facilityId)?.termsAndConditions && !termsAccepted)}
                       style={[styles.venueButton, (!slot.available || !quotes[slot.id] || !!processing) && styles.disabled]}
                       onPress={() => void book(slot.id, 'PAY_AT_VENUE')}
                     >

@@ -4,6 +4,10 @@ import com.jnapanam.sportszone.identity.model.User;import jakarta.persistence.*;
  @Id private UUID id;@Column(name="booking_number",nullable=false,unique=true,length=30)private String bookingNumber;
  @ManyToOne(fetch=FetchType.LAZY,optional=false)@JoinColumn(name="user_id")private User user;@ManyToOne(fetch=FetchType.LAZY,optional=false)@JoinColumn(name="slot_id")private BookingSlot slot;
  @Column(nullable=false)private int quantity;@Enumerated(EnumType.STRING)@Column(nullable=false,length=20)private BookingStatus status;
+ @Column(name="terms_accepted_at")private Instant termsAcceptedAt;
+ @Column(name="terms_snapshot",length=3000)private String termsSnapshot;
+ public void acceptTerms(String terms) { if (terms!=null&&!terms.isBlank()) { this.termsSnapshot=terms; this.termsAcceptedAt=Instant.now(); } }
+ public Instant getTermsAcceptedAt(){return termsAcceptedAt;}
  @Column(name="confirmed_at",nullable=false)private Instant confirmedAt;@Column(name="cancelled_at")private Instant cancelledAt;@Column(name="checked_in_at")private Instant checkedInAt;
  @ManyToOne(fetch=FetchType.LAZY)@JoinColumn(name="checked_in_by")private User checkedInBy;@Column(name="checked_out_at")private Instant checkedOutAt;@ManyToOne(fetch=FetchType.LAZY)@JoinColumn(name="checked_out_by")private User checkedOutBy;@Column(name="identity_verified",nullable=false)private boolean identityVerified;@Column(name="verification_note",length=120)private String verificationNote;
  @Column(name="price_base_paise") private Long priceBasePaise;@Column(name="price_subtotal_paise") private Long priceSubtotalPaise;@Column(name="price_tax_paise") private Long priceTaxPaise;@Column(name="price_total_paise") private Long priceTotalPaise;@Column(name="price_rule_id",length=40) private String priceRuleId;@Column(name="tax_rule_id",length=40) private String taxRuleId;@Column(name="price_locked_at") private Instant priceLockedAt;@Column(name="tax_rate_percent",precision=7,scale=3) private java.math.BigDecimal taxRatePercent;@Column(name="tax_inclusive") private Boolean taxInclusive;

@@ -48,10 +48,14 @@ public class BookingService {
   if(hold.getStatus()!=HoldStatus.ACTIVE) throw new ConflictException("Hold is no longer active");
   BookingSlot slot=slots.findLocked(hold.getSlot().getId()).orElseThrow(()->new NotFoundException("Slot not found"));
   if (!slot.getFacility().isAvailableOn(slot.getDate())) throw new ConflictException("Facility or sport is suspended for this date");
+  String rules = slot.getFacility().getTermsAndConditions();
+  if(rules != null && !rules.isBlank() && !Boolean.TRUE.equals(request.acceptedTerms()))
+      throw new BadRequestException("Accept the facility terms and conditions before confirming your booking");
   if(hold.expired(Instant.now())){slot.releaseHold(hold.getQuantity());hold.change(HoldStatus.EXPIRED);throw new ConflictException("Hold has expired");}
   var quote=pricingService==null?null:pricingService.quote(slot,hold.getQuantity());
   if(quote!=null && request.expectedTotalPaise()!=null && request.expectedTotalPaise()!=quote.total().movePointRight(2).longValueExact())throw new ConflictException("Slot price changed. Refresh price and try again.");
   slot.confirm(hold.getQuantity());hold.change(HoldStatus.CONVERTED);boolean priced=quote==null?slot.getFacility().getBookingPrice().signum()>0:quote.total().signum()>0;PaymentOption option=request.paymentOption()==null?PaymentOption.PAY_NOW:request.paymentOption();if(priced&&hold.getUser().isRequiresUpfrontPayment()&&option==PaymentOption.PAY_AT_VENUE)throw new ConflictException("Upfront online payment is required for this customer");boolean paymentRequired=priced&&option==PaymentOption.PAY_NOW;Booking booked=new Booking(hold.getUser(),slot,hold.getQuantity(),priced,option,paymentRequired,Instant.now().plusSeconds(paymentMinutes*60));
+  if(Boolean.TRUE.equals(request.acceptedTerms())) booked.acceptTerms(rules);
   if(quote!=null)booked.lockPrice(quote.unitBase().multiply(java.math.BigDecimal.valueOf(hold.getQuantity())).movePointRight(2).longValueExact(),quote.taxableValue().movePointRight(2).longValueExact(),quote.tax().movePointRight(2).longValueExact(),quote.total().movePointRight(2).longValueExact(),quote.priceRuleId(),quote.taxRuleId(),quote.taxRatePercent(),quote.taxInclusive());
   Booking saved=bookings.save(booked);notificationService.lifecycle(userId,paymentRequired?"BOOKING_CREATED":"BOOKING_CONFIRMED",paymentRequired?"Booking created - payment pending":"Booking confirmed",paymentRequired?"Booking "+saved.getBookingNumber()+" is reserved. Complete payment before the payment window expires.":"Booking "+saved.getBookingNumber()+" is confirmed. Payment can be collected at the venue.");return BookingResponse.from(saved);
  }
