@@ -11,10 +11,18 @@ type Item={id:string;name:string;scope:Scope;target?:string|null;targetLabel?:st
 type Option={code?:string;id?:string;name:string};
 type Slot={id:string;startTime:string;endTime:string};
 const scopes:[Scope,string][]=[["SITE","Entire site"],["SPORT","Sport"],["FACILITY","Facility / court"],["SLOT","Individual slot"]];
-const empty=()=>({name:"",scope:"SITE" as Scope,target:"",value:"0",adjustment:"ADD_PERCENT",priority:"0",startTime:"",endTime:"",effectiveFrom:"",effectiveTo:"",ratePercent:"0",inclusive:false,weekdays:[] as string[]});
+const empty=(scope:Scope="FACILITY")=>({name:"",scope,target:"",value:"",adjustment:"FIXED_PRICE",priority:"0",startTime:"",endTime:"",effectiveFrom:"",effectiveTo:"",ratePercent:"0",inclusive:false,weekdays:[] as string[]});
 const days=["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"];
 const dateOnly=(v?:string)=>v?v.slice(0,10):"";
 const timeOnly=(v?:string)=>v?v.slice(0,5):"";
+const whenText=(r:Item)=>{
+ const days=r.weekdays?.split(",").filter(Boolean)||[];
+ const cadence=days.length?days.map(day=>day.slice(0,3)).join(", "):"Every day";
+ const hours=r.start_time&&r.end_time?`${timeOnly(r.start_time)}–${timeOnly(r.end_time)}`:"All hours";
+ const from=dateOnly(r.effective_from),to=dateOnly(r.effective_to);
+ const dates=from&&to&&from===to?`Only ${from}`:from||to?`${from||"Any day"} – ${to||"Ongoing"}`:"No end date";
+ return `${cadence} · ${hours} · ${dates}`;
+};
 export default function PricingAdminPage(){
  const router=useRouter(),searchParams=useSearchParams();
  const requestedTab=searchParams.get("tab");
@@ -24,25 +32,55 @@ export default function PricingAdminPage(){
  const [slotFacility,setSlotFacility]=useState(""),[slotDate,setSlotDate]=useState(new Date().toLocaleDateString("en-CA"));
  const [editing,setEditing]=useState<string|null>(null),[visible,setVisible]=useState(false);
  const [form,setForm]=useState(empty());
+ const [exceptionFor,setExceptionFor]=useState<Item|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState("");
  const load=useCallback(async()=>{try{setError("");const [data,s,f]=await Promise.all([api<Item[]>(`/api/v1/admin/${kind}`),api<Option[]>("/api/v1/admin/catalog/sports"),api<Option[]>("/api/v1/admin/catalog/facilities")]);setRecords(data);setSports(s);setFacilities(f)}catch(e){setError(e instanceof Error?e.message:"Unable to load pricing configuration")}},[kind]);
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{const next:Kind=requestedTab==="taxes"?"taxes":"pricing-rules";setKind(next);setEditing(null);setVisible(false);setError("")},[requestedTab]);
  useEffect(()=>{if(form.scope!=="SLOT"||!slotFacility||!slotDate){setSlots([]);return}let active=true;api<Slot[]>(`/api/v1/public/facilities/${slotFacility}/slots?date=${slotDate}`).then(v=>{if(active)setSlots(v)}).catch(()=>{if(active)setSlots([])});return()=>{active=false}},[form.scope,slotFacility,slotDate]);
- function reset(){setForm(empty());setEditing(null);setVisible(false);setError("")}
+ function reset(){setForm(empty(kind==="taxes"?"SITE":"FACILITY"));setEditing(null);setExceptionFor(null);setVisible(false);setError("")}
+ function newPricePreset(preset:"day"|"evening"){
+   setKind("pricing-rules");setEditing(null);setExceptionFor(null);setSuccess("");setError("");
+   setForm({...empty(),name:preset==="day"?"Daytime standard rate":"Evening floodlight rate",adjustment:"FIXED_PRICE",
+      value:preset==="day"?"300":"400",startTime:preset==="day"?"00:00":"18:00",endTime:preset==="day"?"18:00":"23:00"});
+   setVisible(true);
+ }
+ function exceptionForDate(rule:Item){
+   const priority=Math.max(0,...records.filter(r=>r.active&&r.scope===rule.scope&&r.target===rule.target).map(r=>Number(r.priority||0)))+1;
+   setEditing(null);setExceptionFor(rule);setSuccess("");setError("");
+   setForm({...empty(),scope:rule.scope,target:rule.target||"",name:rule.name+" — date override",
+      startTime:timeOnly(rule.start_time),endTime:timeOnly(rule.end_time),
+      adjustment:"FIXED_PRICE",value:"",priority:String(priority),weekdays:[]});
+   setVisible(true);
+ }
  function selectTab(next:Kind){setKind(next);reset();router.replace(`/admin/pricing?tab=${next}`)}
- function edit(r:Item){setForm({name:r.name,scope:r.scope,target:r.target||"",value:String(r.value??0),adjustment:r.adjustment||"ADD_PERCENT",priority:String(r.priority??0),startTime:timeOnly(r.start_time),endTime:timeOnly(r.end_time),effectiveFrom:dateOnly(r.effective_from),effectiveTo:dateOnly(r.effective_to),ratePercent:String(r.rate_percent??0),inclusive:Boolean(r.inclusive),weekdays:r.weekdays?r.weekdays.split(",").filter(Boolean):[]});setEditing(r.id);setVisible(true);setSuccess("")}
+ function edit(r:Item){setForm({name:r.name,scope:r.scope,target:r.target||"",value:String(r.value??0),adjustment:r.adjustment||"ADD_PERCENT",priority:String(r.priority??0),startTime:timeOnly(r.start_time),endTime:timeOnly(r.end_time),effectiveFrom:dateOnly(r.effective_from),effectiveTo:dateOnly(r.effective_to),ratePercent:String(r.rate_percent??0),inclusive:Boolean(r.inclusive),weekdays:r.weekdays?r.weekdays.split(",").filter(Boolean):[]});setEditing(r.id);setExceptionFor(null);setVisible(true);setSuccess("")}
  const set=(key:keyof ReturnType<typeof empty>,value:unknown)=>setForm(v=>({...v,[key]:value}));
  async function save(event:FormEvent){event.preventDefault();try{setBusy(true);setError("");setSuccess("");if(form.scope!=="SITE"&&!form.target)throw new Error("Choose a sport, facility or slot.");
+ if(kind==="pricing-rules"){
+   if(form.value.trim()===""||!Number.isFinite(Number(form.value)))throw new Error("Enter a valid price or adjustment.");
+   if(Boolean(form.startTime)!==Boolean(form.endTime))throw new Error("Set both start and end times, or leave both empty for all hours.");
+   if(form.startTime&&form.endTime&&form.endTime<=form.startTime)throw new Error("End time must be after start time. Split overnight pricing into two rules.");
+   if(exceptionFor&&(!form.effectiveFrom||form.effectiveTo!==form.effectiveFrom))throw new Error("Choose the one date for this exception.");
+   if(form.scope==="SLOT"&&!slotDate)throw new Error("Choose the date of the individual slot.");
+   if(!editing&&!exceptionFor&&form.scope==="FACILITY"&&form.startTime&&form.endTime){
+     const conflict=records.find(r=>r.active&&r.scope==="FACILITY"&&r.target===form.target&&
+       Number(r.priority||0)===Number(form.priority||0)&&
+       (!r.effective_from&&!r.effective_to)&&
+       ((r.weekdays||"")===""||form.weekdays.length===0||form.weekdays.some(d=>(r.weekdays||"").split(",").includes(d)))&&
+       (!r.start_time||!r.end_time||!(form.endTime<=timeOnly(r.start_time)||form.startTime>=timeOnly(r.end_time))));
+     if(conflict)throw new Error(`This time range overlaps the active rule "${conflict.name}". Edit that rule, select non-overlapping hours, or set an intentional priority.`);
+   }
+ }
  const shared={name:form.name.trim(),scope:form.scope,target:form.scope==="SITE"?null:form.target,effectiveFrom:form.effectiveFrom||null,effectiveTo:form.effectiveTo||null};
  const payload=kind==="taxes"?{...shared,ratePercent:Number(form.ratePercent),inclusive:form.inclusive}:{...shared,adjustment:form.adjustment,value:Number(form.value),priority:Number(form.priority),startTime:form.startTime||null,endTime:form.endTime||null,weekdays:form.weekdays};
  await api(`/api/v1/admin/${kind}${editing?"/"+editing:""}`,{method:editing?"PUT":"POST",body:JSON.stringify(payload)});
- reset();setSuccess("Rule saved successfully.");await load();
+ reset();setSuccess(exceptionFor?"One-day override saved. All other dates keep their recurring price.":"Rule saved successfully.");await load();
  }catch(e){setError(e instanceof Error?e.message:"Unable to save rule")}finally{setBusy(false)}}
  async function disable(r:Item){if(!window.confirm(`Deactivate "${r.name}"? Existing bookings and invoices will not change.`))return;try{setBusy(true);await api(`/api/v1/admin/${kind}/${r.id}`,{method:"DELETE"});setSuccess("Rule deactivated.");await load()}catch(e){setError(e instanceof Error?e.message:"Unable to deactivate rule")}finally{setBusy(false)}}
  const targets=form.scope==="SPORT"?sports.map(x=>({value:String(x.code),label:x.name})):form.scope==="FACILITY"?facilities.map(x=>({value:String(x.code),label:x.name})):slots.map(x=>({value:x.id,label:`${x.startTime?.slice(0,5)}–${x.endTime?.slice(0,5)}`}));
  return <main className={styles.page}>
- <header className={styles.head}><div><p className={styles.eyebrow}>ARENA REVENUE MANAGEMENT</p><h1>Pricing & Taxes</h1><p>Set site-wide, sport, court or individual slot rules. Existing booking prices remain locked.</p></div><button type="button" className={styles.primary} onClick={()=>{reset();setVisible(true)}}>+ Add rule</button></header>
+ <header className={styles.head}><div><p className={styles.eyebrow}>ARENA REVENUE MANAGEMENT</p><h1>Pricing & Taxes</h1><p>Set recurring facility rates by time of day, with optional one-day exceptions. Existing bookings keep their locked prices.</p></div><button type="button" className={styles.primary} onClick={()=>{reset();setVisible(true)}}>+ Add {kind==="taxes"?"tax":"price"} rule</button></header>
  <div className={styles.tabs} role="tablist" aria-label="Rule type"><button type="button" role="tab" aria-selected={kind==="pricing-rules"} onClick={()=>selectTab("pricing-rules")}>Dynamic Pricing</button><button type="button" role="tab" aria-selected={kind==="taxes"} onClick={()=>selectTab("taxes")}>Tax Management</button></div>
  {success&&<p role="status" className={styles.success}>{success}</p>}{error&&!visible&&<p role="alert" className={styles.error}>{error}</p>}
  <div className={styles.tableWrap}><table><thead><tr><th>Rule</th><th>Applies to</th><th>{kind==="taxes"?"Tax":"Adjustment"}</th><th>Effective dates</th><th>Status</th><th>Actions</th></tr></thead><tbody>{records.length?records.map(r=><tr key={r.id}><td><strong>{r.name}</strong></td><td>{scopes.find(x=>x[0]===r.scope)?.[1]}{r.target?" · "+(r.targetLabel||"Unavailable target"):""}</td><td>{kind==="taxes"?`${r.rate_percent}% ${r.inclusive?"included":"extra"}`:`${r.adjustment?.replaceAll("_"," ")}: ${r.value}`}</td><td>{dateOnly(r.effective_from)||"Any"} – {dateOnly(r.effective_to)||"Any"}</td><td>{r.active?"Active":"Inactive"}</td><td><button type="button" onClick={()=>edit(r)}>Edit</button> {r.active&&<button type="button" disabled={busy} onClick={()=>void disable(r)}>Deactivate</button>}</td></tr>):<tr><td colSpan={6}>No configured rules yet. Add a rule to begin.</td></tr>}</tbody></table></div>
