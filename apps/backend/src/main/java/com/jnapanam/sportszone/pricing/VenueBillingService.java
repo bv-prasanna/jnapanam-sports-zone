@@ -106,7 +106,7 @@ public class VenueBillingService {
         if(o.getPurpose()!=PaymentPurpose.BOOKING)
             throw new BadRequestException("Booking-specific GST invoice handling supports booking payments only");
         Booking b=bookings.findById(o.getReferenceId()).orElseThrow(()->new NotFoundException("Booking not found"));
-        if(b.getPriceTotalPaise()==null || b.getPriceTaxPaise()==null)
+        if(b.getPriceTotalPaise()==null || b.getPriceTaxPaise()==null || b.getTaxRatePercent()==null)
             throw new ConflictException("This legacy booking has no locked tax breakdown. Manual accounting review is required.");
         if(b.getPriceTotalPaise()!=o.getAmountPaise()||o.getDiscountPaise()!=0||o.getLoyaltyPointsUsed()!=0)
             throw new ConflictException("Discount or loyalty allocation requires manual tax review before invoice issue");
@@ -136,7 +136,7 @@ public class VenueBillingService {
         data.put("recipientStateCode",details.recipientStateCode());data.put("componentMode",details.componentMode());
         data.put("service",b.getSlot().getFacility().getName()+" — "+b.getSlot().getDate());
         data.put("bookingNumber",b.getBookingNumber());data.put("quantity",b.getQuantity());
-        data.put("taxablePaise",net);data.put("taxRatePercent",net==0?BigDecimal.ZERO:BigDecimal.valueOf(tax).multiply(BigDecimal.valueOf(100)).divide(BigDecimal.valueOf(net),3,RoundingMode.HALF_UP));data.put("cgstPaise",central);data.put("sgstPaise",state);
+        data.put("taxablePaise",net);data.put("taxRatePercent",b.getTaxRatePercent());data.put("taxInclusive",b.getTaxInclusive());data.put("cgstPaise",central);data.put("sgstPaise",state);
         data.put("igstPaise",integrated);data.put("totalPaise",total);data.put("paymentId",paymentId.toString());
         return issueDocument(paymentId,null,"INVOICE",net,tax,total,data);
     }
