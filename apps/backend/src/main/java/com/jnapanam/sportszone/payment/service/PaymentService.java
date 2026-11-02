@@ -120,6 +120,13 @@ public class PaymentService {
         resolveAmount(userId, order.getPurpose(), order.getReferenceId());
         if (!gateway.verifyPayment(order.getProviderOrderId(), request.providerPaymentId(), request.signature()))
             throw new BadRequestException("Invalid payment signature");
+        if ("RAZORPAY".equals(gateway.provider())) {
+            PaymentGateway.CapturedPayment captured=gateway.fetchPayment(request.providerPaymentId());
+            if(captured==null || !captured.captured())
+                throw new ConflictException("Payment capture is pending. Refresh payment status; do not pay again.");
+            if(!captured.matches(order.getProviderOrderId(),order.getAmountPaise(),order.getCurrency()))
+                throw new BadRequestException("Captured payment does not match this order, amount or currency");
+        }
         order.paid(request.providerPaymentId());
         fulfil(order);
         loyaltyService.earn(order.getUser(), order);

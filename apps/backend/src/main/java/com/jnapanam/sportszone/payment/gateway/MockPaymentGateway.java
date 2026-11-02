@@ -5,6 +5,7 @@ public class MockPaymentGateway implements PaymentGateway{
  public Order createOrder(String r,long a,String c){return new Order("order_mock_"+UUID.randomUUID().toString().replace("-","").substring(0,16));}
  public boolean verifyPayment(String o,String p,String s){return "mock-signature".equals(s);}
  public boolean verifyWebhook(String b,String s){return "mock-webhook-signature".equals(s);}
+ public CapturedPayment fetchPayment(String id){throw new UnsupportedOperationException("No live capture in mock mode");}
  public Refund refund(String p,long a,String r){return new Refund("rfnd_mock_"+UUID.randomUUID().toString().replace("-","").substring(0,16));}
  public String provider(){return "MOCK";}public String publicKey(){return "rzp_test_mock";}
 }
