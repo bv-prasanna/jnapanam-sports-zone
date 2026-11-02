@@ -112,6 +112,8 @@ const en = {
     email: 'Email', password: 'Password', fullName: 'Full name', mobile: 'Mobile number', confirmPassword: 'Confirm password',
     needAccount: 'New here? Create an account', haveAccount: 'Already registered? Login', joinCommunity: 'JOIN THE COMMUNITY',
     createAccount: 'Create Account', registerDescription: 'Register once to book facilities and join programs.',
+    verifyEmail:'Verify email', emailOtpSentTo:'We sent a 6-digit verification code to:', checkSpamFolder:'Check this inbox, including spam or junk.',emailVerificationCode:'Email verification code',
+    sixDigitOtp:'6-digit OTP',sendEmailOtp:'Send email OTP',verifyAndCreateAccount:'Verify & Create Account',changeEmail:'Wrong email? Change address',validEmailOtp:'Enter the 6-digit code from your email.',
     loginRequired: 'Login required', validCredentials: 'Enter a valid email and password.', validName: 'Enter a proper name using letters only.',
     validEmail: 'Enter a valid email address.', validMobile: 'Enter a valid 10 to 20 character mobile number.',
     passwordLength: 'Password must contain at least 8 characters.', passwordMismatch: 'Passwords do not match.', smsOtp:'SMS verification code', sendOtp:'Send SMS OTP', verifyOtp:'Verify OTP', resetPassword:'Reset password', deviceVerified:'This mobile device is verified for your session',

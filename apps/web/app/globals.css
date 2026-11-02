@@ -297,3 +297,17 @@
  .portal-nav>div{display:grid;gap:5px;padding:8px 10px 14px}
  .portal-nav button{white-space:normal;text-align:left;min-height:42px}
 }
+
+/* Responsive public contact phone links and clear OTP email recipient. */
+.utility-phone-links{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+.utility-phone-links>a{white-space:nowrap}
+@media(max-width:620px){
+ .utility-inner{height:auto;min-height:32px;padding:5px 0}
+ .utility-inner>div{flex-wrap:wrap;justify-content:center;row-gap:4px}
+ .utility-phone-links{gap:8px}
+ .utility-phone-links>a{font-size:11px}
+}
+.registration-otp-destination{margin:0;line-height:1.6;color:var(--muted)}
+.registration-otp-destination strong{display:block;overflow-wrap:anywhere;color:var(--olive);font-weight:800}
+.registration-change-email{justify-self:start;background:none;border:0;color:var(--saffron);cursor:pointer;font-weight:700;padding:0}
+.registration-change-email:hover{text-decoration:underline}
