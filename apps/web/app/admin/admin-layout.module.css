@@ -21,7 +21,7 @@
 .navLink:hover{background:#ffffff22;color:#fff}
 .navLink.active{background:var(--admin-accent);color:#fff;font-weight:850;box-shadow:inset 3px 0 0 var(--gold,#d99a32)}
 .content{min-width:0;width:100%;box-sizing:border-box;padding:clamp(18px,2.5vw,32px);background:var(--admin-bg)}
-.menuToggle{display:none;min-width:40px;height:40px;border:1px solid var(--admin-line);background:#fff;border-radius:9px;color:var(--admin-primary);font-size:22px}
+.menuToggle{display:none;min-width:90px;height:40px;border:1px solid var(--admin-line);background:#fff;border-radius:9px;color:var(--admin-primary);font-size:22px}
 .scrim{display:none}
 @media(max-width:1000px){.body{grid-template-columns:216px minmax(0,1fr)}.content{padding:18px}.topBar{padding:0 17px}}
 @media(max-width:760px){.body{display:block}.topBar{height:64px}.menuToggle{display:block}.brand strong{font-size:14px}.brandIcon{width:34px;height:34px;flex-basis:34px}.userIdentity{display:none}.account{gap:6px}.accountLink{display:none}.sidebar{position:fixed;top:64px;bottom:0;left:0;z-index:80;width:min(285px,85vw);height:calc(100dvh - 64px);transform:translateX(-110%);transition:transform .2s;padding-bottom:70px}.sidebarOpen{transform:translateX(0)}.scrim{display:block;position:fixed;inset:64px 0 0;background:#15191499;z-index:75;border:0;width:100%;height:calc(100vh - 64px)}.content{padding:16px}.navLink{padding:12px}}
@@ -30,3 +30,16 @@
 .logout{background:var(--admin-accent);color:#fff;border-color:var(--admin-accent)}
 .logout:hover{background:#aa3007;color:#fff;border-color:#aa3007}
 .shell :is(a,button):focus-visible{outline:3px solid var(--gold,#d99a32);outline-offset:3px}
+
+/* Guarantee a real left navigation column on desktop, rather than an
+   off-canvas sidebar if a mobile style or browser zoom leaked across. */
+@media(min-width:761px){
+ .body{display:grid;grid-template-columns:clamp(216px,18vw,254px) minmax(0,1fr)}
+ .sidebar{display:block;position:sticky;top:72px;transform:none;visibility:visible}
+ .menuToggle{display:none}
+}
+@media(max-width:760px){
+ .menuToggle{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;font-size:14px;font-weight:750;padding:8px 12px}
+ .sidebar{visibility:hidden;pointer-events:none}
+ .sidebar.sidebarOpen{visibility:visible;pointer-events:auto;transform:translateX(0)}
+}

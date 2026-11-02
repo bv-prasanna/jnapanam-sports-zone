@@ -128,3 +128,18 @@ test("admin theme follows the homepage palette, type and branded button states",
    assert.doesNotMatch(file,/#063b63|#0877b9|#17354a|#f4f8fa|#101d2a|#164b69|#52a8db/i);
  }
 });
+
+test("desktop admin and tablet customer sidebar remain visible; phone menus have labels",async()=>{
+ const admin=await source("app/admin/layout.tsx");
+ const css=await source("app/admin/admin-layout.module.css");
+ const customer=await source("app/dashboard/page.tsx");
+ const global=await source("app/globals.css");
+ assert.match(admin,/\{menuOpen\?"✕ Close":"☰ Menu"\}/);
+ assert.match(css,/@media\(min-width:761px\)/);
+ assert.match(css,/\.sidebar\{display:block;position:sticky/);
+ assert.match(css,/\.sidebar\.sidebarOpen\{visibility:visible/);
+ assert.match(customer,/aria-controls="jnapanam-customer-nav"/);
+ assert.match(customer,/portal-nav-toggle/);
+ assert.match(global,/@media\(min-width:701px\) and \(max-width:900px\)/);
+ assert.match(global,/\.portal-nav\.portal-nav-open\{display:flex\}/);
+});
