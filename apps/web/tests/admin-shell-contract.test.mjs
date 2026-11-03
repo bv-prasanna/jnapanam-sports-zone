@@ -143,3 +143,22 @@ test("desktop admin and tablet customer sidebar remain visible; phone menus have
  assert.match(global,/@media\(min-width:701px\) and \(max-width:900px\)/);
  assert.match(global,/\.portal-nav\.portal-nav-open\{display:flex\}/);
 });
+
+test("booking Pay Now remains clickable and displays an accessible terms message if unchecked",async()=>{
+ const page=await source("app/dashboard/page.tsx");
+ const css=await source("app/globals.css");
+ assert.match(page,/setTermsError\(true\)/);
+ assert.match(page,/Please accept the facility terms and conditions before continuing to payment/);
+ assert.match(page,/document\.querySelector\("\.booking-terms"\)\?\.scrollIntoView/);
+ assert.match(page,/termsError&&!termsAccepted&&<p className="booking-terms-error" role="alert"/);
+ assert.doesNotMatch(page,/disabled=\{!s\.available\|\|!quotes\[s\.id\]\|\|!!processing\|\|\(!!facilities/);
+ assert.match(css,/\.booking-terms-error/);
+});
+test("admin payment diagnostic view exposes Razorpay order and callback metadata",async()=>{
+ const page=await source("app/admin/page.tsx");
+ assert.match(page,/\/api\/v1\/admin\/payments\/webhook-events/);
+ assert.match(page,/Razorpay gateway events/);
+ assert.match(page,/Razorpay order ID/);
+ assert.match(page,/Search payment orders/);
+ assert.match(page,/Payment reconciliation required/);
+});

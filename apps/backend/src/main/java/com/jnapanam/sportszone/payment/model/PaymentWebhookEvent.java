@@ -45,6 +45,8 @@ public class PaymentWebhookEvent {
         this.providerPaymentId=paymentId;
         this.amountPaise=amount;
     }
+    public Instant getProcessedAt(){return processedAt;}
+    public Long getAmountPaise(){return amountPaise;}
     public String getEventType(){return eventType;}
     public String getStatus(){return status;}
     public String getProviderObjectId(){return providerObjectId;}

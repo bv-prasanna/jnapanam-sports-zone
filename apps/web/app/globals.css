@@ -339,3 +339,11 @@
 @media(max-width:760px){
  :is(.auth-card,.contact-grid,.contact-grid>*,.feature-grid,.feature-grid>*){min-width:0}
 }
+
+/* Booking acceptance must explain missing T&C even when Pay Now was clicked at slot level. */
+.booking-terms-error{margin:10px 0 15px;padding:12px 14px;border:1px solid #e4a28c;border-radius:10px;background:#fff1ec;color:#9b2810;font-weight:750;line-height:1.5;overflow-wrap:anywhere}
+.booking-terms:focus-within{outline:2px solid var(--gold,#d99a32);outline-offset:2px}
+.admin-payment-guide{padding:14px 16px;background:#fff4e8;color:var(--olive,#28330f);border:1px solid var(--line,#e4d6be);border-radius:10px;line-height:1.6;overflow-wrap:anywhere}
+.admin-gateway-events{margin-top:22px}.admin-gateway-events .admin-table-wrap{max-width:100%;overflow-x:auto}
+.admin-gateway-events .admin-toolbar{flex-wrap:wrap;gap:14px}.admin-gateway-events .admin-toolbar h2{margin:0 0 6px}
+.admin-gateway-events .admin-toolbar p{margin:0;color:var(--muted,#66705d)}

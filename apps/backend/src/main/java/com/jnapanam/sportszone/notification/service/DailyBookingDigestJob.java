@@ -107,8 +107,9 @@ public class DailyBookingDigestJob {
             List<DailyBookingDigestReport.Booking> bookings=bookingsFor(date,facilities);
             String subject="Jnapanam Sports Zone | Bookings for "+date;
             String message=DailyBookingDigestReport.compose(date,facilities,bookings);
+            String html=DailyBookingDigestReport.composeHtml(date,facilities,bookings);
             String ref=providers.provider(NotificationChannel.EMAIL)
-                .send(new Notification(user,NotificationChannel.EMAIL,"DAILY_BOOKING_DIGEST",subject,message));
+                .send(new Notification(user,NotificationChannel.EMAIL,"DAILY_BOOKING_DIGEST",subject,message).html(html));
             jdbc.update("""
                 update daily_booking_digest_deliveries set status='SENT',sent_at=now(),
                     provider_reference=?,locked_at=null,last_error=null
