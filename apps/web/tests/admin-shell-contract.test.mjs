@@ -162,3 +162,21 @@ test("admin payment diagnostic view exposes Razorpay order and callback metadata
  assert.match(page,/Search payment orders/);
  assert.match(page,/Payment reconciliation required/);
 });
+
+test("numeric KPI cards precede module links with active users and pending payments",async()=>{
+ const page=await source("app/admin/page.tsx");
+ assert.ok(page.indexOf('<AdminData view={view}')<page.indexOf('view==="dashboard"&&<AdminDashboardLinks'));
+ assert.match(page,/title:"Active users"/);
+ assert.match(page,/title:"Bookings"/);
+ assert.match(page,/title:"Active sports"/);
+ assert.match(page,/title:"Pending payment orders"/);
+ assert.match(page,/api\/v1\/admin\/reconciliation/);
+});
+test("payment-error message remains visible after booking or slot refresh",async()=>{
+ const page=await source("app/dashboard/page.tsx");
+ assert.match(page,/let pendingBookingNumber=""/);
+ assert.match(page,/Payment not confirmed for booking/);
+ assert.match(page,/Do not pay twice if money was debited/);
+ assert.match(page,/setMessage\(warning\)/);
+ assert.match(page,/finally\{setMessage\(result\)\}/);
+});

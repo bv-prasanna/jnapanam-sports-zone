@@ -61,4 +61,13 @@ class DailyBookingDigestReportTest {
         assertTrue(body.contains("Swimming"));
         assertFalse(body.contains("SPORT: Cricket"));
     }
+    @Test void reportIncludesActualConfiguredSportPerFacility() {
+        var misAssigned=new DailyBookingDigestReport.Facility(UUID.randomUUID(),"Cricket","Swimming");
+        var body=DailyBookingDigestReport.compose(LocalDate.now(),List.of(misAssigned),List.of());
+        var html=DailyBookingDigestReport.composeHtml(LocalDate.now(),List.of(misAssigned),List.of());
+        assertTrue(body.contains("SPORT: Cricket"));
+        assertTrue(html.contains("Sport: Cricket"));
+        assertTrue(html.contains("Swimming"));
+    }
+
 }

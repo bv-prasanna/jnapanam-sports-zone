@@ -64,6 +64,7 @@ public final class DailyBookingDigestReport {
             List<Booking> rows=forFacility(facility.id(),bookings);
             body.append("\n").append("--------------------------------------------------\n")
                 .append(++number).append(". ").append(safe(facility.name()))
+                .append("  |  SPORT: ").append(safe(facility.sport()))
                 .append("  (").append(rows.size()).append(rows.size()==1?" booking)":" bookings)").append("\n");
             if(rows.isEmpty()){body.append("   No bookings for this facility.\n");continue;}
             for(Booking b:rows) {
@@ -101,7 +102,7 @@ public final class DailyBookingDigestReport {
             out.append("<section style=\"margin-top:17px;background:#fff;border:1px solid #e4d6be;border-radius:10px;overflow:hidden;\">")
                .append("<div style=\"background:#f3e7d2;padding:13px 16px;\"><strong style=\"font-size:17px;color:#28330f;\">")
                .append(++count).append(". ").append(escape(facility.name())).append("</strong>")
-               .append(" <span style=\"color:#66705d;font-size:13px;\">(").append(rows.size()).append(rows.size()==1?" booking":" bookings").append(")</span></div>");
+               .append(" <span style=\"color:#66705d;font-size:13px;\">Sport: ").append(escape(facility.sport())).append(" · ").append(rows.size()).append(rows.size()==1?" booking":" bookings").append(")</span></div>");
             if(rows.isEmpty())out.append("<p style=\"color:#66705d;margin:15px;\">No bookings scheduled.</p>");
             else {
                 out.append("<div style=\"overflow-x:auto;\"><table role=\"table\" style=\"width:100%;border-collapse:collapse;font-size:13px;text-align:left;\">")
