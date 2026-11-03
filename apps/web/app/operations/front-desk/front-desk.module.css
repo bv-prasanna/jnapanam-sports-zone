@@ -1,0 +1,15 @@
+.page{width:100%;min-width:0;max-width:1200px;margin:0 auto;padding:clamp(16px,3vw,38px);box-sizing:border-box;color:var(--ink,#20251c);background:var(--ivory,#fff9ef);display:grid;align-content:start;gap:20px;overflow-wrap:anywhere}
+.header span{font-size:12px;font-weight:850;letter-spacing:.12em;color:var(--saffron,#c83a0a)}.header h1{margin:7px 0;font:750 clamp(28px,3vw,38px)/1.2 Georgia,'Times New Roman',serif;color:var(--olive,#28330f)}.header p{margin:0;color:var(--muted,#66705d);line-height:1.55}
+.card{min-width:0;background:#fffdf8;border:1px solid var(--line,#e4d6be);border-radius:16px;padding:clamp(16px,2vw,24px);overflow-wrap:anywhere}
+.card h2{font:750 22px/1.25 Georgia,'Times New Roman',serif;color:var(--olive,#28330f);margin:0 0 16px}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:end}.form label{font-size:14px;display:grid;gap:7px;font-weight:750;min-width:0}
+.form input{box-sizing:border-box;min-height:44px;width:100%;min-width:0;max-width:100%;padding:10px 12px;border:1px solid var(--line,#e4d6be);background:#fff;border-radius:9px}
+.form button,.sectionHead button{min-height:44px;border:1px solid var(--saffron,#c83a0a);background:var(--saffron,#c83a0a);color:#fff;padding:11px 14px;border-radius:9px;font-size:14px;font-weight:750;cursor:pointer}
+.form button:hover,.sectionHead button:hover{background:#aa3007}
+.form input:focus-visible,.form button:focus-visible,.sectionHead button:focus-visible{outline:3px solid var(--gold,#d99a32);outline-offset:2px}
+.notice{color:var(--olive,#28330f);padding:12px;background:#f9efdf;border-radius:9px;overflow-wrap:anywhere}
+.sectionHead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:15px}.sectionHead h2{margin:0}
+.tableScroll{width:100%;max-width:100%;overflow-x:auto}.tableScroll table{width:100%;min-width:620px;border-collapse:collapse;font-size:14px}
+.tableScroll th,.tableScroll td{padding:12px;text-align:left;border-bottom:1px solid var(--line,#e4d6be);overflow-wrap:anywhere}
+.tableScroll th{background:#f8edda;color:var(--olive,#28330f);font-weight:800}.tableScroll td{color:var(--ink,#20251c)}
+@media(max-width:700px){.form{grid-template-columns:minmax(0,1fr)}.page{padding:14px}.tableScroll table{min-width:570px}}

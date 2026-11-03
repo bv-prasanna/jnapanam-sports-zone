@@ -2,3 +2,7 @@
 .headerActions{display:flex;gap:10px;align-items:center}.headerActions button:last-child{background:white;color:var(--admin-primary,var(--olive));border:1px solid var(--admin-line,var(--line))}
 
 .opsTabs{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.opsTabs button{border:1px solid var(--admin-line,var(--line));background:var(--admin-card,#fffdf8);color:var(--admin-primary,var(--olive));border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}.opsPanel{background:var(--admin-card,#fffdf8);border:1px solid var(--admin-line,var(--line));border-radius:var(--radius);padding:20px;margin-top:16px}.opsPanel form{display:grid;gap:10px;margin-bottom:18px}.opsPanel textarea{min-height:100px;padding:12px;border:1px solid var(--admin-line,var(--line));border-radius:10px;font:inherit}.opsPanel form button{justify-self:start;background:var(--admin-primary,var(--saffron));color:white;border:0;border-radius:9px;padding:10px 15px;font-weight:700}.opsPanel article{border-top:1px solid var(--admin-line,var(--line));padding:12px 0}.opsPanel article p{margin:5px 0;color:var(--admin-muted,var(--muted))}
+
+/* Avoid overflow from labels and operation cards at small widths. */
+.page,.panel,.card,.filters{min-width:0;overflow-wrap:anywhere}
+:is(.page,.panel) input,:is(.page,.panel) select{max-width:100%;min-width:0}

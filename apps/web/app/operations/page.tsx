@@ -7,6 +7,7 @@ import { useApp } from "@/components/app-provider";
 import styles from "./operations.module.css";
 import { OperatorFacilityBoard } from "@/components/operator-facility-board";
 import {PortalSideNavigation} from "@/components/portal-side-navigation";
+import {SiteHeader} from "@/components/site-header";
 import AdminLayout from "@/app/admin/layout";
 import shell from "@/components/portal-shell.module.css";
 
@@ -45,5 +46,5 @@ export default function OperationsPage(){
     {checkingIn&&<div className={styles.backdrop}><form className={styles.dialog} onSubmit={confirmCheckIn}><h2>Check in {checkingIn.bookingNumber}</h2><p>{checkingIn.customerName} · {checkingIn.facilityName}</p><label className={styles.check}><input type="checkbox" checked={verified} onChange={e=>setVerified(e.target.checked)}/> Customer identity verified</label><label>Verification note<input value={note} maxLength={120} onChange={e=>setNote(e.target.value)} placeholder="Example: Name matched photo ID"/></label><div className={styles.actions}><button type="button" className={styles.secondary} onClick={()=>{setCheckingIn(null);setBusy("");}}>Cancel</button><button disabled={!!busy}>{busy?"Checking in…":"Confirm Check-in"}</button></div></form></div>}
   </main>;
   const isAdmin=!!user?.roles.some(role=>role==="ADMIN"||role==="SUPER_ADMIN");
-  return isAdmin?<AdminLayout>{screen}</AdminLayout>:<div className={shell.shell}><PortalSideNavigation active="operations"/>{screen}</div>;
+  return isAdmin?<AdminLayout>{screen}</AdminLayout>:<><SiteHeader/><div className={shell.shell}><PortalSideNavigation active="operations"/>{screen}</div></>;
 }
