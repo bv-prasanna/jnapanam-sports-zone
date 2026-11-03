@@ -90,7 +90,7 @@ export default function ProfilePage(){
         <div><h2>{user.displayName||user.fullName}</h2><p>{user.email}</p><label className={styles.upload}>{uploading?"Uploading…":"Upload photo"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} disabled={uploading}/></label><small>JPG, PNG or WebP · maximum 5 MB</small></div>
       </div>
       <form className={styles.form} onSubmit={save}>
-        <div className={styles.grid}><label>Full name<input value={user.fullName} disabled/></label><label>Display / calling name<input value={displayName} maxLength={60} onChange={e=>setDisplayName(e.target.value)} placeholder={user.fullName}/></label><label>Email<input value={user.email} disabled/></label><label>Mobile (not verified)<input value={mobile} inputMode="tel" pattern="[0-9]{10}" maxLength={10} onChange={e=>setMobile(e.target.value)}/></label></div>
+        <div className={styles.grid}><label>Full name<input value={user.fullName} disabled/></label><label>Display / calling name<input value={displayName} maxLength={60} onChange={e=>setDisplayName(e.target.value)} placeholder={user.fullName}/></label><label>Email<input value={user.email} disabled/></label><label>Mobile number<input value={mobile} inputMode="tel" pattern="[0-9]{10}" maxLength={10} onChange={e=>setMobile(e.target.value)}/></label></div>
         <div className={styles.grid}>
         <label>Address<input value={addressLine} maxLength={250} onChange={e=>setAddressLine(e.target.value)}/></label>
         <label>City<input value={city} maxLength={100} onChange={e=>setCity(e.target.value)}/></label>
@@ -98,14 +98,24 @@ export default function ProfilePage(){
         <label>PIN code<input value={postalCode} maxLength={12} onChange={e=>setPostalCode(e.target.value)}/></label>
         </div>
         <label>Profile photo URL<input type="url" maxLength={500} value={photoUrl} onChange={e=>setPhotoUrl(e.target.value)} placeholder="Upload a photo above or enter an HTTPS image URL"/></label>
-        <section aria-label="First booking verification">
-          <h3>Address proof (required before first booking)</h3>
-          <p>Provide one document showing your address. Status: <strong>{proofStatus.replaceAll("_"," ")}</strong>.</p>
-          <label>Document type<select value={proofType} onChange={e=>setProofType(e.target.value)}>
-          <option value="DL">Driving Licence</option><option value="VOTER_ID">Voter ID</option><option value="PASSPORT">Passport</option>
-          </select></label>
-          <label>{proofBusy?"Uploading…":"JPG, PNG or PDF (up to 2 MB)"}<input type="file" accept="image/jpeg,image/png,application/pdf" disabled={proofBusy} onChange={uploadProof}/></label>
-          <small>Private upload. PAN, Aadhaar and utility bills are not accepted.</small>
+        <section className={styles.proofPanel} aria-label="First booking verification">
+          <div className={styles.proofIntro}>
+            <h3>Address proof (required before first booking)</h3>
+            <p>Upload one document showing your address. Status: <strong className={styles.proofStatus}>{proofStatus.replaceAll("_"," ")}</strong></p>
+          </div>
+          <div className={styles.proofFields}>
+            <label>Document type
+              <select value={proofType} onChange={e=>setProofType(e.target.value)}>
+                <option value="DL">Driving Licence</option>
+                <option value="VOTER_ID">Voter ID</option>
+                <option value="PASSPORT">Passport</option>
+              </select>
+            </label>
+            <label>{proofBusy?"Uploading document…":"Upload document"}
+              <input type="file" aria-label="Upload address proof (JPG, PNG or PDF)" accept="image/jpeg,image/png,application/pdf" disabled={proofBusy} onChange={uploadProof}/>
+            </label>
+          </div>
+          <p className={styles.proofHint}>JPG, PNG or PDF (up to 2 MB). Private upload. PAN, Aadhaar and utility bills are not accepted.</p>
         </section>
         <div className={styles.roles}><small>Roles</small><div>{user.roles.map(role=><span key={role}>{role.replaceAll("_"," ")}</span>)}</div></div>
         {error&&<div className={styles.error}>{error}</div>}{message&&<div className={styles.success}>{message}</div>}
