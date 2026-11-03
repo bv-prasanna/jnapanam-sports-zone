@@ -116,7 +116,7 @@ public class HostedPaymentCheckoutController {
               });
               checkout.on('payment.failed',()=>{
                 button.disabled=false;
-                status.textContent='Payment failed. You may retry.';
+                status.textContent='Payment was not confirmed. Check your UPI transaction history and payment status before trying again to avoid a duplicate debit.';
               });
               checkout.open();
             };

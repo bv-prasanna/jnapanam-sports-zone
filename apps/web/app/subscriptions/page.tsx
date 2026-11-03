@@ -6,6 +6,8 @@ import {SiteFooter} from "@/components/site-footer";
 import {useApp} from "@/components/app-provider";
 import {api,ApiError,API_BASE_URL} from "@/lib/api";
 import styles from "./subscriptions.module.css";
+import {PortalSideNavigation} from "@/components/portal-side-navigation";
+import shell from "@/components/portal-shell.module.css";
 
 type Offering={id:string;kind:"MEMBERSHIP"|"TRAINING";referenceId:string;title:string;amountPaise:number;period:string;interval:number;totalCycles:number;enabled:boolean};
 type Membership={id:string;planCode:string;status:string};
@@ -88,7 +90,7 @@ export default function SubscriptionsPage(){
    try{await api("/api/v1/subscriptions/"+id+"/cancel",{method:"POST"});setMessage("Recurring billing cancelled.");await load();}
    catch(e){setError(msg(e))}finally{setBusy(false)}
  }
- return <><SiteHeader/><main className={styles.page}>
+ return <><SiteHeader/><div className={user?shell.shell:styles.publicShell}>{user&&<PortalSideNavigation active="subscriptions"/>}<main className={styles.page}>
   <header><span className={styles.eyebrow}>BILLING · MEMBERSHIPS & TRAINING</span><h1>Recurring Subscriptions</h1>
     <p>Choose a renewable membership or scheduled training installments. One-time purchases remain available in the regular portal.</p></header>
   {!cfg.enabled&&<div className={styles.warning} role="status">Recurring billing is not enabled for this Jnapanam deployment. No automatic charges can be started. The administrator must finish Razorpay mandate UAT first.</div>}
@@ -120,5 +122,5 @@ export default function SubscriptionsPage(){
    <tbody>{charges.map(c=><tr key={c.id}><td><b>{c.title}</b></td><td>{new Date(c.chargedAt).toLocaleDateString("en-IN")}</td><td>{money(c.amountPaise)}</td><td>{money(c.refundedPaise)}</td><td>{c.providerPaymentId}</td></tr>)}</tbody></table></div>}
   </section>
   <p className={styles.footnote}>Subscription authorization does not activate access. Access starts or extends after Razorpay confirms a captured installment. Auto-renewal support depends on your account's Razorpay Subscriptions eligibility.</p>
- </main><SiteFooter/></>;
+ </main></div><SiteFooter/></>;
 }

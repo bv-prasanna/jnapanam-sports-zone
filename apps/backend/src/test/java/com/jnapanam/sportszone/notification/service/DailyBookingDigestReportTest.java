@@ -29,7 +29,7 @@ class DailyBookingDigestReportTest {
         assertFalse(text.contains("9888888888"));assertFalse(text.contains("Ground A"));
     }
     @Test void emptyScheduleAndNoAssignmentsExplained() {
-        assertTrue(DailyBookingDigestReport.compose(LocalDate.now(),List.of(court),List.of()).contains("No bookings scheduled"));
+        assertTrue(DailyBookingDigestReport.compose(LocalDate.now(),List.of(court),List.of()).contains("No bookings for this facility"));
         assertTrue(DailyBookingDigestReport.compose(LocalDate.now(),List.of(),List.of()).contains("No facilities are assigned"));
     }
     @Test void rowsSortBySlotTime() {
@@ -38,4 +38,36 @@ class DailyBookingDigestReportTest {
         var values=DailyBookingDigestReport.visibleBookings(List.of(later,booked),List.of(court));
         assertEquals("JN-01",values.get(0).reference());
     }
+    @Test void htmlEmailIsFacilityWiseWithReadableColumnsAndEscaping(){
+        var html=DailyBookingDigestReport.composeHtml(LocalDate.of(2026,11,4),List.of(ground,court),List.of(other,booked));
+        assertTrue(html.contains("<table role=\"table\""));
+        assertTrue(html.contains("Booked person"));
+        assertTrue(html.contains("Payment"));
+        assertTrue(html.contains("Court 1"));
+        assertTrue(html.contains("Ground A"));
+        assertTrue(html.indexOf("Court 1")<html.indexOf("Ground A"));
+        assertTrue(html.contains("Test Customer"));
+    }
+    @Test void userSuppliedNamesAreEscapedInHtml(){
+        var injected=new DailyBookingDigestReport.Booking(badminton,"Badminton","Court 1","09:00","10:00",
+           "JNZ-3","<script>alert(1)</script>","9449284747","CONFIRMED","UNPAID");
+        var html=DailyBookingDigestReport.composeHtml(LocalDate.now(),List.of(court),List.of(injected));
+        assertFalse(html.contains("<script>"));
+        assertTrue(html.contains("&lt;script&gt;"));
+    }
+    @Test void wrongSportAssignmentRemainsVisibleWithoutGroupingOtherFacilities(){
+        var incorrect=new DailyBookingDigestReport.Facility(UUID.randomUUID(),"Cricket","Swimming");
+        var body=DailyBookingDigestReport.compose(LocalDate.now(),List.of(ground,incorrect),List.of());
+        assertTrue(body.contains("Swimming"));
+        assertTrue(body.contains("SPORT: Cricket"));
+    }
+    @Test void reportIncludesActualConfiguredSportPerFacility() {
+        var misAssigned=new DailyBookingDigestReport.Facility(UUID.randomUUID(),"Cricket","Swimming");
+        var body=DailyBookingDigestReport.compose(LocalDate.now(),List.of(misAssigned),List.of());
+        var html=DailyBookingDigestReport.composeHtml(LocalDate.now(),List.of(misAssigned),List.of());
+        assertTrue(body.contains("SPORT: Cricket"));
+        assertTrue(html.contains("Sport: Cricket"));
+        assertTrue(html.contains("Swimming"));
+    }
+
 }

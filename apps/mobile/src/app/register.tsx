@@ -10,18 +10,18 @@ import { useAuth } from '@/features/auth/auth-context';
 export default function RegisterScreen() {
   const { t } = useTranslation(); const { requestRegistrationOtp,verifyRegistrationOtp } = useAuth();
   const [form,setForm]=useState({fullName:'',email:'',mobile:'',password:'',confirmPassword:''});
-  const [error,setError]=useState(''); const [busy,setBusy]=useState(false);const [otpSent,setOtpSent]=useState(false);const [otp,setOtp]=useState('');
+  const [error,setError]=useState(''); const [busy,setBusy]=useState(false);const [otpSent,setOtpSent]=useState(false);const [otp,setOtp]=useState('');const [otpEmail,setOtpEmail]=useState('');
   const set=(key:keyof typeof form)=>(value:string)=>setForm(v=>({...v,[key]:value}));
 
   async function submit(){
     const nameOk=/^[\p{L}][\p{L} .'-]{1,119}$/u.test(form.fullName.trim());
     if(!nameOk){setError(t('auth.validName'));return;}
     if(!/^\S+@\S+\.\S+$/.test(form.email.trim())){setError(t('auth.validEmail'));return;}
-    if(form.mobile && !/^[0-9+ -]{10,20}$/.test(form.mobile)){setError(t('auth.validMobile'));return;}
+    if(!/^[0-9+ -]{10,20}$/.test(form.mobile.trim()) || form.mobile.replace(/[^0-9]/g,'').length<10){setError(t('auth.validMobile'));return;}
     if(form.password.length<8){setError(t('auth.passwordLength'));return;}
     if(form.password!==form.confirmPassword){setError(t('auth.passwordMismatch'));return;}
     setBusy(true);setError('');
-    try{if(!otpSent){await requestRegistrationOtp(form);setOtpSent(true);}else{await verifyRegistrationOtp(form,otp);router.replace('/');}}
+    try{if(!otpSent){await requestRegistrationOtp(form);setOtpEmail(form.email.trim().toLowerCase());setOtpSent(true);}else{if(!/^\d{6}$/.test(otp.trim())){setError(t('auth.validEmailOtp'));return;}await verifyRegistrationOtp(form,otp.trim());router.replace('/');}}
     catch(e){setError(e instanceof Error?e.message:t('common.tryAgain'));}
     finally{setBusy(false);}
   }
@@ -39,16 +39,17 @@ export default function RegisterScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.card}><View style={styles.top}><Text style={styles.eyebrow}>{t('auth.joinCommunity')}</Text><LanguageSwitch /></View>
-      <Text style={styles.title}>{otpSent?'Verify Email & Create Account':t('auth.createAccount')}</Text><Text style={styles.subtitle}>{t('auth.registerDescription')}</Text>
-      {(['fullName','email','mobile','password','confirmPassword'] as const).map(key=><View key={key}>
+      <Text style={styles.title}>{otpSent?t('auth.verifyEmail'):t('auth.createAccount')}</Text>
+      {otpSent?<View><Text style={styles.subtitle}>{t('auth.emailOtpSentTo')}</Text><Text selectable style={styles.recipient}>{otpEmail}</Text><Text style={styles.subtitle}>{t('auth.checkSpamFolder')}</Text></View>:<Text style={styles.subtitle}>{t('auth.registerDescription')}</Text>}
+      {!otpSent&&(['fullName','email','mobile','password','confirmPassword'] as const).map(key=><View key={key}>
         <Text style={styles.label}>{t(`auth.${key}`)}</Text>
         <TextInput value={form[key]} onChangeText={set(key)} autoCapitalize={key==='fullName'?'words':'none'}
           keyboardType={key==='email'?'email-address':key==='mobile'?'phone-pad':'default'}
           secureTextEntry={key==='password'||key==='confirmPassword'} style={styles.input}
           returnKeyType={key==='confirmPassword'?'done':'next'} />
       </View>)}
-      {otpSent&&<View><Text style={styles.label}>Email verification code</Text><TextInput value={otp} onChangeText={setOtp} keyboardType="number-pad" maxLength={6} style={styles.input} placeholder="6-digit OTP"/></View>}{!!error&&<Text style={styles.error}>{error}</Text>}
-      <Pressable onPress={submit} disabled={busy} style={[styles.button,busy&&styles.disabled]}>{busy?<ActivityIndicator color="#fff"/>:<Text style={styles.buttonText}>{t('auth.createAccount')}</Text>}</Pressable>
+      {otpSent&&<View><Text style={styles.label}>{t('auth.emailVerificationCode')}</Text><TextInput value={otp} onChangeText={setOtp} keyboardType="number-pad" maxLength={6} style={styles.input} placeholder={t('auth.sixDigitOtp')}/><Pressable accessibilityRole="button" disabled={busy} onPress={()=>{setOtpSent(false);setOtp('');setError('');}}><Text style={styles.changeEmail}>{t('auth.changeEmail')}</Text></Pressable></View>}{!!error&&<Text style={styles.error}>{error}</Text>}
+      <Pressable onPress={submit} disabled={busy} style={[styles.button,busy&&styles.disabled]}>{busy?<ActivityIndicator color="#fff"/>:<Text style={styles.buttonText}>{otpSent?t('auth.verifyAndCreateAccount'):t('auth.sendEmailOtp')}</Text>}</Pressable>
       <Pressable onPress={()=>router.replace('/login')}><Text style={styles.link}>{t('auth.haveAccount')}</Text></Pressable></View>
     </ScrollView>
   </KeyboardAvoidingView>;
@@ -60,6 +61,7 @@ const styles=StyleSheet.create({
   title:{fontSize:32,fontWeight:'900',color:BrandColors.textPrimary,marginTop:12},subtitle:{color:BrandColors.textSecondary,fontSize:14,lineHeight:20,marginTop:6,marginBottom:10},
   label:{fontSize:14,fontWeight:'800',color:BrandColors.textPrimary,marginTop:12,marginBottom:6},
   input:{borderWidth:1,borderColor:'#DCCCAD',backgroundColor:'#fff',borderRadius:13,paddingHorizontal:14,paddingVertical:12,fontSize:16},
+  recipient:{color:BrandColors.primary,fontWeight:'900',fontSize:17,marginBottom:6},changeEmail:{color:BrandColors.accent,fontSize:14,fontWeight:'800',marginTop:14,textDecorationLine:'underline'},
   error:{color:'#B42318',backgroundColor:'#FEECEB',borderRadius:10,padding:11,marginTop:14},
   button:{backgroundColor:'#D23808',borderRadius:13,padding:15,alignItems:'center',marginTop:20},disabled:{opacity:.65},
   buttonText:{color:'#fff',fontWeight:'900',fontSize:16},link:{textAlign:'center',color:BrandColors.primary,fontWeight:'800',marginTop:18}

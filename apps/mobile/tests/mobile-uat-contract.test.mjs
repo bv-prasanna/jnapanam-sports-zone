@@ -84,3 +84,33 @@ test('multipart file uploads preserve device-generated boundary and enforce file
  assert.ok(pkg.dependencies['expo-document-picker']);
  assert.ok(lock.packages['node_modules/expo-document-picker']);
 });
+
+test('registration OTP displays actual recipient in English and Kannada',async()=>{
+ const screen=await source('src/app/register.tsx');
+ const auth=await source('src/features/auth/auth-context.tsx');
+ const en=await source('src/i18n/locales/en.ts');
+ const kn=await source('src/i18n/locales/kn.ts');
+ assert.match(auth,/registration\/email\/request/);
+ assert.match(screen,/setOtpEmail\(form\.email\.trim\(\)\.toLowerCase\(\)\)/);
+ assert.match(screen,/\{otpEmail\}/);
+ assert.match(screen,/!otpSent&&\(\['fullName'/);
+ assert.match(screen,/auth\.changeEmail/);
+ for(const locale of [en,kn]){
+  for(const key of ['emailOtpSentTo:','verifyEmail:','emailVerificationCode:','changeEmail:','verifyAndCreateAccount:'])
+   assert.ok(locale.includes(key),key);
+ }
+});
+
+test('mobile registration requires phone details but continues email-only OTP',async()=>{
+ const screen=await source('src/app/register.tsx');
+ const auth=await source('src/features/auth/auth-context.tsx');
+ const en=await source('src/i18n/locales/en.ts');
+ const kn=await source('src/i18n/locales/kn.ts');
+ assert.match(screen,/form\.mobile\.replace\(\/\[\^0-9\]\/g,'\'\)\.length<10/);
+ assert.doesNotMatch(screen,/if\(form\.mobile &&/);
+ assert.match(auth,/mobile: string; password: string/);
+ assert.match(auth,/registration\/email\/request/);
+ assert.match(auth,/registration\/email\/verify/);
+ assert.doesNotMatch(auth,/registration\/request'/);
+ for(const locale of [en,kn])assert.match(locale,/validMobile:/);
+});

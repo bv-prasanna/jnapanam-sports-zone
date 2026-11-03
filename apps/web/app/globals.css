@@ -219,15 +219,15 @@
 .admin-crud-dialog[data-managed-module="content"] form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-width:0}
 .admin-crud-dialog[data-managed-module="content"] form>label,.admin-crud-dialog[data-managed-module="content"] .event-media-field{min-width:0}
 .admin-crud-dialog[data-managed-module="content"] form>label:has(textarea),.admin-crud-dialog[data-managed-module="content"] .event-media-field,.admin-crud-dialog[data-managed-module="content"] .dialog-actions{grid-column:1/-1}
-.admin-crud-dialog[data-managed-module="content"] form label{font:750 13px Arial,Helvetica,sans-serif;color:#17354a;display:grid;gap:7px}
-.admin-crud-dialog[data-managed-module="content"] form input:not([type=checkbox]):not([type=file]),.admin-crud-dialog[data-managed-module="content"] form select,.admin-crud-dialog[data-managed-module="content"] form textarea{width:100%;min-width:0;min-height:44px;font:14px Arial,Helvetica,sans-serif;padding:11px 12px;border:1px solid #d6e2e9;border-radius:10px;background:#fff;color:#17354a}
+.admin-crud-dialog[data-managed-module="content"] form label{font:750 13px Arial,Helvetica,sans-serif;color:var(--ink,#20251c);display:grid;gap:7px}
+.admin-crud-dialog[data-managed-module="content"] form input:not([type=checkbox]):not([type=file]),.admin-crud-dialog[data-managed-module="content"] form select,.admin-crud-dialog[data-managed-module="content"] form textarea{width:100%;min-width:0;min-height:44px;font:14px Arial,Helvetica,sans-serif;padding:11px 12px;border:1px solid var(--line,#e4d6be);border-radius:10px;background:#fff;color:var(--ink,#20251c)}
 .admin-crud-dialog[data-managed-module="content"] form textarea{min-height:110px;resize:vertical}
 .admin-crud-dialog[data-managed-module="content"] form>.admin-check{align-self:center;display:flex;flex-direction:row;align-items:center;gap:9px}
-.admin-crud-dialog[data-managed-module="content"] form input[type=checkbox]{width:18px;height:18px;accent-color:#0877b9}
+.admin-crud-dialog[data-managed-module="content"] form input[type=checkbox]{width:18px;height:18px;accent-color:var(--saffron,#c83a0a)}
 .event-media-field{display:grid;grid-template-columns:1fr minmax(110px,200px);gap:12px 17px;padding:14px;border:1px solid #dbe7ee;border-radius:13px;background:#f7fafc}
 .event-media-field>label{min-width:0}.event-media-field>label:nth-of-type(2){grid-column:1;grid-row:2}
 .event-media-field input[type=file]{font-size:13px;max-width:100%}.event-media-field .event-media-hint{font-size:12px;font-weight:400;color:#62798b;line-height:1.4}
-.event-media-field .event-media-preview{grid-column:2;grid-row:1/3;align-self:center;width:100%;height:140px;border-radius:11px;border:1px solid #dce6eb;overflow:hidden;background:white}
+.event-media-field .event-media-preview{grid-column:2;grid-row:1/3;align-self:center;width:100%;height:140px;border-radius:11px;border:1px solid var(--line,#e4d6be);overflow:hidden;background:white}
 .event-media-preview img{width:100%;height:100%;object-fit:contain}
 .event-media-field>.dialog-error,.event-media-field>p{grid-column:1/-1}
 @media(max-width:640px){.admin-crud-dialog[data-managed-module="content"] form{grid-template-columns:1fr}.event-media-field{grid-template-columns:1fr}.event-media-field>label:nth-of-type(2),.event-media-field .event-media-preview{grid-column:1;grid-row:auto}.event-media-field .event-media-preview{height:180px}}
@@ -237,9 +237,9 @@
 .role-selector>.sport-icon-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem}
 .sport-icon-picker .sport-icon-choice{display:flex;flex-direction:column;justify-content:center;gap:.35rem;position:relative;min-height:6.1rem;text-align:center;background:#fff;padding:.85rem .45rem;border:1px solid #d8dfe4;border-radius:.8rem;transition:background .15s,border-color .15s,box-shadow .15s}
 .sport-icon-picker .sport-icon-choice input[type="radio"]{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
-.sport-icon-picker .sport-icon-choice:has(input:checked){background:#edf6ff;border-color:#0877b9;box-shadow:inset 0 0 0 1px #0877b9;color:#063b63}
-.sport-icon-picker .sport-icon-choice:has(input:focus-visible){outline:3px solid #0877b9;outline-offset:3px}
-.sport-icon-picker .sport-icon-choice:hover{border-color:#0877b9}
+.sport-icon-picker .sport-icon-choice:has(input:checked){background:#fff2e0;border-color:var(--saffron,#c83a0a);box-shadow:inset 0 0 0 1px var(--saffron,#c83a0a);color:var(--olive,#28330f)}
+.sport-icon-picker .sport-icon-choice:has(input:focus-visible){outline:3px solid var(--saffron,#c83a0a);outline-offset:3px}
+.sport-icon-picker .sport-icon-choice:hover{border-color:var(--saffron,#c83a0a)}
 @media(max-width:650px){.role-selector>.sport-icon-picker{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 
@@ -258,9 +258,9 @@
 .booking-search-field :is(input,select){width:100%;min-width:0;min-height:48px}
 .booking-search>button{min-height:48px;white-space:nowrap}
 .booking-schedule-help{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eaf4fb;border:1px solid #b2d2e7;border-radius:11px;padding:12px 15px;margin:0 0 20px;font-size:13px;line-height:1.5}
-.booking-schedule-help strong{color:#063b63}
+.booking-schedule-help strong{color:var(--olive,#28330f)}
 .booking-schedule-help span{flex:1;min-width:220px}
-.booking-schedule-help a{font-weight:800;color:#063b63;text-decoration:underline;text-underline-offset:2px}
+.booking-schedule-help a{font-weight:800;color:var(--olive,#28330f);text-decoration:underline;text-underline-offset:2px}
 .schedule-setup-alert{padding:14px 16px;background:#fff6e5;border:1px solid #e6bd78;border-radius:10px;margin:14px 0;font-size:13px;line-height:1.5;color:#53340b}
 .schedule-setup-alert strong{display:block;font-size:14px}
 .schedule-setup-alert p{margin:5px 0 0}
@@ -297,3 +297,65 @@
  .portal-nav>div{display:grid;gap:5px;padding:8px 10px 14px}
  .portal-nav button{white-space:normal;text-align:left;min-height:42px}
 }
+
+/* Responsive public contact phone links and clear OTP email recipient. */
+.utility-phone-links{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+.utility-phone-links>a{white-space:nowrap}
+@media(max-width:620px){
+ .utility-inner{height:auto;min-height:32px;padding:5px 0}
+ .utility-inner>div{flex-wrap:wrap;justify-content:center;row-gap:4px}
+ .utility-phone-links{gap:8px}
+ .utility-phone-links>a{font-size:11px}
+}
+.registration-otp-destination{margin:0;line-height:1.6;color:var(--muted)}
+.registration-otp-destination strong{display:block;overflow-wrap:anywhere;color:var(--olive);font-weight:800}
+.registration-change-email{justify-self:start;background:none;border:0;color:var(--saffron);cursor:pointer;font-weight:700;padding:0}
+.registration-change-email:hover{text-decoration:underline}
+
+/*
+ * Cross-page layout safeguards. Avoid clipped IDs, translated labels, document
+ * filenames or unsupported fixed widths; tables retain horizontal scrollbars.
+ */
+:is(.portal-content,.admin-content,.adminExperience main,.r1-page,.auth-card,.contact-details,.site-footer) {
+ min-width:0;
+}
+:is(.portal-content,.admin-content,.adminExperience main,.r1-page,.auth-card,.contact-details,.site-footer)
+ :is(h1,h2,h3,h4,p,strong,label,small,a){
+ overflow-wrap:anywhere;
+}
+:is(.portal-content,.adminExperience main,.r1-page,.auth-card) :is(input,select,textarea){
+ box-sizing:border-box;
+ max-width:100%;
+ min-width:0;
+}
+.adminExperience main :is(.admin-table-wrap,[class*="tableScroll"],[class*="tableWrap"]){
+ max-width:100%;
+ min-width:0;
+ overflow-x:auto;
+}
+.adminExperience main :is(th,td),.portal-content :is(th,td){
+ overflow-wrap:anywhere;
+}
+@media(max-width:760px){
+ :is(.auth-card,.contact-grid,.contact-grid>*,.feature-grid,.feature-grid>*){min-width:0}
+}
+
+/* Booking acceptance must explain missing T&C even when Pay Now was clicked at slot level. */
+.booking-terms-error{margin:10px 0 15px;padding:12px 14px;border:1px solid #e4a28c;border-radius:10px;background:#fff1ec;color:#9b2810;font-weight:750;line-height:1.5;overflow-wrap:anywhere}
+.booking-terms:focus-within{outline:2px solid var(--gold,#d99a32);outline-offset:2px}
+.admin-payment-guide{padding:14px 16px;background:#fff4e8;color:var(--olive,#28330f);border:1px solid var(--line,#e4d6be);border-radius:10px;line-height:1.6;overflow-wrap:anywhere}
+.admin-gateway-events{margin-top:22px}.admin-gateway-events .admin-table-wrap{max-width:100%;overflow-x:auto}
+.admin-gateway-events .admin-toolbar{flex-wrap:wrap;gap:14px}.admin-gateway-events .admin-toolbar h2{margin:0 0 6px}
+.admin-gateway-events .admin-toolbar p{margin:0;color:var(--muted,#66705d)}
+
+/* Restore visible numerical KPIs above Admin shortcuts, using home-page colors. */
+.admin-dashboard-kpis{display:grid;gap:17px;margin:0 0 24px}
+.admin-kpi-heading h2{font:750 clamp(22px,2.5vw,30px)/1.2 Georgia,'Times New Roman',serif;color:var(--olive,#28330f);margin:6px 0}
+.admin-kpi-heading p{color:var(--muted,#66705d);font-size:14px;line-height:1.5;margin:0}
+.admin-dashboard-kpis .metric-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.admin-dashboard-kpis .metric-card{min-height:130px;min-width:0;padding:17px;background:#fffdf8}
+.admin-dashboard-kpis .metric-card strong{font-size:clamp(24px,2.6vw,33px);color:var(--olive,#28330f)}
+.admin-dashboard-kpis .metric-card span{color:var(--saffron,#c83a0a);font-size:12px;line-height:1.4}
+@media(max-width:1100px){.admin-dashboard-kpis .metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:770px){.admin-dashboard-kpis .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:430px){.admin-dashboard-kpis .metric-grid{grid-template-columns:minmax(0,1fr)}}

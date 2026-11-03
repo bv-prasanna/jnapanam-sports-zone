@@ -288,13 +288,26 @@ public class PaymentService {
                 if (amount == null || amount != target.getAmountPaise()
                         || !target.getCurrency().equals(entity.path("currency").asText()))
                     throw new BadRequestException("Captured payment amount or currency mismatch");
-                resolveAmount(target.getUser().getId(), target.getPurpose(), target.getReferenceId());
-                target.paid(capturedPaymentId);
-                fulfil(target);
-                loyaltyService.earn(target.getUser(), target);
-                notificationService.payment(target.getUser().getId(), target.getReceiptNumber(), target.getAmountPaise());
-                notifyFulfilment(target);
-                result = "APPLIED";
+                // A late UPI capture can arrive after payment expiry released the slot.
+                // Record the real money without reviving an expired/cancelled booking or
+                // granting access to a potentially resold slot. Staff must reconcile/refund.
+                Booking linked = target.getPurpose() == PaymentPurpose.BOOKING
+                        ? bookings.findById(target.getReferenceId()).orElse(null) : null;
+                boolean unavailableBooking = target.getPurpose() == PaymentPurpose.BOOKING
+                        && (linked == null || linked.getStatus() == BookingStatus.PAYMENT_EXPIRED
+                                            || linked.getStatus() == BookingStatus.CANCELLED);
+                if (unavailableBooking) {
+                    target.paid(capturedPaymentId);
+                    result = "REVIEW_REQUIRED";
+                } else {
+                    resolveAmount(target.getUser().getId(), target.getPurpose(), target.getReferenceId());
+                    target.paid(capturedPaymentId);
+                    fulfil(target);
+                    loyaltyService.earn(target.getUser(), target);
+                    notificationService.payment(target.getUser().getId(), target.getReceiptNumber(), target.getAmountPaise());
+                    notifyFulfilment(target);
+                    result = "APPLIED";
+                }
                 }
             }
         } else if (type.startsWith("refund.")) {
