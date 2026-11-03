@@ -4,3 +4,21 @@
 .page :is(input,select,textarea){box-sizing:border-box;max-width:100%}
 .page :is(button,input,select,textarea):focus-visible{outline:3px solid var(--admin-focus,var(--gold,#d99a32));outline-offset:2px}
 .page :is(.card,.form,.list,.editor,.tableWrap){border-radius:var(--admin-radius,12px)}
+
+/* Read-only capacity diagnostics, independent of the sport/booking filters. */
+.audit{margin:24px 0 18px;padding:20px;border:1px solid var(--admin-line);border-radius:16px;background:#fffdf8;display:grid;gap:14px;min-width:0}
+.audit h2{font:750 24px/1.25 Georgia,'Times New Roman',serif;color:var(--admin-primary);margin:0 0 7px}
+.audit p{color:var(--admin-muted);line-height:1.55;margin:0;overflow-wrap:anywhere}
+.auditControls{display:grid;grid-template-columns:minmax(180px,2fr) minmax(150px,1fr) auto;align-items:end;gap:12px}
+.auditControls label{display:grid;gap:6px;font-size:13px;font-weight:750;color:var(--admin-ink);min-width:0}
+.auditControls select,.auditControls input{min-width:0;width:100%;min-height:44px;border:1px solid var(--admin-line);border-radius:9px;padding:9px 12px;background:#fff;color:var(--admin-ink)}
+.auditControls button{min-height:44px;padding:10px 16px;background:var(--admin-accent);color:white;border:1px solid var(--admin-accent);border-radius:9px;font-weight:800;cursor:pointer}
+.auditControls button:hover:not(:disabled){background:#aa3007}.auditControls button:disabled{opacity:.6;cursor:not-allowed}
+.auditTable{width:100%;overflow-x:auto;border:1px solid var(--admin-line);border-radius:10px}
+.auditTable table{width:100%;min-width:930px;border-collapse:collapse;font-size:13px}
+.auditTable th,.auditTable td{padding:10px 12px;border-bottom:1px solid var(--admin-line);text-align:left;vertical-align:top}
+.auditTable th{background:#f6ead6;color:var(--admin-primary);font-size:12px}
+.auditTable td small{display:block;color:var(--admin-muted);font-size:11px}
+.auditWarning{padding:12px;border:1px solid #edb79b;border-radius:10px;background:#fff4e8;color:#80330e!important;font-weight:650}
+.auditMismatch{color:#9b2810;font-weight:800}.auditMatch{color:var(--admin-primary);font-weight:750}
+@media(max-width:760px){.auditControls{grid-template-columns:minmax(0,1fr)}.audit{padding:15px}}
