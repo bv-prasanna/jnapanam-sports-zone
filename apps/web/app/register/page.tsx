@@ -26,6 +26,9 @@ export default function Register(){
      mobile:String(form.get("mobile")||"").trim(),
      password:String(form.get("password")||"")
     };
+    if(!/^[0-9+ -]{10,20}$/.test(payload.mobile) || payload.mobile.replace(/[^0-9]/g,"").length<10){
+     setError("Enter a valid mobile number (required).");return;
+    }
     if(payload.password!==String(form.get("confirm"))){
      setError("Passwords do not match");return;
     }
@@ -53,7 +56,7 @@ export default function Register(){
    {!otpSent&&<>
     <label>Full name<input name="fullName" required maxLength={120} defaultValue={saved?.fullName||""}/></label>
     <label>Email<input name="email" required type="email" autoComplete="email" defaultValue={saved?.email||""}/></label>
-    <label>Mobile number (optional, not verified)<input name="mobile" type="tel" pattern="[0-9+ -]{10,20}" defaultValue={saved?.mobile||""}/></label>
+    <label>Mobile number<input name="mobile" required type="tel" autoComplete="tel" inputMode="tel" pattern="[0-9+ -]{10,20}" defaultValue={saved?.mobile||""}/></label>
     <label>Password<input name="password" required type="password" minLength={8} autoComplete="new-password"/></label>
     <label>Confirm password<input name="confirm" required type="password" minLength={8} autoComplete="new-password"/></label>
    </>}

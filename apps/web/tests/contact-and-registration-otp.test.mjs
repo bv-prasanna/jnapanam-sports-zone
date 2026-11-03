@@ -23,3 +23,14 @@ test("verification step shows exact email and permits correcting address",async(
  assert.match(registration,/registration-otp-destination/);
  assert.match(registration,/registerWithEmailOtp\(\{\.\.\.saved,otp:/);
 });
+
+test("registration requires mobile number without activating mobile OTP",async()=>{
+ const registration=await source("app/register/page.tsx");
+ const api=await source("lib/api.ts");
+ assert.match(registration,/<label>Mobile number<input name="mobile" required type="tel"/);
+ assert.doesNotMatch(registration,/optional, not verified/i);
+ assert.match(registration,/payload\.mobile\.replace\(\/\[\^0-9\]\/g,""\)\.length<10/);
+ assert.match(registration,/requestEmailRegistrationOtp\(payload\.email\)/);
+ assert.doesNotMatch(registration,/requestRegistrationOtp\(payload\.mobile\)/);
+ assert.match(api,/registration\/email\/request/);
+});

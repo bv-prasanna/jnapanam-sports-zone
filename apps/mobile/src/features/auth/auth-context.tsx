@@ -6,7 +6,7 @@ import { getDeviceIdentity } from '@/lib/device-identity';
 
 const REFRESH_TOKEN_KEY = 'jnapanam.refreshToken';
 
-type RegisterInput = { fullName: string; email: string; mobile?: string; password: string };
+type RegisterInput = { fullName: string; email: string; mobile: string; password: string };
 type AuthValue = {
   user: User | null;
   initializing: boolean;
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const requestRegistrationOtp=useCallback(async(input:RegisterInput)=>{await api<void>('/api/v1/auth/otp/registration/email/request',{method:'POST',body:JSON.stringify({email:input.email.trim().toLowerCase()})});},[]);
-  const verifyRegistrationOtp=useCallback(async(input:RegisterInput,otp:string)=>{const device=await getDeviceIdentity();const tokens=await api<TokenResponse>('/api/v1/auth/otp/registration/email/verify',{method:'POST',body:JSON.stringify({...input,fullName:input.fullName.trim(),email:input.email.trim().toLowerCase(),mobile:input.mobile?.trim(),otp,...device})});await storeSession(tokens);setUser(await loadMe());},[]);
+  const verifyRegistrationOtp=useCallback(async(input:RegisterInput,otp:string)=>{const device=await getDeviceIdentity();const tokens=await api<TokenResponse>('/api/v1/auth/otp/registration/email/verify',{method:'POST',body:JSON.stringify({...input,fullName:input.fullName.trim(),email:input.email.trim().toLowerCase(),mobile:input.mobile.trim(),otp,...device})});await storeSession(tokens);setUser(await loadMe());},[]);
 
   const logout = useCallback(async () => {
     const refreshToken = await getStoredValue(REFRESH_TOKEN_KEY);

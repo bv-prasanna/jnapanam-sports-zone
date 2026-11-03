@@ -17,7 +17,7 @@ export default function RegisterScreen() {
     const nameOk=/^[\p{L}][\p{L} .'-]{1,119}$/u.test(form.fullName.trim());
     if(!nameOk){setError(t('auth.validName'));return;}
     if(!/^\S+@\S+\.\S+$/.test(form.email.trim())){setError(t('auth.validEmail'));return;}
-    if(form.mobile && !/^[0-9+ -]{10,20}$/.test(form.mobile)){setError(t('auth.validMobile'));return;}
+    if(!/^[0-9+ -]{10,20}$/.test(form.mobile.trim()) || form.mobile.replace(/[^0-9]/g,'').length<10){setError(t('auth.validMobile'));return;}
     if(form.password.length<8){setError(t('auth.passwordLength'));return;}
     if(form.password!==form.confirmPassword){setError(t('auth.passwordMismatch'));return;}
     setBusy(true);setError('');

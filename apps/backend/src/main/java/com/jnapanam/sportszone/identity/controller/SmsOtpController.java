@@ -13,7 +13,7 @@ import com.jnapanam.sportszone.identity.dto.*;import com.jnapanam.sportszone.ide
   return ResponseEntity.status(HttpStatus.CREATED).body(auth.register(payload,r.deviceSignature(),r.deviceName()));
  }
  public record EmailOtpRequest(@Email@NotBlank String email){}
- public record EmailRegistrationVerifyRequest(@NotBlank String fullName,@Email@NotBlank String email,String mobile,@Size(min=8) String password,@Pattern(regexp="\\d{6}") String otp,String deviceSignature,String deviceName){}
+ public record EmailRegistrationVerifyRequest(@NotBlank String fullName,@Email@NotBlank String email,@NotBlank @Pattern(regexp="^[0-9+ -]{10,20}$",message="A valid mobile number is required") String mobile,@Size(min=8) String password,@Pattern(regexp="\\d{6}") String otp,String deviceSignature,String deviceName){}
  @PostMapping("/password/request")@ResponseStatus(HttpStatus.ACCEPTED)public void password(@Valid@RequestBody OtpRequest r){requireMobileOtp();recovery.requestSmsOtp(r.mobile());}
  @PostMapping("/password/reset")@ResponseStatus(HttpStatus.NO_CONTENT)public void reset(@Valid@RequestBody SmsPasswordResetRequest r){requireMobileOtp();recovery.resetWithSmsOtp(r);}
  public record RegistrationOtpVerifyRequest(@NotBlank String fullName,@Email@NotBlank String email,@NotBlank String mobile,@Size(min=8) String password,@Pattern(regexp="\\d{4,6}") String otp,String deviceSignature,String deviceName){}

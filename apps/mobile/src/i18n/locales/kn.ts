@@ -115,7 +115,7 @@ const kn = {
     verifyEmail:'ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ', emailOtpSentTo:'6 ಅಂಕಿಯ ಪರಿಶೀಲನಾ ಕೋಡ್ ಅನ್ನು ಈ ಇಮೇಲ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ:', checkSpamFolder:'ಈ ಇಮೇಲ್‌ನ ಇನ್‌ಬಾಕ್ಸ್ ಮತ್ತು ಸ್ಪ್ಯಾಮ್ ಫೋಲ್ಡರ್ ಪರಿಶೀಲಿಸಿ.',emailVerificationCode:'ಇಮೇಲ್ ಪರಿಶೀಲನಾ ಕೋಡ್',
     sixDigitOtp:'6 ಅಂಕಿಯ OTP',sendEmailOtp:'ಇಮೇಲ್ OTP ಕಳುಹಿಸಿ',verifyAndCreateAccount:'ಪರಿಶೀಲಿಸಿ ಖಾತೆ ತೆರೆಯಿರಿ',changeEmail:'ತಪ್ಪಾದ ಇಮೇಲ್? ವಿಳಾಸ ಬದಲಾಯಿಸಿ',validEmailOtp:'ಇಮೇಲ್‌ಗೆ ಬಂದ 6 ಅಂಕಿಯ ಕೋಡ್ ನಮೂದಿಸಿ.',
     loginRequired: 'ಲಾಗಿನ್ ಅಗತ್ಯ', validCredentials: 'ಸರಿಯಾದ ಇಮೇಲ್ ಮತ್ತು ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ.', validName: 'ಅಕ್ಷರಗಳನ್ನು ಬಳಸಿ ಸರಿಯಾದ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.',
-    validEmail: 'ಸರಿಯಾದ ಇಮೇಲ್ ವಿಳಾಸ ನಮೂದಿಸಿ.', validMobile: 'ಸರಿಯಾದ 10 ರಿಂದ 20 ಅಕ್ಷರದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ.',
+    validEmail: 'ಸರಿಯಾದ ಇಮೇಲ್ ವಿಳಾಸ ನಮೂದಿಸಿ.', validMobile: 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಕಡ್ಡಾಯ. ಕನಿಷ್ಠ 10 ಅಂಕಿಗಳಿರುವ ಸರಿಯಾದ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ.',
     passwordLength: 'ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು.', passwordMismatch: 'ಪಾಸ್‌ವರ್ಡ್‌ಗಳು ಹೊಂದಿಕೆಯಾಗುತ್ತಿಲ್ಲ.', smsOtp:'SMS ಪರಿಶೀಲನಾ ಕೋಡ್', sendOtp:'SMS OTP ಕಳುಹಿಸಿ', verifyOtp:'OTP ಪರಿಶೀಲಿಸಿ', resetPassword:'ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸಿ', deviceVerified:'ನಿಮ್ಮ ಸೆಷನ್‌ಗೆ ಈ ಮೊಬೈಲ್ ಸಾಧನವನ್ನು ಪರಿಶೀಲಿಸಲಾಗಿದೆ',
   },
   home: {
