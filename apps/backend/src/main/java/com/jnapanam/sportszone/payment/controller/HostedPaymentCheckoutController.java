@@ -76,9 +76,9 @@ public class HostedPaymentCheckoutController {
             <!doctype html><html lang="en"><head><meta charset="utf-8">
             <meta name="viewport" content="width=device-width,initial-scale=1">
             <title>Jnapanam secure checkout</title>
-            <style>body{font-family:system-ui,sans-serif;background:#f7fafc;color:#063b63;
+            <style>body{font-family:system-ui,sans-serif;background:#fff9ef;color:#28330f;
             max-width:460px;margin:10vh auto;padding:24px;text-align:center}
-            button{background:#0877b9;color:white;border:0;border-radius:10px;padding:14px 26px;font-size:17px}
+            button{background:#c83a0a;color:white;border:0;border-radius:10px;padding:14px 26px;font-size:17px}
             button:disabled{opacity:.55}</style></head><body>
             <h2>Jnapanam Sports Zone</h2><p>Secure payment through Razorpay</p>
             <button id="pay" disabled>Preparing checkout…</button><p id="status"></p>
