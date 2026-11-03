@@ -156,4 +156,28 @@ class RazorpayWebhookLifecycleTest {
         assertEquals(RefundStatus.REQUESTED,refund.getStatus());
         verify(events,never()).save(any());
     }
+    @Test void lateCapturedPaymentAfterBookingExpiryMustBeRecordedForReconciliation() throws Exception {
+        User user=mock(User.class);
+        when(user.getId()).thenReturn(UUID.randomUUID());
+        UUID bookingId=UUID.randomUUID();
+        PaymentOrder order=new PaymentOrder(user,PaymentPurpose.BOOKING,bookingId,15000L,
+            "INR","RAZORPAY","late-123");
+        order.providerOrder("order_late_123");
+        com.jnapanam.sportszone.booking.model.Booking booking =
+            mock(com.jnapanam.sportszone.booking.model.Booking.class);
+        when(booking.getStatus()).thenReturn(
+            com.jnapanam.sportszone.booking.model.BookingStatus.PAYMENT_EXPIRED);
+        when(bookings.findById(bookingId)).thenReturn(Optional.of(booking));
+        when(orders.findByProviderOrderId("order_late_123")).thenReturn(Optional.of(order));
+        event("evt-late-captured",
+          "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_late_123\",\"order_id\":\"order_late_123\",\"amount\":15000,\"currency\":\"INR\",\"status\":\"captured\"}}}}");
+        assertEquals(PaymentStatus.PAID,order.getStatus());
+        assertEquals("pay_late_123",order.getProviderPaymentId());
+        verify(booking,never()).paid();
+        verifyNoInteractions(notifications);
+        ArgumentCaptor<PaymentWebhookEvent> eventsCaptor=ArgumentCaptor.forClass(PaymentWebhookEvent.class);
+        verify(events).save(eventsCaptor.capture());
+        assertEquals("REVIEW_REQUIRED",eventsCaptor.getValue().getStatus());
+        assertEquals("order_late_123",eventsCaptor.getValue().getProviderOrderId());
+    }
 }
