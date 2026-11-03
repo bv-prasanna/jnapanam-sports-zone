@@ -55,11 +55,11 @@ class DailyBookingDigestReportTest {
         assertFalse(html.contains("<script>"));
         assertTrue(html.contains("&lt;script&gt;"));
     }
-    @Test void noSportGroupingWhenCatalogContainsWrongSportAssignments(){
+    @Test void wrongSportAssignmentRemainsVisibleWithoutGroupingOtherFacilities(){
         var incorrect=new DailyBookingDigestReport.Facility(UUID.randomUUID(),"Cricket","Swimming");
         var body=DailyBookingDigestReport.compose(LocalDate.now(),List.of(ground,incorrect),List.of());
         assertTrue(body.contains("Swimming"));
-        assertFalse(body.contains("SPORT: Cricket"));
+        assertTrue(body.contains("SPORT: Cricket"));
     }
     @Test void reportIncludesActualConfiguredSportPerFacility() {
         var misAssigned=new DailyBookingDigestReport.Facility(UUID.randomUUID(),"Cricket","Swimming");
