@@ -23,6 +23,9 @@ export default function AppManagement(){
    event.preventDefault();if(!policy||busy)return;
    if(policy.minimumSupportedVersionCode>policy.latestVersionCode){setError("Minimum supported build cannot exceed the latest build.");return;}
    if(policy.updateMode!=="OFF"&&!policy.apkUrl?.trim()){setError("Publish the APK URL before enabling updates.");return;}
+   if(policy.updateMode==="MANDATORY"&&!window.confirm(
+     "MANDATORY updates can block customer bookings, payment and check-in from older Android builds. Confirm the new APK is publicly downloadable, installs correctly and uses a compatible signing certificate. Enable mandatory updates now?"
+   ))return;
    setBusy(true);setError("");setMessage("");
    try{const updated=await api<Policy>("/api/v1/admin/app-management",{method:"PUT",body:JSON.stringify({
      latestVersionCode:policy.latestVersionCode,
