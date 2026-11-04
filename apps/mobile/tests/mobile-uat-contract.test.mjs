@@ -20,7 +20,7 @@ test('one hamburger navigation replaces every bottom tab and omits Admin tools',
 test('approved website logo is used in shared mobile header, not oversize legacy logo',async()=>{
   const header=await source('src/components/mobile-header.tsx');
   const home=await source('src/app/index.tsx');
-  assert.match(header,/jnapanam-logo-mobile\.jpg/);
+  assert.match(header,/jnapanam-brand\.png/);
   assert.match(header,/SafeAreaView/);
   assert.doesNotMatch(home,/jnapanam-logo-current\.png/);
   assert.doesNotMatch(home,/<LanguageSwitch/);

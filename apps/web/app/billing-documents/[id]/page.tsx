@@ -44,7 +44,7 @@ export default function BillingDocumentsPage(){
  {doc.kind==="CREDIT_NOTE"&&<p>Against invoice: <strong>{String(d.originalInvoice||"—")}</strong> · Refund: {String(d.refundId||"—")}</p>}
  <table className={styles.table}><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>
  {d.originalPricePaise!=null&&<tr><td>Original service value</td><td>{rs(d.originalPricePaise)}</td></tr>}
- {d.promotionCode&&<tr><td>Offer / coupon code</td><td>{String(d.promotionCode)}</td></tr>}
+ {d.promotionCode!=null&&String(d.promotionCode).trim()!==""&&<tr><td>Offer / coupon code</td><td>{String(d.promotionCode)}</td></tr>}
  {d.couponDiscountPaise!=null&&<tr><td>Coupon / promotional discount</td><td>- {rs(d.couponDiscountPaise)}</td></tr>}
  {d.loyaltyPointsUsed!=null&&<tr><td>Loyalty redeemed</td><td>{String(d.loyaltyPointsUsed)} points</td></tr>}
  {d.loyaltyTenderPaise!=null&&<tr><td>Paid using loyalty value</td><td>{rs(d.loyaltyTenderPaise)}</td></tr>}
