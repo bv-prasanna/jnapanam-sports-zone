@@ -1,0 +1,31 @@
+name: One-time QR mobile lockfile sync
+on:
+  push:
+    branches: [feat/weekly-hours-operator-qr-checkin-20261104]
+    paths:
+      - .github/workflows/qr-mobile-lock-sync.yml
+permissions:
+  contents: write
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/weekly-hours-operator-qr-checkin-20261104
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Resolve lockfile for Expo SDK 57 dependencies
+        working-directory: apps/mobile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit reviewed lockfile back to feature branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/package-lock.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "build(mobile): lock exact QR scanner dependencies"
+          git push origin HEAD:refs/heads/feat/weekly-hours-operator-qr-checkin-20261104
