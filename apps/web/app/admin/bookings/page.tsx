@@ -16,7 +16,7 @@ type Booking = {
   checkedInBy?:string; checkedOutBy?:string; onsitePaymentMethod?:string; onsitePaymentReference?:string; statusReason?:string;
 };
 type Payment = { id:string; referenceId?:string; purpose?:string; receiptNumber?:string; status?:string; amountPaise?:number; originalAmountPaise?:number; discountPaise?:number; provider?:string; providerPaymentId?:string; paidAt?:string; createdAt?:string };
-type RangePreset = "TODAY"|"TOMORROW"|"WEEK"|"MONTH"|"CUSTOM";
+type RangePreset = "ALL"|"TODAY"|"TOMORROW"|"WEEK"|"MONTH"|"CUSTOM";
 type CapacityAudit={slotId:string;facilityName:string;sportName:string;date:string;startTime:string;endTime:string;
  capacity:number;heldCount:number;bookedCount:number;available:number;activeHolds:number;
  activeBookings:number;pendingPayment:number;confirmed:number;expiredBookings:number;countersMismatch:boolean};
@@ -36,7 +36,7 @@ export default function AdminBookingExplorer(){
   const allowed=!!user?.roles.some(role=>["SUPER_ADMIN","ADMIN"].includes(role));
   const today=todayLocal();
   const [sport,setSport]=useState(""); const [facilityId,setFacilityId]=useState("");
-  const [from,setFrom]=useState(today); const [to,setTo]=useState(today); const [preset,setPreset]=useState<RangePreset>("TODAY");
+  const [from,setFrom]=useState(""); const [to,setTo]=useState(""); const [preset,setPreset]=useState<RangePreset>("ALL");
   const [status,setStatus]=useState(""); const [paymentStatus,setPaymentStatus]=useState(""); const [query,setQuery]=useState("");
   const [sports,setSports]=useState<Sport[]>([]); const [facilities,setFacilities]=useState<Facility[]>([]); const [bookings,setBookings]=useState<Booking[]>([]);
   const [selected,setSelected]=useState<Booking|null>(null); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [notice,setNotice]=useState("");
@@ -60,8 +60,8 @@ export default function AdminBookingExplorer(){
   },[allowed,from,to,sport,facilityId,status,paymentStatus,query]);
   useEffect(()=>{void load()},[load]);
 
-  function applyPreset(next:RangePreset){setPreset(next);if(next==="CUSTOM")return;const base=today;if(next==="TODAY"){setFrom(base);setTo(base)}else if(next==="TOMORROW"){const d=addDays(base,1);setFrom(d);setTo(d)}else if(next==="WEEK"){setFrom(base);setTo(addDays(base,6))}else{setFrom(base.slice(0,7)+"-01");setTo(monthEnd(base))}}
-  function clear(){setSport("");setFacilityId("");setStatus("");setPaymentStatus("");setQuery("");setFrom(today);setTo(today);setPreset("TODAY")}
+  function applyPreset(next:RangePreset){setPreset(next);if(next==="CUSTOM")return;if(next==="ALL"){setFrom("");setTo("");return;}const base=today;if(next==="TODAY"){setFrom(base);setTo(base)}else if(next==="TOMORROW"){const d=addDays(base,1);setFrom(d);setTo(d)}else if(next==="WEEK"){setFrom(base);setTo(addDays(base,6))}else{setFrom(base.slice(0,7)+"-01");setTo(monthEnd(base))}}
+  function clear(){setSport("");setFacilityId("");setStatus("");setPaymentStatus("");setQuery("");setFrom("");setTo("");setPreset("ALL")}
   async function inspectCapacity(){
     if(!auditFacility){setAuditError("Select a facility before inspecting capacity.");return;}
     setAuditBusy(true);setAuditError("");setAuditRows(null);
@@ -90,14 +90,14 @@ export default function AdminBookingExplorer(){
   }
 
   const linkedPayments=useMemo(()=>selected?payments.filter(p=>p.purpose==="BOOKING"&&String(p.referenceId)===String(selected.id)):[],[payments,selected]);
-  const counts=useMemo(()=>({total:bookings.length,confirmed:bookings.filter(b=>b.status==="CONFIRMED").length,paymentDue:bookings.filter(b=>["UNPAID","PENDING"].includes(String(b.paymentStatus))).length,checkedIn:bookings.filter(b=>!!b.checkedInAt&&!b.checkedOutAt).length,completed:bookings.filter(b=>!!b.checkedOutAt).length,cancelled:bookings.filter(b=>b.status==="CANCELLED").length}),[bookings]);
+  const counts=useMemo(()=>({total:bookings.length,confirmed:bookings.filter(b=>b.status==="CONFIRMED").length,paymentDue:bookings.filter(b=>["CONFIRMED","PENDING_PAYMENT"].includes(b.status)&&["UNPAID","PENDING"].includes(String(b.paymentStatus))).length,checkedIn:bookings.filter(b=>!!b.checkedInAt&&!b.checkedOutAt).length,completed:bookings.filter(b=>!!b.checkedOutAt).length,cancelled:bookings.filter(b=>b.status==="CANCELLED").length}),[bookings]);
 
   function actionButtons(row:Booking){const confirmed=row.status==="CONFIRMED";const pending=["CONFIRMED","PENDING_PAYMENT"].includes(row.status);return <div className={styles.detailActions}>{confirmed&&!row.checkedInAt&&<button onClick={()=>{setCheckingIn(row);setIdentityVerified(false);setVerificationNote("");setError("")}}>Check in</button>}{row.checkedInAt&&!row.checkedOutAt&&<button disabled={!!actionBusy} onClick={()=>void runAction(row,"check-out")}>Check out</button>}{confirmed&&!row.checkedInAt&&<button disabled={!!actionBusy} onClick={()=>void runAction(row,"no-show")}>No-show</button>}{pending&&<button className={styles.danger} disabled={!!actionBusy} onClick={()=>void runAction(row,"cancel")}>Cancel booking</button>}</div>}
 
   if(!ready||!allowed)return <main className={styles.page}>Checking access…</main>;
   return <main className={styles.page}>
     <header className={styles.header}><div><span>ADMIN</span><h1>Booking Explorer</h1><p>Find bookings, inspect payment details and take permitted booking actions.</p></div></header>
-    <section className={styles.presets}>{(["TODAY","TOMORROW","WEEK","MONTH","CUSTOM"] as RangePreset[]).map(x=><button key={x} className={preset===x?styles.active:""} onClick={()=>applyPreset(x)}>{x==="WEEK"?"This week":x==="MONTH"?"This month":x[0]+x.slice(1).toLowerCase()}</button>)}</section>
+    <section className={styles.presets}>{(["ALL","TODAY","TOMORROW","WEEK","MONTH","CUSTOM"] as RangePreset[]).map(x=><button key={x} className={preset===x?styles.active:""} onClick={()=>applyPreset(x)}>{x==="ALL"?"All dates":x==="WEEK"?"This week":x==="MONTH"?"This month":x[0]+x.slice(1).toLowerCase()}</button>)}</section>
     <section className={styles.filters}>
       <label>Sport<select value={sport} onChange={e=>{setSport(e.target.value);setFacilityId("")}}><option value="">All sports</option>{sports.map(s=><option key={s.code} value={s.code}>{s.name}</option>)}</select></label>
       <label>Facility<select value={facilityId} onChange={e=>setFacilityId(e.target.value)}><option value="">All facilities</option>{availableFacilities.map(f=><option key={f.id} value={f.id}>{f.name} · {f.sportName||f.sportCode||"Unknown sport"}</option>)}</select></label>
