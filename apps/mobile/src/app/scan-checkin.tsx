@@ -61,7 +61,7 @@ export default function ScanCheckIn(){
      barcodeScannerSettings={{barcodeTypes:['qr']}} onBarcodeScanned={({data})=>void onScan(data)}/>}
    {busy&&<ActivityIndicator color={BrandColors.accent} size="large"/>}
    {!!error&&<><Text style={styles.error} accessibilityRole="alert">{error}</Text>
-     <Pressable style={styles.outline} onPress={retry}><Text style={styles.outlineText}>Try scanning again</Text></Pressable></>
+     <Pressable style={styles.outline} onPress={retry}><Text style={styles.outlineText}>Try scanning again</Text></Pressable></>}
    {done?<View style={styles.result}>
      <MaterialCommunityIcons name="check-circle" color="#146C43" size={64}/>
      <Text style={styles.title}>Check-in successful</Text>
