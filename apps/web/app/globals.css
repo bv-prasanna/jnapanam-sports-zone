@@ -375,3 +375,19 @@
 .portal-dialog{max-height:calc(100dvh - 2.5rem);overflow-y:auto;overscroll-behavior:contain;min-height:0}
 .booking-detail-grid strong,.booking-detail-grid span{overflow-wrap:anywhere;word-break:break-word}
 @media(max-width:520px){.booking-detail-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Exactly seven weekday cards; split shifts stay under their weekday heading. */
+.weekly-day-card{display:grid;gap:13px;padding:16px 18px;border:1px solid var(--line,#e4d6be);border-radius:14px;background:#fffaf2;min-width:0}
+.weekly-day-card.is-closed{background:#f2f1ea}
+.weekly-day-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.weekly-day-header>strong{font-weight:850;font-size:17px;min-width:112px}
+.weekly-day-header .closed-toggle{margin-right:auto}
+.weekly-day-periods{display:grid;gap:10px}
+.weekly-period-row{display:grid;grid-template-columns:minmax(74px,.5fr) minmax(130px,1fr) minmax(130px,1fr) auto;gap:12px;align-items:end}
+.weekly-period-row label{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:750;color:var(--ink)}
+.weekly-period-row input[type=time]{background:#fff;min-height:45px;width:100%;border:1px solid var(--line);border-radius:10px;padding:8px}
+.period-name{align-self:center;font-size:12px;font-weight:800;color:var(--muted)}
+.weekly-day-card .add-week-period{justify-self:start;padding:9px 14px}
+.weekly-day-card .copy-week-btn{margin-left:auto;padding:9px 12px;font-size:12px}
+.weekly-day-card .remove-week-period{padding:10px 14px}
+@media(max-width:640px){.weekly-period-row{grid-template-columns:1fr 1fr}.weekly-period-row .period-name,.weekly-period-row .remove-week-period{grid-column:1/-1}.weekly-day-header .copy-week-btn{margin-left:0}.weekly-day-card{padding:12px}}
