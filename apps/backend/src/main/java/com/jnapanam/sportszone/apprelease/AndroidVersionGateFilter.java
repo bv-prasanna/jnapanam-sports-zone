@@ -30,6 +30,11 @@ public class AndroidVersionGateFilter extends OncePerRequestFilter {
             chain.doFilter(request,response);return;
         }
         Integer installed=parsePositiveInt(request.getHeader("X-Jnapanam-Version-Code"));
+        // Legacy APKs with no native version header cannot be gated safely;
+        // do not query the policy or misclassify them as unsupported builds.
+        if(installed==null) {
+            chain.doFilter(request,response);return;
+        }
         if(AppReleaseService.mustUpgrade(service.publicPolicy(),installed)) {
             response.setStatus(426);
             response.setHeader("Cache-Control","no-store");
