@@ -39,6 +39,5 @@ export const adminModules:AdminModule[]=[
  {id:"providers",label:"Notification Providers",href:"/admin/notification-providers",area:"System",description:"Configure email and messaging channels."},
  {id:"content",label:"Content & Events",href:"/admin?view=content",area:"System",description:"Manage website content and announcements."},
  {id:"audit",label:"Audit Log",href:"/admin?view=audit",area:"System",description:"Review significant administrative activity."},
- {id:"uat",label:"UAT OTP Numbers",href:"/admin/uat-otp",area:"System",description:"Manage approved UAT authentication numbers.",superAdmin:true}
 ];
 export const visibleAdminModules=(superAdmin:boolean)=>adminModules.filter(module=>!module.superAdmin||superAdmin);
