@@ -21,7 +21,7 @@ export default function RegisterScreen() {
     if(form.password.length<8){setError(t('auth.passwordLength'));return;}
     if(form.password!==form.confirmPassword){setError(t('auth.passwordMismatch'));return;}
     setBusy(true);setError('');
-    try{if(!otpSent){await requestRegistrationOtp(form);setOtpEmail(form.email.trim().toLowerCase());setOtpSent(true);}else{if(!/^\d{6}$/.test(otp.trim())){setError(t('auth.validEmailOtp'));return;}await verifyRegistrationOtp(form,otp.trim());router.replace('/');}}
+    try{if(!otpSent){await requestRegistrationOtp(form);setOtpEmail(form.email.trim().toLowerCase());setOtpSent(true);}else{if(!/^\d{6}$/.test(otp.trim())){setError(t('auth.validEmailOtp'));return;}await verifyRegistrationOtp(form,otp.trim());router.replace('/profile');}}
     catch(e){setError(e instanceof Error?e.message:t('common.tryAgain'));}
     finally{setBusy(false);}
   }
