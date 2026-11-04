@@ -74,8 +74,8 @@ export default function AdminBookingExplorer(){
 
   async function runAction(row:Booking,kind:ActionKind){
     const label=kind.replace("-"," ");
-    if((kind==="cancel"||kind==="no-show")&&!window.confirm(`${kind==="cancel"?"Cancel":"Mark no-show for"} booking ${row.bookingNumber}?`))return;
-    try{setActionBusy(row.id+kind);setError("");setNotice("");const url=kind==="check-out"?`/api/v1/operations/bookings/${row.id}/check-out`:`/api/v1/operations/bookings/${row.id}/${kind}`;await api(url,{method:"POST",body:kind==="check-out"?undefined:JSON.stringify({reason:kind==="cancel"?"Cancelled by administrator":"Customer did not arrive within the grace period"})});setSelected(null);setNotice(`Booking ${label} completed.`);await load()}catch(e){setError(message(e,`Unable to ${label} this booking.`))}finally{setActionBusy("")}
+    if((kind==="cancel"||kind==="no-show")&&!window.confirm(kind==="cancel" ? `Cancel booking ${row.bookingNumber}? This does NOT automatically refund captured money. Check Admin → Payments and Razorpay, then request a refund separately according to the venue policy.` : `Mark booking ${row.bookingNumber} as no-show?`))return;
+    try{setActionBusy(row.id+kind);setError("");setNotice("");const url=kind==="check-out"?`/api/v1/operations/bookings/${row.id}/check-out`:`/api/v1/operations/bookings/${row.id}/${kind}`;await api(url,{method:"POST",body:kind==="check-out"?undefined:JSON.stringify({reason:kind==="cancel"?"Cancelled by administrator":"Customer did not arrive within the grace period"})});setSelected(null);setNotice(kind==="cancel"&&row.paymentStatus==="PAID" ? `Booking ${row.bookingNumber} cancelled. Captured payment is NOT automatically refunded. Review Admin → Payments and Razorpay before taking a separate refund action.` : `Booking ${label} completed.`);await load()}catch(e){setError(message(e,`Unable to ${label} this booking.`))}finally{setActionBusy("")}
   }
 
   async function checkIn(event:FormEvent<HTMLFormElement>){
