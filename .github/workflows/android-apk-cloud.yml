@@ -1,7 +1,11 @@
 name: Android APK cloud build
-# APK generation is intentionally manual-only. Never build on push or merge
-# until the Jnapanam owner requests an APK build.
+# Jnapanam owner requested a new APK on 2026-11-04; build once on main merge.
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/android-apk-cloud.yml
+      - apps/mobile/**
   workflow_dispatch:
     inputs:
       api_url:
@@ -64,15 +68,15 @@ jobs:
           from pathlib import Path
           from PIL import Image, ImageFile, ImageOps
           ImageFile.LOAD_TRUNCATED_IMAGES = True
-          source = Path("../web/public/images/jnapanam-logo.jpg")
+          source = Path("../web/public/images/jnapanam-logo.png")
           if not source.is_file() or source.stat().st_size < 1000:
-              raise SystemExit("Website JPEG logo is missing or suspiciously small")
+              raise SystemExit("Canonical website PNG logo is missing or suspiciously small")
           try:
               with Image.open(source) as original:
                   original.load()
                   logo = original.convert("RGBA")
           except Exception as exc:
-              raise SystemExit(f"Cannot decode source JPEG logo: {exc}")
+              raise SystemExit(f"Cannot decode source PNG logo: {exc}")
           if min(logo.size) < 128:
               raise SystemExit(f"Logo resolution too low: {logo.size}")
           dest = Path("assets/images")
