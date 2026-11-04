@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, ApiError } from "@/lib/api";
+import { api, apiBlob, ApiError } from "@/lib/api";
 import { useApp } from "@/components/app-provider";
 import styles from "./operations.module.css";
 import { OperatorFacilityBoard } from "@/components/operator-facility-board";
@@ -30,6 +30,8 @@ export default function OperationsPage(){
   const [selectedDate,setSelectedDate]=useState(today);
   const [bookings,setBookings]=useState<Booking[]>([]);
   const [checkingIn,setCheckingIn]=useState<Booking|null>(null); const [verified,setVerified]=useState(false); const [note,setNote]=useState("");
+  const [evidence,setEvidence]=useState<{photoAvailable:boolean;documentAvailable:boolean;documentType?:string;documentStatus?:string}|null>(null);
+  const [photoUrl,setPhotoUrl]=useState("");const [documentUrl,setDocumentUrl]=useState(""); const [evidenceError,setEvidenceError]=useState("");
   const [busy,setBusy]=useState(""); const [error,setError]=useState(""); const [opsTab,setOpsTab]=useState<"bookings"|"incidents"|"equipment"|"handover">("bookings"); const [incidents,setIncidents]=useState<any[]>([]); const [equipment,setEquipment]=useState<any[]>([]); const [handovers,setHandovers]=useState<any[]>([]); const [opsText,setOpsText]=useState("");
 
   useEffect(()=>{if(ready&&!allowed)router.replace(user?"/dashboard":"/login")},[ready,allowed,user,router]);
@@ -39,11 +41,41 @@ export default function OperationsPage(){
   async function action(booking:Booking,kind:Action){try{setBusy(booking.id+kind);setError("");if(kind==="check-in"){setCheckingIn(booking);setBusy("");return}await api(`/api/v1/operations/bookings/${booking.id}/${kind}`,{method:"POST",body:kind==="no-show"?JSON.stringify({reason:"Customer did not arrive within the grace period"}):undefined});await load()}catch(e){setError(e instanceof ApiError?e.message:`Unable to ${kind}.`)}finally{if(kind!=="check-in")setBusy("")}}
   async function confirmCheckIn(e:FormEvent){e.preventDefault();if(!checkingIn)return;try{setBusy(checkingIn.id+"check-in");setError("");await api(`/api/v1/operations/bookings/${checkingIn.bookingNumber}/check-in`,{method:"POST",body:JSON.stringify({identityVerified:verified,verificationNote:note.trim()||null})});setCheckingIn(null);setVerified(false);setNote("");await load()}catch(err){setError(err instanceof ApiError?err.message:"Unable to check in customer.")}finally{setBusy("")}}
 
+  useEffect(()=>{
+    if(!checkingIn){setEvidence(null);setPhotoUrl("");setDocumentUrl("");setEvidenceError("");return;}
+    let active=true;
+    const urls:string[]=[];
+    const path="/api/v1/operations/bookings/"+encodeURIComponent(checkingIn.bookingNumber)+"/identity";
+    (async()=>{
+      try{
+        const status=await api<{photoAvailable:boolean;documentAvailable:boolean;documentType?:string;documentStatus?:string}>(path);
+        if(!active)return;
+        setEvidence(status);
+        if(status.photoAvailable){
+          const blob=await apiBlob(path+"/photo");
+          if(active){const url=URL.createObjectURL(blob);urls.push(url);setPhotoUrl(url);}
+        }
+        if(status.documentAvailable){
+          const blob=await apiBlob(path+"/document");
+          if(active){const url=URL.createObjectURL(blob);urls.push(url);setDocumentUrl(url);}
+        }
+      }catch(err){if(active)setEvidenceError(err instanceof ApiError?err.message:"Identity evidence unavailable. Ask the admin to check document access.");}
+    })();
+    return()=>{active=false;urls.forEach(url=>URL.revokeObjectURL(url));};
+  },[checkingIn]);
+
   if(!ready||!allowed)return <main className={styles.page}>Checking access…</main>;
   const screen=<main className={styles.page}>
     <header className={styles.header}><div><span>OPERATIONS · {selectedDate}</span><h1>{selectedDate===today?"Today's Facility Operations":"Facility Operations"}</h1><p>Payment first, then verify customer, check in, and check out.</p></div>{!user?.roles.some(role=>role==="ADMIN"||role==="SUPER_ADMIN")&&<div className={styles.headerActions}><button onClick={()=>router.push("/dashboard")}>Customer portal</button><button onClick={()=>void signOut().then(()=>router.replace("/login"))}>Logout</button></div>}</header>
     <nav className={styles.opsTabs}><button onClick={()=>setOpsTab("bookings")}>Bookings</button><button onClick={()=>setOpsTab("incidents")}>Incidents</button><button onClick={()=>setOpsTab("equipment")}>Equipment</button><button onClick={()=>setOpsTab("handover")}>Shift Handover</button></nav>{opsTab==="bookings"&&<OperatorFacilityBoard date={selectedDate} setDate={setSelectedDate} bookings={bookings} reload={load} onAction={action}/>}{opsTab==="incidents"&&<section className={styles.opsPanel}><h2>Incident Log</h2><form onSubmit={async e=>{e.preventDefault();await api("/api/v1/operations/incidents",{method:"POST",body:JSON.stringify({incidentType:"GENERAL",severity:"NORMAL",description:opsText})});setOpsText("");setIncidents(await api<any[]>("/api/v1/operations/incidents"))}}><textarea required value={opsText} onChange={e=>setOpsText(e.target.value)} placeholder="Describe incident, injury, damage, closure or lost/found item"/><button>Record Incident</button></form>{incidents.map(x=><article key={x.id}><b>{x.incident_type}</b> · {x.severity}<p>{x.description}</p></article>)}</section>}{opsTab==="equipment"&&<section className={styles.opsPanel}><h2>Equipment Register</h2><p>Issue/return records for onsite equipment. New issues can be recorded against booking/customer through the operations API.</p>{equipment.map(x=><article key={x.id}><b>{x.equipment_name}</b> × {x.quantity}<p>{x.returned_at?"Returned":"Issued / awaiting return"}</p></article>)}</section>}{opsTab==="handover"&&<section className={styles.opsPanel}><h2>Shift Handover</h2><form onSubmit={async e=>{e.preventDefault();await api("/api/v1/operations/handovers",{method:"POST",body:JSON.stringify({shiftDate:today,notes:opsText})});setOpsText("");setHandovers(await api<any[]>("/api/v1/operations/handovers"))}}><textarea required value={opsText} onChange={e=>setOpsText(e.target.value)} placeholder="Pending payments, incidents, equipment, closures, customer follow-ups…"/><button>Save Handover</button></form>{handovers.map(x=><article key={x.id}><b>{x.shift_date} · {x.staff_name}</b><p>{x.notes}</p></article>)}</section>}
-    {checkingIn&&<div className={styles.backdrop}><form className={styles.dialog} onSubmit={confirmCheckIn}><h2>Check in {checkingIn.bookingNumber}</h2><p>{checkingIn.customerName} · {checkingIn.facilityName}</p><label className={styles.check}><input type="checkbox" checked={verified} onChange={e=>setVerified(e.target.checked)}/> Customer identity verified</label><label>Verification note<input value={note} maxLength={120} onChange={e=>setNote(e.target.value)} placeholder="Example: Name matched photo ID"/></label><div className={styles.actions}><button type="button" className={styles.secondary} onClick={()=>{setCheckingIn(null);setBusy("");}}>Cancel</button><button disabled={!!busy}>{busy?"Checking in…":"Confirm Check-in"}</button></div></form></div>}
+    {checkingIn&&<div className={styles.backdrop}><form className={styles.dialog} onSubmit={confirmCheckIn}><h2>Check in {checkingIn.bookingNumber}</h2><p>{checkingIn.customerName} · {checkingIn.sportName} · {checkingIn.facilityName} · {checkingIn.startTime?.slice(0,5)}–{checkingIn.endTime?.slice(0,5)}</p>
+      <div className={styles.identityPanel}><strong>Customer verification</strong>
+        {photoUrl?<img alt="Customer's uploaded profile photo" src={photoUrl} className={styles.customerPhoto}/>:<p>{evidence?.photoAvailable?"Loading profile photo…":"No uploaded profile photo"}</p>}
+        <p>Document: {evidence?.documentType||"Not uploaded"} · Status: {evidence?.documentStatus||"Not available"}</p>
+        {documentUrl&&<a href={documentUrl} target="_blank" rel="noreferrer">Open submitted identity document</a>}
+        {evidenceError&&<p role="alert">{evidenceError}</p>}
+        <p>Match the customer, booked facility, time, payment and photo/document before accepting a manual check-in.</p>
+      </div><label className={styles.check}><input type="checkbox" checked={verified} onChange={e=>setVerified(e.target.checked)}/> Customer identity verified</label><label>Verification note<input value={note} maxLength={120} onChange={e=>setNote(e.target.value)} placeholder="Example: Name matched photo ID"/></label><div className={styles.actions}><button type="button" className={styles.secondary} onClick={()=>{setCheckingIn(null);setBusy("");}}>Cancel</button><button disabled={!!busy||!verified}>{busy?"Checking in…":"Confirm Check-in"}</button></div></form></div>}
   </main>;
   const isAdmin=!!user?.roles.some(role=>role==="ADMIN"||role==="SUPER_ADMIN");
   return isAdmin?<AdminLayout>{screen}</AdminLayout>:<><SiteHeader/><div className={shell.shell}><PortalSideNavigation active="operations"/>{screen}</div></>;
