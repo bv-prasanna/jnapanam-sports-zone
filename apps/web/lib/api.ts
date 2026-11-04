@@ -28,7 +28,8 @@ async function refreshAccess(): Promise<string | null> {
   if (!refreshPromise) refreshPromise = fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refreshToken }),
   }).then(async response => {
-    if (!response.ok) { clearSession(); return null; }
+    if (response.status === 401 || response.status === 403) { clearSession(); return null; }
+    if (!response.ok) throw new ApiError(response.status, "Sign-in service temporarily unavailable. Please retry.");
     const tokens = await response.json() as TokenResponse; saveTokens(tokens); return tokens.accessToken;
   }).finally(() => { refreshPromise = null; });
   return refreshPromise;
