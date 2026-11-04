@@ -6,6 +6,15 @@ export type User = { id: string; fullName: string; displayName?: string; profile
 const REFRESH_KEY = "jnapanam.refresh-token";
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
+const SESSION_EXPIRED_EVENT = "jnapanam:session-expired";
+let sessionExpiryPublished = false;
+/** End an invalid session once across all protected pages and file downloads. */
+function expireSession() {
+  if (sessionExpiryPublished) return;
+  sessionExpiryPublished = true;
+  clearSession();
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+}
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public details?: unknown) { super(message); }
@@ -13,6 +22,7 @@ export class ApiError extends Error {
 
 function saveTokens(tokens: TokenResponse) {
   accessToken = tokens.accessToken;
+  sessionExpiryPublished = false;
   if (typeof window !== "undefined") localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
 }
 
@@ -28,7 +38,7 @@ async function refreshAccess(): Promise<string | null> {
   if (!refreshPromise) refreshPromise = fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refreshToken }),
   }).then(async response => {
-    if (response.status === 401 || response.status === 403) { clearSession(); return null; }
+    if (response.status === 401 || response.status === 403) { expireSession(); return null; }
     if (!response.ok) throw new ApiError(response.status, "Sign-in service temporarily unavailable. Please retry.");
     const tokens = await response.json() as TokenResponse; saveTokens(tokens); return tokens.accessToken;
   }).finally(() => { refreshPromise = null; });
@@ -69,8 +79,17 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   }
   await attachEventLocation(headers, init.method || "GET");
   let response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
-  if (response.status === 401 && retry && !publicAuthPath && await refreshAccess()) {
-    headers.set("Authorization", `Bearer ${accessToken}`); response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  if (response.status === 401 && retry && !publicAuthPath) {
+    const renewed = await refreshAccess();
+    if (renewed) {
+      headers.set("Authorization", `Bearer ${renewed}`);
+      response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+    }
+  }
+  // A 403 is a permissions issue; only a 401 after attempted refresh expires login.
+  if (response.status === 401 && !publicAuthPath && !path.startsWith("/api/v1/public/")) {
+    expireSession();
+    throw new ApiError(401, "Session expired. Please sign in again.");
   }
   if (!response.ok) {
     const body = await response.json().catch(() => null);
@@ -89,7 +108,8 @@ export async function apiBlob(path:string):Promise<Blob>{
   let jwt=accessToken || await refreshAccess();
   const request=()=>fetch(`${API_BASE_URL}${path}`,{headers:jwt?{Authorization:`Bearer ${jwt}`}:{}});
   let response=await request();
-  if(response.status===401){jwt=await refreshAccess();response=await request();}
+  if(response.status===401){jwt=await refreshAccess();if(jwt)response=await request();}
+  if(response.status===401){expireSession();throw new ApiError(401,"Session expired. Please sign in again.");}
   if(!response.ok)throw new ApiError(response.status,`Unable to download document (${response.status})`);
   return response.blob();
 }
@@ -122,6 +142,7 @@ export async function apiDocument(path:string):Promise<Blob>{
   const request=async(token:string|null)=>fetch(`${API_BASE_URL}${path}`,{headers:token?{Authorization:`Bearer ${token}`}:{}});
   let response=await request(accessToken);
   if(response.status===401){const token=await refreshAccess();if(token)response=await request(token);}
+  if(response.status===401){expireSession();throw new ApiError(401,"Session expired. Please sign in again.");}
   if(!response.ok)throw new ApiError(response.status,"Unable to retrieve verification document");
   return response.blob();
 }
