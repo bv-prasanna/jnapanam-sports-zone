@@ -1,5 +1,6 @@
 import {router, useFocusEffect} from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import {useCallback, useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Image, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
@@ -70,35 +71,41 @@ export default function ProfileScreen(){
    }catch(e){setPasswordError(userFriendlyError(e,t('errors.generic')))}
    finally{setChangingPassword(false)}
  }
- async function uploadPhoto(){
+ async function uploadPhoto(source:'camera'|'library'){
    if(uploadingPhoto)return;
    try{
      setError('');setFeedback('');
-     const result=await DocumentPicker.getDocumentAsync({type:['image/jpeg','image/png','image/webp'],copyToCacheDirectory:true,multiple:false});
+     const result=source==='camera'
+       ?await ImagePicker.launchCameraAsync({mediaTypes:['images'],allowsEditing:true,aspect:[1,1],quality:0.45})
+       :await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],allowsEditing:true,aspect:[1,1],quality:0.45});
      if(result.canceled||!result.assets?.[0])return;
      const asset=result.assets[0];
-     const mime=asset.mimeType||'';
+     const mime=asset.mimeType||'image/jpeg';
      if(!['image/jpeg','image/png','image/webp'].includes(mime)){setError(t('mobileProfile.photoInvalid'));return;}
-     if(!asset.size||asset.size>5*1024*1024){setError(t('mobileProfile.photoLimit'));return;}
+     if(!asset.fileSize||asset.fileSize>5*1024*1024){setError(t('mobileProfile.photoLimit'));return;}
      const body=new FormData();
-     body.append('file',{uri:asset.uri,name:asset.name||'profile.jpg',type:mime} as unknown as Blob);
+     body.append('file',{uri:asset.uri,name:asset.fileName||'profile.jpg',type:mime} as unknown as Blob);
      setUploadingPhoto(true);
      const updated=await api<User>('/api/v1/profile/photo',{method:'POST',body});
      updateUser(updated);setPhotoFailed(false);setFeedback(t('mobileProfile.photoUploaded'));
    }catch(e){setError(userFriendlyError(e,t('errors.generic')))}
    finally{setUploadingPhoto(false)}
  }
- async function uploadProof(){
+ async function uploadProof(source:'camera'|'browse'='browse'){
    if(uploadingProof)return;
    try{
      setError('');setFeedback('');
-     const result=await DocumentPicker.getDocumentAsync({type:['image/jpeg','image/png','application/pdf'],copyToCacheDirectory:true,multiple:false});
-     if(result.canceled||!result.assets?.[0])return;
-     const asset=result.assets[0];const mime=asset.mimeType||'';
+     const asset=source==='camera'
+       ?(await ImagePicker.launchCameraAsync({mediaTypes:['images'],allowsEditing:false,quality:0.6})).assets?.[0]
+       :(await DocumentPicker.getDocumentAsync({type:['image/jpeg','image/png','application/pdf'],copyToCacheDirectory:true})).assets?.[0];
+     if(!asset)return;
+     const mime='mimeType'in asset?asset.mimeType||'image/jpeg':'image/jpeg';
      if(!['image/jpeg','image/png','application/pdf'].includes(mime)){setError(t('mobileProfile.proofInvalid'));return;}
-     if(!asset.size||asset.size>2*1024*1024){setError(t('mobileProfile.proofLimit'));return;}
+     const bytes='fileSize'in asset?asset.fileSize:asset.size;
+     if(!bytes||bytes>2*1024*1024){setError(t('mobileProfile.proofLimit'));return;}
      const body=new FormData();body.append('type',proofType);
-     body.append('file',{uri:asset.uri,name:asset.name||'address-proof',type:mime} as unknown as Blob);
+     const name=('name'in asset?asset.name:asset.fileName)||'address-proof';
+     body.append('file',{uri:asset.uri,name,type:mime} as unknown as Blob);
      setUploadingProof(true);
      const resultStatus=await api<{status:string}>('/api/v1/profile/address-proof',{method:'POST',body});
      setProofStatus(resultStatus.status);setProofReviewNote(null);setFeedback(t('mobileProfile.proofUploaded'));
@@ -116,6 +123,10 @@ export default function ProfileScreen(){
        keyboardType={keyboard} maxLength={limit} autoCapitalize={key==='mobile'||key==='postalCode'?'none':'sentences'}
        onChangeText={value=>change(key,value)}/></View>;
  return <ScreenShell title={t('navigation.profile')}>
+   {(!form.profilePhotoUrl||!['PENDING','APPROVED'].includes(proofStatus))&&<View style={styles.card}>
+      <Text style={styles.sectionTitle}>Complete your profile before booking</Text>
+      <Text style={styles.subText}>Upload a clear profile photo and a government ID. Identity documents are reviewed by Jnapanam staff. Your bookings require an uploaded document.</Text>
+    </View>}
    <View style={styles.card}>
      <View style={styles.identity}>
        {form.profilePhotoUrl&&!photoFailed?<Image source={{uri:form.profilePhotoUrl}} style={{width:64,height:64,borderRadius:32,backgroundColor:BrandColors.background}} onError={()=>setPhotoFailed(true)}/>:
@@ -123,9 +134,11 @@ export default function ProfileScreen(){
        <View style={styles.identityCopy}><Text style={styles.name}>{user.displayName||user.fullName}</Text><Text style={styles.subText}>{user.email}</Text>
          <Text style={styles.status}>{t('profile.status')}: {user.status}</Text></View>
      </View>
-     <Pressable accessibilityRole="button" style={styles.outline} disabled={uploadingPhoto} onPress={()=>void uploadPhoto()}>
-       <Text style={styles.outlineText}>{uploadingPhoto?t('mobileProfile.uploading'):t('mobileProfile.changePhoto')}</Text>
-     </Pressable>
+     <Text style={styles.hint}>Profile photo required for venue entry. Take a clear face photo or choose a compressed image (JPG/PNG, up to 5 MB).</Text>
+     <View style={styles.photoActions}>
+       <Pressable accessibilityRole="button" style={styles.outline} disabled={uploadingPhoto} onPress={()=>void uploadPhoto('camera')}><Text style={styles.outlineText}>Take photo</Text></Pressable>
+       <Pressable accessibilityRole="button" style={styles.outline} disabled={uploadingPhoto} onPress={()=>void uploadPhoto('library')}><Text style={styles.outlineText}>Choose photo</Text></Pressable>
+     </View>
      <Text style={styles.hint}>{t('mobileProfile.photoHelp')}</Text>
    </View>
    <View style={styles.card}>
@@ -162,7 +175,10 @@ export default function ProfileScreen(){
          style={[styles.proofOption,proofType===kind&&styles.proofSelected]} onPress={()=>setProofType(kind)}>
          <Text style={[styles.proofOptionText,proofType===kind&&styles.proofSelectedText]}>{t('mobileProfile.proofKind.'+kind)}</Text>
        </Pressable>)}</View>
-     <Pressable style={styles.outline} disabled={uploadingProof} onPress={()=>void uploadProof()}>
+     <Pressable style={styles.outline} disabled={uploadingProof} onPress={()=>void uploadProof('camera')}>
+       <Text style={styles.outlineText}>Capture document with camera</Text>
+     </Pressable>
+     <Pressable style={styles.outline} disabled={uploadingProof} onPress={()=>void uploadProof("browse")}>
        <Text style={styles.outlineText}>{uploadingProof?t('mobileProfile.uploading'):t('mobileProfile.uploadProof')}</Text>
      </Pressable>
    </View>
@@ -193,7 +209,7 @@ export default function ProfileScreen(){
    <Pressable style={styles.logout} onPress={async()=>{await logout();router.replace('/')}}><Text style={styles.logoutText}>{t('mobileProfile.logout')}</Text></Pressable>
  </ScreenShell>;
 }
-const styles=StyleSheet.create({
+const styles=StyleSheet.create({photoActions:{flexDirection:"row",flexWrap:"wrap",gap:10},
  proofOptions:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:5},
  proofOption:{borderRadius:9,borderColor:BrandColors.border,borderWidth:1,paddingVertical:9,paddingHorizontal:10,backgroundColor:'#fff'},
  proofSelected:{backgroundColor:BrandColors.primary,borderColor:BrandColors.primary},
