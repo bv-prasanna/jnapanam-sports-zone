@@ -6,3 +6,11 @@
 /* Avoid overflow from labels and operation cards at small widths. */
 .page,.panel,.card,.filters{min-width:0;overflow-wrap:anywhere}
 :is(.page,.panel) input,:is(.page,.panel) select{max-width:100%;min-width:0}
+
+/* Scannable identity evidence never expands the modal beyond the viewport. */
+.backdrop{z-index:90;overflow-y:auto;align-items:safe center;overscroll-behavior:contain}
+.dialog{max-height:calc(100dvh - 36px);overflow-y:auto}
+.identityPanel{display:grid;gap:9px;background:#f8f1e5;border:1px solid var(--admin-line,var(--line));padding:12px;border-radius:12px}
+.identityPanel p{margin:0;font-size:13px;line-height:1.5}
+.customerPhoto{width:110px;height:110px;object-fit:cover;border-radius:12px;border:1px solid var(--admin-line,var(--line))}
+.identityPanel a{color:var(--saffron);font-weight:800;text-decoration:underline}
