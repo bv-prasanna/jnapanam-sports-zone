@@ -138,3 +138,49 @@
 .adminExperience .admin-feature-page input[type=checkbox]{accent-color:var(--admin-accent);width:17px;height:17px}
 .adminExperience .admin-feature-card>.btn{min-height:43px}
 @media(max-width:600px){.adminExperience .admin-feature-card{padding:16px}}
+
+/* Shared 2026 admin control polish. Keep these tokens and surfaces consistent
+   across legacy Admin sections, Booking Explorer, pricing and billing modules. */
+.adminExperience {
+  --admin-surface-strong:#ffffff;
+  --admin-surface-subtle:#f8f1e5;
+  --admin-hover:#fff4e8;
+  color-scheme:light;
+}
+.adminExperience main :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+  color:var(--admin-ink);
+  background:var(--admin-surface-strong);
+  border:1px solid var(--admin-line);
+  border-radius:9px;
+  min-height:var(--admin-field-height);
+  line-height:1.45;
+  transition:border-color .15s ease,box-shadow .15s ease;
+}
+.adminExperience main :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea):hover:not(:disabled) {
+  border-color:#cbb898;
+}
+.adminExperience main :is(input,select,textarea):disabled {
+  background:var(--admin-surface-subtle);
+  color:var(--admin-muted);
+  cursor:not-allowed;
+}
+.adminExperience main :is(input,select,textarea)::placeholder {color:#777d70;opacity:1}
+.adminExperience main :is(button,.btn) {
+  transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease;
+}
+.adminExperience main table {border-spacing:0}
+.adminExperience main table td {border-color:var(--admin-line);color:var(--admin-ink)}
+.adminExperience main table th {border-color:var(--admin-line)}
+.adminExperience main [role="alert"] {overflow-wrap:anywhere}
+.adminExperience main [role="dialog"] {max-height:calc(100dvh - 40px);overflow-y:auto}
+.adminExperience main :is(.admin-card,.admin-feature-card,.admin-metric-card) {
+  box-shadow:0 3px 14px rgba(40,51,15,.055);
+}
+.adminExperience .admin-feature-actions {display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+@media(max-width:560px) {
+  .adminExperience .admin-feature-actions>button {flex:1 1 160px}
+  .adminExperience main :is(input,select,textarea) {font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .adminExperience main :is(input,select,textarea,button) {transition:none}
+}
