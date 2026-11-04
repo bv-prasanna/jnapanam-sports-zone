@@ -1,4 +1,5 @@
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { API_URL, api } from '@/lib/api';
 
 export type PaymentPurpose = 'BOOKING' | 'MEMBERSHIP' | 'TRAINING' | 'TOURNAMENT';
@@ -35,15 +36,17 @@ async function processOrder(order: PaymentOrder): Promise<PaymentOrder> {
   if (!session.path.startsWith('/api/v1/public/payments/checkout/')) {
     throw new Error('Invalid secure checkout session');
   }
-  await WebBrowser.openBrowserAsync(`${API_URL}${session.path}`, {
-    showTitle: true,
-  });
+  // Android/iOS return URI must be registered by the native app scheme.
+  // AuthSession closes the browser after the verified checkout page navigates
+  // to this URI. Never treat a deep link as evidence that money was captured.
+  const returnUrl = Linking.createURL('payment-return', { scheme: 'jnapanamsportszone' });
+  await WebBrowser.openAuthSessionAsync(`${API_URL}${session.path}`, returnUrl);
 
-  // The Razorpay callback is verified on the server. Never trust the browser-close
-  // event as evidence of payment; webhooks can also settle the transaction later.
+  // Status is sourced from our authenticated server, never from browser state.
+  // A delayed UPI capture can arrive after the checkout window closes.
   const receipt = await api<PaymentOrder>(`/api/v1/payments/${order.id}/receipt`);
   if (receipt.status !== 'PAID') {
-    throw new Error('Payment not confirmed yet. Refresh payment status before trying again.');
+    throw new Error('Payment not confirmed yet. Check Payments and My Bookings before retrying to avoid a duplicate debit.');
   }
   return receipt;
 }
