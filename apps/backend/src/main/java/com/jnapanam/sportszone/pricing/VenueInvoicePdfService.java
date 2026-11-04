@@ -6,6 +6,7 @@ import java.util.*;
 import org.apache.pdfbox.pdmodel.*;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.*;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,7 +26,7 @@ public class VenueInvoicePdfService {
   try(PDDocument pdf=new PDDocument();ByteArrayOutputStream out=new ByteArrayOutputStream()){
    PDPage page=new PDPage(PDRectangle.A4);pdf.addPage(page);
    try(PDPageContentStream c=new PDPageContentStream(pdf,page)){
-    title(c,"CREDIT_NOTE".equals(kind)?"GST CREDIT NOTE":"TAX INVOICE",number);
+    title(pdf,c,"CREDIT_NOTE".equals(kind)?"GST CREDIT NOTE":"TAX INVOICE",number);
     float y=708;
     Map<?,?> supplier=data.get("supplier") instanceof Map<?,?> v?v:Map.of();
     y=section(c,"SUPPLIER",y);
@@ -68,7 +69,7 @@ public class VenueInvoicePdfService {
   try(PDDocument pdf=new PDDocument();ByteArrayOutputStream out=new ByteArrayOutputStream()){
    PDPage page=new PDPage(PDRectangle.A4);pdf.addPage(page);
    try(PDPageContentStream c=new PDPageContentStream(pdf,page)){
-    title(c,"PAYMENT RECEIPT",str(receipt.get("receiptNumber")));
+    title(pdf,c,"PAYMENT RECEIPT",str(receipt.get("receiptNumber")));
     float y=708;
     y=section(c,"PAYMENT",y);
     y=detail(c,"Payment status",receipt.get("status"),y);
@@ -102,11 +103,17 @@ public class VenueInvoicePdfService {
   }catch(IOException ex){throw new IllegalStateException("Unable to render payment receipt PDF",ex);}
  }
 
- private static void title(PDPageContentStream c,String heading,String number)throws IOException{
+ private static void title(PDDocument doc,PDPageContentStream c,String heading,String number)throws IOException{
   c.setNonStrokingColor(OLIVE);c.addRect(0,756,PDRectangle.A4.getWidth(),86);c.fill();
   c.setNonStrokingColor(SAFFRON);c.addRect(0,752,PDRectangle.A4.getWidth(),4);c.fill();
-  text(c,BOLD,20,LEFT,801,Color.WHITE,"JNAPANAM SPORTS ZONE");
-  text(c,REGULAR,11,LEFT,779,Color.WHITE,heading);
+  try(InputStream logo=VenueInvoicePdfService.class.getResourceAsStream("/branding/jnapanam-logo.png")){
+    if(logo!=null){
+      PDImageXObject image=PDImageXObject.createFromByteArray(doc,logo.readAllBytes(),"jnapanam-brand");
+      c.drawImage(image,LEFT,770,62,62);
+    }
+  }
+  text(c,BOLD,20,LEFT+78,801,Color.WHITE,"JNAPANAM SPORTS ZONE");
+  text(c,REGULAR,11,LEFT+78,779,Color.WHITE,heading);
   text(c,BOLD,11,LEFT,733,INK,"DOCUMENT NO.  "+number);
  }
  private static float section(PDPageContentStream c,String label,float y)throws IOException{

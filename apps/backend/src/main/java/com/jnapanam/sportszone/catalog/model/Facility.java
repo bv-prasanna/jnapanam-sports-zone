@@ -69,7 +69,10 @@ public class Facility {
         this.termsAndConditions = trimToNull(termsAndConditions) == null
             ? "Gutka, cigarettes, smoking and tobacco are not permitted. Follow the safety and hygiene instructions of the facility operator."
             : trimToNull(termsAndConditions);
-        this.termsAndConditionsKn=trimToNull(termsAndConditionsKn)==null ? "ಗುಟ್ಕಾ, ಸಿಗರೇಟ್, ಧೂಮಪಾನ ಮತ್ತು ತಂಬಾಕು ಬಳಕೆಯನ್ನು ನಿಷೇಧಿಸಲಾಗಿದೆ. ಸೌಲಭ್ಯದ ನಿರ್ವಾಹಕರ ಸುರಕ್ಷತೆ ಮತ್ತು ಸ್ವಚ್ಛತಾ ಸೂಚನೆಗಳನ್ನು ಪಾಲಿಸಿ." : trimToNull(termsAndConditionsKn);
+        this.termsAndConditionsKn=trimToNull(termsAndConditionsKn)==null
+          ? (this.termsAndConditions.equals("Gutka, cigarettes, smoking and tobacco are not permitted. Follow the safety and hygiene instructions of the facility operator.")
+              ? "ಗುಟ್ಕಾ, ಸಿಗರೇಟ್, ಧೂಮಪಾನ ಮತ್ತು ತಂಬಾಕು ಬಳಕೆಯನ್ನು ನಿಷೇಧಿಸಲಾಗಿದೆ. ಸೌಲಭ್ಯದ ನಿರ್ವಾಹಕರ ಸುರಕ್ಷತೆ ಮತ್ತು ಸ್ವಚ್ಛತಾ ಸೂಚನೆಗಳನ್ನು ಪಾಲಿಸಿ." : null)
+          : trimToNull(termsAndConditionsKn);
         this.updatedAt = Instant.now();
     }
 

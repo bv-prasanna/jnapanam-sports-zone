@@ -125,7 +125,7 @@
 
 
 /* Render the brand mark independently of framework image sizing. */
-.brand-logo{display:block;width:72px;height:72px;flex:none;background:url('/images/jnapanam-logo.jpg?v=20261024') center/contain no-repeat}
+.brand-logo{display:block;width:72px;height:72px;flex:none;background:url('/images/jnapanam-logo.png?v=20261104') center/contain no-repeat}
 @media(max-width:780px){.brand-logo{width:68px;height:68px}}
 
 
@@ -175,7 +175,7 @@
 
 /* Consolidated responsive branding; preserve the valid JPEG introduced after old logo PRs. */
 .site-header .brand{display:flex;align-items:center;justify-content:center;align-self:stretch;flex-shrink:0;overflow:visible}
-.site-header .brand-logo{display:block;width:clamp(68px,6.5vw,88px);height:clamp(68px,6.5vw,88px);max-width:100%;background-image:url('/images/jnapanam-logo.jpg?v=20261025');background-size:contain;background-position:center;background-repeat:no-repeat;flex:none}
+.site-header .brand-logo{display:block;width:clamp(68px,6.5vw,88px);height:clamp(68px,6.5vw,88px);max-width:100%;background-image:url('/images/jnapanam-logo.png?v=20261104');background-size:contain;background-position:center;background-repeat:no-repeat;flex:none}
 .feature-grid{align-items:stretch}
 .feature-grid>.feature-card{height:auto;min-height:320px}
 .feature-grid>.founder-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(115px,38%);padding:20px 0 0 20px;align-items:stretch;overflow:hidden;min-width:0}

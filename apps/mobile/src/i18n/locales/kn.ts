@@ -78,7 +78,7 @@ const kn = {
     account:'ಖಾತೆಯ ಮಾಹಿತಿ',photo:'ಪ್ರೊಫೈಲ್ ಫೋಟೋ',changePhoto:'ಪ್ರೊಫೈಲ್ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
     update:'ಪ್ರೊಫೈಲ್ ಉಳಿಸಿ',saving:'ಉಳಿಸಲಾಗುತ್ತಿದೆ…',saved:'ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ.',
     fullName:'ಪೂರ್ಣ ಹೆಸರು',displayName:'ಕರೆಯುವ ಹೆಸರು',email:'ಇಮೇಲ್',
-    mobile:'ಮೊಬೈಲ್ (ದೃಢೀಕರಿಸಿಲ್ಲ)',address:'ವಿಳಾಸ',city:'ನಗರ',state:'ರಾಜ್ಯ',pin:'ಪಿನ್ ಕೋಡ್',
+    mobile:'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ',address:'ವಿಳಾಸ',city:'ನಗರ',state:'ರಾಜ್ಯ',pin:'ಪಿನ್ ಕೋಡ್',
     verification:'ವಿಳಾಸದ ದಾಖಲೆಯ ಪರಿಶೀಲನೆ',proofDescription:'ಮೊದಲ ಬುಕಿಂಗ್‌ಗೆ ವಿಳಾಸದ ದಾಖಲೆ ಅಗತ್ಯ.',
     proofStatus:'ದಾಖಲೆಯ ಸ್ಥಿತಿ',uploadProof:'ವಿಳಾಸದ ದಾಖಲೆ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ',
     photoHelp:'JPG, PNG ಅಥವಾ WebP · ಗರಿಷ್ಠ 5 MB.',

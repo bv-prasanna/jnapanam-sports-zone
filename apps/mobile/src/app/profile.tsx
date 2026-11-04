@@ -21,7 +21,7 @@ export default function ProfileScreen(){
  const [saving,setSaving]=useState(false);
  const [feedback,setFeedback]=useState('');
  const [error,setError]=useState('');
- const [proofStatus,setProofStatus]=useState('');
+ const [proofStatus,setProofStatus]=useState('');const [proofReviewNote,setProofReviewNote]=useState<string|null>(null);
  const [geoStatus,setGeoStatus]=useState(t('mobileProfile.locationDisabled'));
  const [securityOpen,setSecurityOpen]=useState(false);
  const [currentPassword,setCurrentPassword]=useState('');
@@ -38,7 +38,7 @@ export default function ProfileScreen(){
    if(!user)return;
    let active=true;
    void refreshProfile().catch(()=>{});
-   void api<{status:string}>('/api/v1/profile/address-proof').then(v=>{if(active)setProofStatus(v.status)}).catch(()=>{if(active)setProofStatus('')});
+   void api<{status:string;reviewNote?:string|null}>('/api/v1/profile/address-proof').then(v=>{if(active){setProofStatus(v.status);setProofReviewNote(v.reviewNote||null)}}).catch(()=>{if(active)setProofStatus('')});
    return()=>{active=false};
  },[Boolean(user)]));
  function change(key:keyof ProfileData,value:string){setForm(s=>({...s,[key]:value}));setError('');setFeedback('')}
@@ -101,7 +101,7 @@ export default function ProfileScreen(){
      body.append('file',{uri:asset.uri,name:asset.name||'address-proof',type:mime} as unknown as Blob);
      setUploadingProof(true);
      const resultStatus=await api<{status:string}>('/api/v1/profile/address-proof',{method:'POST',body});
-     setProofStatus(resultStatus.status);setFeedback(t('mobileProfile.proofUploaded'));
+     setProofStatus(resultStatus.status);setProofReviewNote(null);setFeedback(t('mobileProfile.proofUploaded'));
    }catch(e){setError(userFriendlyError(e,t('errors.generic')))}
    finally{setUploadingProof(false)}
  }
@@ -150,7 +150,12 @@ export default function ProfileScreen(){
    <View style={styles.card}>
      <Text style={styles.sectionTitle}>{t('mobileProfile.verification')}</Text>
      <Text style={styles.subText}>{t('mobileProfile.proofDescription')}</Text>
-     {!!proofStatus&&<Text style={styles.status}>{t('mobileProfile.proofStatus')}: {proofStatus.replace(/_/g,' ')}</Text>}
+     {!!proofStatus&&<View><Text style={styles.status}>{t('mobileProfile.proofStatus')}: {proofStatus.replace(/_/g,' ')}</Text>
+       <Text style={styles.subText}>{proofStatus==='PENDING'?t('bookings.proofPending'):
+         proofStatus==='APPROVED'?t('bookings.proofApproved'):
+         proofStatus==='REJECTED'?t('bookings.proofRejected'):t('bookings.proofRequired')}</Text>
+       {proofStatus==='REJECTED'&&!!proofReviewNote&&<Text style={styles.subText}>{proofReviewNote}</Text>}
+     </View>}
      <Text style={styles.label}>{t('mobileProfile.proofType')}</Text>
      <View style={styles.proofOptions}>{(['DL','VOTER_ID','PASSPORT'] as const).map(kind=>
        <Pressable key={kind} accessibilityRole="radio" accessibilityState={{checked:proofType===kind}}
