@@ -7,3 +7,23 @@
 .tabs button.selected{background:var(--olive,#28330f);border-color:var(--olive,#28330f)}
 .panel{background:#fffdf8;border-color:var(--line,#e4d6be)}
 .tableScroll{min-width:0;max-width:100%;overflow-x:auto}
+
+/* Compact, accessible collapsible slot groups; customer rows only render when expanded. */
+.dayShortcuts{display:flex;flex-wrap:wrap;gap:7px}
+.toolActions .dayShortcuts button{border:1px solid var(--line,#e4d6be);background:#fff;color:var(--olive,#28330f);padding:10px 12px}
+.toolActions .dayShortcuts button.activeDate{background:var(--olive,#28330f);color:#fff;border-color:var(--olive)}
+.slotAccordions{display:grid;gap:10px;min-width:0}
+.slotCard,.slotExpanded{border:1px solid var(--line,#e4d6be);border-radius:12px;background:#fff;overflow:hidden}
+.slotExpanded{border-color:var(--saffron,#c83a0a);box-shadow:0 3px 14px #28330f12}
+.slotHeading{display:grid;grid-template-columns:minmax(110px,1.2fr) repeat(3,minmax(110px,1fr)) 26px;align-items:center;gap:10px;width:100%;padding:14px 17px;border:0;background:#f8f2e7;color:var(--olive,#28330f);text-align:left;cursor:pointer;font-size:13px}
+.slotExpanded .slotHeading{background:#fff1e5}
+.slotHeading>strong{font-size:17px}.slotHeading>b{text-align:right;font-size:25px;color:var(--saffron,#c83a0a)}
+.slotHeading span{font-weight:700}
+.slotHeading:focus-visible{outline:3px solid var(--gold,#d99a32);outline-offset:-3px}
+.slotDetail{padding:7px 16px}
+.customerRow{display:grid;grid-template-columns:minmax(180px,1.5fr) minmax(155px,1fr) minmax(115px,.75fr) auto;gap:12px;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line,#e4d6be);font-size:13px}
+.customerRow:last-child{border-bottom:0}
+.customerRow small{display:block;margin-top:5px;color:var(--muted,#66705d)}
+.customerRow b{font-weight:850}.slotDetail .unbooked{padding:12px 3px}
+@media(max-width:1024px){.customerRow{grid-template-columns:1fr 1fr}.slotHeading{grid-template-columns:1fr 1fr 1fr}.slotHeading>strong{grid-column:1/-1}.slotHeading>b{grid-column:3;grid-row:2}}
+@media(max-width:580px){.slotHeading{grid-template-columns:1fr 1fr;font-size:12px}.slotHeading>strong{grid-column:1}.slotHeading>b{grid-column:2;grid-row:1}.customerRow{grid-template-columns:1fr}.toolActions .dayShortcuts{width:100%}}
