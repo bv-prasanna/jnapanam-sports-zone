@@ -232,6 +232,7 @@ export default function BookingsScreen() {
   }
 
   async function book(slotId: string, paymentOption: 'PAY_NOW' | 'PAY_AT_VENUE') {
+    if(!user?.profilePhotoUrl){setError('Please upload a profile photo in My Profile before booking.');return;}
     if(!proof||!['PENDING','APPROVED'].includes(proof.status)){
       setError(proof?.status==='REJECTED'?t('bookings.proofRejected'):t('bookings.proofRequired'));return;
     }
