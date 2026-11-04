@@ -5,7 +5,7 @@ import { MobileHeader } from '@/components/mobile-header';
 const screens = [
   'index','bookings','memberships','training','growth','tournaments','shop','notifications',
   'shop-counter','operations','profile','billing','subscriptions','login','register','forgot-password','explore',
-  'checkin','admin'
+  'checkin','booking-qr','scan-checkin','admin'
 ] as const;
 
 /** Screen routing is kept, but the overcrowded Android tab bar is replaced with one accessible hamburger drawer. */
