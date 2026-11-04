@@ -26,7 +26,7 @@ test("shared sidebar contains every primary admin module exactly once",async()=>
     "/admin/pricing?tab=pricing-rules","/admin/pricing?tab=taxes",
     "/admin?view=promotions","/admin/billing","/admin/operator-assignments",
     "/admin/release-readiness","/admin/subscriptions","/admin/notification-providers",
-    "/admin/uat-otp","/admin?view=sports","/admin?view=facilities",
+    "/admin?view=sports","/admin?view=facilities",
     "/admin?view=memberships","/admin?view=training","/admin?view=tournaments",
   ];
   for(const route of routes){
@@ -66,7 +66,7 @@ test("every admin route uses the common layout without its own website header or
     "commerce/page.tsx","pricing/page.tsx","billing/page.tsx",
     "subscriptions/page.tsx","notification-providers/page.tsx",
     "operator-assignments/page.tsx","release-readiness/page.tsx",
-    "uat-otp/page.tsx","player-growth/page.tsx"
+    "player-growth/page.tsx"
   ];
   for(const page of pages){
     const contents=await source("app/admin/"+page);
@@ -82,7 +82,7 @@ test("all admin page-level CSS modules honor common geometry and typographic sca
     "pricing/pricing.module.css","release-readiness/release-readiness.module.css",
     "notification-providers/notification-providers.module.css",
     "operator-assignments/operator-assignments.module.css",
-    "subscriptions/admin-subscriptions.module.css","uat-otp/uat-otp.module.css"
+    "subscriptions/admin-subscriptions.module.css"
   ];
   for(const moduleName of modules){
     const css=await source("app/admin/"+moduleName);
@@ -179,4 +179,28 @@ test("payment-error message remains visible after booking or slot refresh",async
  assert.match(page,/Do not pay twice if money was debited/);
  assert.match(page,/setMessage\(warning\)/);
  assert.match(page,/finally\{setMessageKind\("success"\);setMessage\(result\);?\}/);
+});
+
+test("production admin does not expose a fixed-OTP management screen",async()=>{
+ const registry=await source("app/admin/admin-navigation.ts");
+ const old=await source("app/admin/uat-otp/page.tsx");
+ assert.doesNotMatch(registry,/href:"\/admin\/uat-otp"/);
+ assert.match(old,/notFound\(\)/);
+});
+
+test("booking Explorer shows all dates by default; active operations exclude expired reservations",async()=>{
+ const explorer=await source("app/admin/bookings/page.tsx");
+ const board=await source("components/operator-facility-board.tsx");
+ assert.match(explorer,/useState<RangePreset>\("ALL"\)/);
+ assert.match(explorer,/x==="ALL"\?"All dates"/);
+ assert.match(board,/\["CANCELLED","NO_SHOW","PAYMENT_EXPIRED"\]/);
+ assert.match(board,/>Active bookings<\/span>/);
+});
+
+test("long booking details scroll and features have explicit enable and disable controls",async()=>{
+ const css=await source("app/globals.css");
+ const features=await source("app/admin/features/page.tsx");
+ assert.match(css,/\.portal-dialog\{max-height:calc\(100dvh - 2\.5rem\);overflow-y:auto/);
+ assert.match(features,/Disable feature/);
+ assert.match(features,/Enable feature/);
 });
