@@ -17,3 +17,13 @@ test('mobile booking buttons remain tappable when facility rules are not yet acc
  assert.match(page,/setError\(t\('bookings\.termsRequired'\)\)/);
  assert.doesNotMatch(page,/disabled=\{!slot\.available \|\| !quotes\[slot\.id\] \|\| !!processing \|\| \(\(!!facilities/);
 });
+
+test('Razorpay success uses a native app-return deep link and rechecks server payment status',async()=>{
+ const payments=await source('src/lib/payments.ts');
+ const route=await source('src/app/payment-return.tsx');
+ assert.match(payments,/WebBrowser\.openAuthSessionAsync/);
+ assert.match(payments,/Linking\.createURL\('payment-return', \{ scheme: 'jnapanamsportszone' \}\)/);
+ assert.doesNotMatch(payments,/WebBrowser\.openBrowserAsync/);
+ assert.match(payments,/receipt\.status !== 'PAID'/);
+ assert.match(route,/<Redirect href="\/bookings"/);
+});
