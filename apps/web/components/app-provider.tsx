@@ -8,7 +8,7 @@ type AppState = { language: Language; setLanguage(v:Language):void; t(k:Translat
 const Context = createContext<AppState|null>(null);
 export function AppProvider({children}:{children:React.ReactNode}) {
   const [language,setLanguageState]=useState<Language>("en"); const [user,setUser]=useState<User|null>(null); const [ready,setReady]=useState(false);
-  useEffect(()=>{ const saved=localStorage.getItem("jnapanam.language") as Language|null; if(saved==="kn"||saved==="en")setLanguageState(saved); restoreSession().then(setUser).finally(()=>setReady(true)); },[]);
+  useEffect(()=>{ const saved=localStorage.getItem("jnapanam.language") as Language|null; if(saved==="kn"||saved==="en")setLanguageState(saved); restoreSession().then(setUser).catch(()=>{/* Keep stored refresh token if API is temporarily unavailable. */}).finally(()=>setReady(true)); },[]);
   const setLanguage=(value:Language)=>{setLanguageState(value);localStorage.setItem("jnapanam.language",value)};
   const value=useMemo(()=>({language,setLanguage,t:(key:TranslationKey)=>translate(language,key),user,setUser,ready,signOut:async()=>{await apiLogout();setUser(null)}}),[language,user,ready]);
   return <Context.Provider value={value}><DocumentLanguage language={language}/>{children}</Context.Provider>;
