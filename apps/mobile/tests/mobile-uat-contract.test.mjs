@@ -78,9 +78,12 @@ test('multipart file uploads preserve device-generated boundary and enforce file
  const pkg=JSON.parse(await source('package.json'));
  const lock=JSON.parse(await source('package-lock.json'));
  assert.match(api,/options\.body instanceof FormData/);
- assert.match(profile,/asset\.size>5\*1024\*1024/);
- assert.match(profile,/asset\.size>2\*1024\*1024/);
+ assert.match(profile,/asset\.fileSize>5\*1024\*1024/);
+ assert.match(profile,/bytes>2\*1024\*1024/);
  assert.match(profile,/copyToCacheDirectory:true/);
+ assert.match(profile,/quality:0\.45/);
+ assert.match(profile,/launchImageLibraryAsync/);
+ assert.match(profile,/launchCameraAsync/);
  assert.ok(pkg.dependencies['expo-document-picker']);
  assert.ok(lock.packages['node_modules/expo-document-picker']);
 });
