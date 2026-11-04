@@ -19,22 +19,27 @@ export default function ScanCheckIn(){
  const [scanned,setScanned]=useState('');
  const [booking,setBooking]=useState<Scan|null>(null);
  const [identity,setIdentity]=useState<Identity|null>(null);
+ const [documentPreview,setDocumentPreview]=useState<string|null>(null);
  const [verified,setVerified]=useState(false);
  const [busy,setBusy]=useState(false);
  const [done,setDone]=useState(false);
  const [error,setError]=useState('');
  async function onScan(data:string){
    if(locked.current||!data.startsWith('JNZCI1.'))return;
-   locked.current=true;setBusy(true);setError('');setVerified(false);setIdentity(null);
+   locked.current=true;setBusy(true);setError('');setVerified(false);setIdentity(null);setDocumentPreview(null);
    try{
      const row=await api<Scan>('/api/v1/operations/check-in/qr/verify',{
        method:'POST',body:JSON.stringify({value:data})});
      const info=await api<Identity>('/api/v1/operations/bookings/'+encodeURIComponent(row.bookingNumber)+'/identity');
      setBooking(row);setIdentity(info);setScanned(data);
+     if(info.documentAvailable){
+       const preview=await api<{mediaType:string;dataBase64:string}>('/api/v1/operations/bookings/'+encodeURIComponent(row.bookingNumber)+'/identity/document-preview');
+       setDocumentPreview('data:'+preview.mediaType+';base64,'+preview.dataBase64);
+     }
    }catch(e){setError(e instanceof ApiError?e.message:'Unable to verify the booking QR. Please try the manual booking list.');}
    finally{setBusy(false);}
  }
- function retry(){locked.current=false;setScanned('');setBooking(null);setIdentity(null);setVerified(false);setDone(false);setError('');}
+ function retry(){locked.current=false;setScanned('');setBooking(null);setIdentity(null);setDocumentPreview(null);setVerified(false);setDone(false);setError('');}
  async function complete(){
    if(!booking||!scanned||!verified)return;
    setBusy(true);setError('');
@@ -55,7 +60,8 @@ export default function ScanCheckIn(){
    {!scanned&&permission?.granted&&!busy&&<CameraView style={styles.camera} facing="back"
      barcodeScannerSettings={{barcodeTypes:['qr']}} onBarcodeScanned={({data})=>void onScan(data)}/>}
    {busy&&<ActivityIndicator color={BrandColors.accent} size="large"/>}
-   {!!error&&<Text style={styles.error} accessibilityRole="alert">{error}</Text>}
+   {!!error&&<><Text style={styles.error} accessibilityRole="alert">{error}</Text>
+     <Pressable style={styles.outline} onPress={retry}><Text style={styles.outlineText}>Try scanning again</Text></Pressable></>
    {done?<View style={styles.result}>
      <MaterialCommunityIcons name="check-circle" color="#146C43" size={64}/>
      <Text style={styles.title}>Check-in successful</Text>
@@ -71,11 +77,13 @@ export default function ScanCheckIn(){
      <Text style={styles.paid}>✓ Payment: {booking.paymentStatus}</Text>
      {booking.profilePhotoUrl?<Image source={{uri:booking.profilePhotoUrl}} style={styles.photo}/>:<Text style={styles.error}>Photo missing. Use the manual identity verification flow.</Text>}
      <Text style={styles.note}>Uploaded document: {identity?.documentType||'Missing'} · {identity?.documentStatus||'Not reviewed'}</Text>
+     {documentPreview&&<Image source={{uri:documentPreview}} resizeMode="contain" style={styles.documentPreview} accessibilityLabel="Private preview of uploaded identity document"/>}
+     {!documentPreview&&<Text style={styles.error}>Document preview unavailable. Use the manual web console for verification.</Text>}
      <Pressable onPress={()=>setVerified(value=>!value)} style={styles.check}>
        <MaterialCommunityIcons name={verified?'checkbox-marked':'checkbox-blank-outline'} size={25} color={BrandColors.primary}/>
        <Text style={styles.checkLabel}>I matched the customer against the booking and their photo/document.</Text>
      </Pressable>
-     <Pressable disabled={busy||!verified||!identity?.photoAvailable} style={[styles.primary,(!verified||!identity?.photoAvailable)&&styles.disabled]} onPress={()=>void complete()}>
+     <Pressable disabled={busy||!verified||!identity?.photoAvailable||!documentPreview} style={[styles.primary,(!verified||!identity?.photoAvailable||!documentPreview)&&styles.disabled]} onPress={()=>void complete()}>
        <Text style={styles.white}>Confirm QR check-in</Text>
      </Pressable>
      <Pressable style={styles.outline} onPress={retry}><Text style={styles.outlineText}>Scan another QR</Text></Pressable>
@@ -93,7 +101,7 @@ const styles=StyleSheet.create({
  card:{backgroundColor:'#fff',borderWidth:1,borderColor:BrandColors.border,borderRadius:18,padding:20,gap:12},
  primary:{padding:15,borderRadius:12,backgroundColor:BrandColors.primary,alignItems:'center'},white:{color:'#fff',fontWeight:'900'},
  outline:{padding:13,borderRadius:12,borderWidth:1,borderColor:BrandColors.primary,alignItems:'center'},
- outlineText:{color:BrandColors.primary,fontWeight:'800'},photo:{width:130,height:130,borderRadius:14,backgroundColor:'#f5f0e7'},
+ outlineText:{color:BrandColors.primary,fontWeight:'800'},photo:{width:130,height:130,borderRadius:14,backgroundColor:'#f5f0e7'},documentPreview:{width:'100%',height:240,backgroundColor:'#f5f0e7',borderRadius:12},
  paid:{color:'#146C43',fontWeight:'900'},check:{flexDirection:'row',gap:10,alignItems:'center'},checkLabel:{flex:1,fontWeight:'700',color:BrandColors.textPrimary},
  disabled:{opacity:.45},result:{backgroundColor:'#ecfdf3',borderRadius:18,padding:20,alignItems:'center',gap:12},error:{backgroundColor:'#fff0ed',color:'#a32323',padding:12,borderRadius:9}
 });
