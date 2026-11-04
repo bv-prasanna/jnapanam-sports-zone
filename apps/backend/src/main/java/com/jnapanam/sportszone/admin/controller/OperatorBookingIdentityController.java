@@ -30,7 +30,7 @@ public class OperatorBookingIdentityController {
         this.assignments=assignments;this.bookings=bookings;this.jdbc=jdbc;
     }
 
-    public record IdentityView(String customerName,boolean photoAvailable,
+    public record IdentityView(String customerName,boolean photoAvailable,String profilePhotoUrl,
             String documentType,String documentStatus,boolean documentAvailable) {}
 
     private UUID allowedUser(Authentication auth,String number) {
@@ -42,11 +42,12 @@ public class OperatorBookingIdentityController {
     @GetMapping
     public IdentityView status(Authentication auth,@PathVariable String bookingNumber) {
         UUID userId=allowedUser(auth,bookingNumber);
-        String name=bookings.findByBookingNumberIgnoreCase(bookingNumber)
-                .orElseThrow(()->new NotFoundException("Booking not found")).getUser().getFullName();
+        var customer=bookings.findByBookingNumberIgnoreCase(bookingNumber)
+                .orElseThrow(()->new NotFoundException("Booking not found")).getUser();
+        String name=customer.getFullName();
         Integer photo=jdbc.queryForObject("select count(*) from user_profile_photos where user_id=?",Integer.class,userId);
         var rows=jdbc.queryForList("select document_type,status from booking_address_proofs where user_id=? order by uploaded_at desc limit 1",userId);
-        return new IdentityView(name,photo!=null&&photo>0,
+        return new IdentityView(name,photo!=null&&photo>0,customer.getProfilePhotoUrl(),
                 rows.isEmpty()?null:(String)rows.get(0).get("document_type"),
                 rows.isEmpty()?null:(String)rows.get(0).get("status"),!rows.isEmpty());
     }
