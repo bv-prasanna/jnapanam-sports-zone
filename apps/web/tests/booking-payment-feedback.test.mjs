@@ -20,3 +20,20 @@ test('mobile and website default to today in venue timezone',async()=>{
  assert.match(page,/min=\{venueDate\(\)\}/);
  assert.doesNotMatch(page,/Date\.now\(\)\+86400000/);
 });
+
+test('checkout verifies browser order id and payment fields, and handles failed attempts',async()=>{
+ const page=await source('app/dashboard/page.tsx');
+ assert.match(page,/result\.razorpay_order_id\|\|""/);
+ assert.match(page,/order\.providerOrderId/);
+ assert.match(page,/!result\.razorpay_payment_id\|\|!result\.razorpay_signature/);
+ assert.match(page,/checkout\.on\?\.\("payment\.failed"/);
+ assert.match(page,/Razorpay reported a failed payment attempt/);
+ assert.match(page,/Do not pay again/);
+});
+
+test('generated payment receipt uses the current shared Jnapanam contact numbers',async()=>{
+ const page=await source('app/dashboard/page.tsx');
+ assert.match(page,/import \{CONTACT_PHONES\} from "@\/lib\/contact"/);
+ assert.match(page,/CONTACT_PHONES\.map\(p=>p\.display\)/);
+ assert.doesNotMatch(page,/82960 22107/);
+});

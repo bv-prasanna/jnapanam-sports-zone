@@ -8,7 +8,16 @@ public class RazorpayGateway implements PaymentGateway{
  private static final Logger LOG=LoggerFactory.getLogger(RazorpayGateway.class);
  private final PaymentProperties p;private final ObjectMapper json;private final HttpClient http=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
  public RazorpayGateway(PaymentProperties p,ObjectMapper json){this.p=p;this.json=json;if(blank(p.keyId())||blank(p.keySecret())||blank(p.webhookSecret()))throw new IllegalStateException("Razorpay keys and webhook secret are required");}
- public Order createOrder(String receipt,long amount,String currency){ObjectNode n=json.createObjectNode().put("amount",amount).put("currency",currency).put("receipt",receipt);return new Order(call("/orders",n).path("id").asText());}
+ public Order createOrder(String receipt,long amount,String currency){
+  validateOrderAmount(amount);
+  ObjectNode n=json.createObjectNode().put("amount",amount).put("currency",currency).put("receipt",receipt);
+  String id=call("/orders",n).path("id").asText();
+  if(!id.matches("order_[A-Za-z0-9]+"))throw new BadRequestException("Payment gateway returned an invalid order");
+  return new Order(id);
+ }
+ static void validateOrderAmount(long amount){
+  if(amount<100)throw new BadRequestException("Online payments must be at least ₹1 after discounts and loyalty points.");
+ }
  public Refund refund(String paymentId,long amount,String reason){ObjectNode n=json.createObjectNode().put("amount",amount);n.putObject("notes").put("reason",reason);return new Refund(call("/payments/"+paymentId+"/refund",n).path("id").asText());}
  public boolean verifyPayment(String o,String payment,String sig){return SignatureSupport.matches(SignatureSupport.hmac(o+"|"+payment,p.keySecret()),sig);}
  public boolean verifyWebhook(String body,String sig){return SignatureSupport.matches(SignatureSupport.hmac(body,p.webhookSecret()),sig);}

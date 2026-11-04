@@ -43,3 +43,18 @@ Confirm KYC plus Live Mode activation, website verification, permitted methods, 
 and automatic payment capture. Rotate affected Northflank credentials following the 2026 incident
 before storing newly issued live keys. Run a low-value genuine payment and refund UAT and
 reconcile amount/order/status before full customer launch.
+
+## Standard Checkout prompt: implementation mapping
+- Backend: `PaymentController` exposes `POST /api/v1/payments/orders`. PaymentService owns the
+  amount, receipt and idempotency; RazorpayGateway calls `POST /v1/orders`.
+  A minimum 100 paise is enforced after discounts. The UI never sets the amount.
+- Web: `openPaymentCheckout` in `apps/web/app/dashboard/page.tsx` loads checkout.js,
+  uses the returned gateway order ID, validates all callback fields and captures
+  `payment.failed` / modal dismiss without treating the failed attempt as paid.
+- Verification: `POST /api/v1/payments/verify` validates HMAC-SHA256 using the order
+  ID stored on the server, not a browser-trusted order; it additionally fetches the
+  payment from Razorpay to verify captured status, order, currency and amount.
+- Mobile: checkout is hosted server-side using a short-lived session, then receipt
+  status is checked; closing the browser is never considered successful payment.
+- There is **no need** to install a Node SDK for this Java / Spring Boot backend.
+- **APK builds are manual only** in `.github/workflows/android-apk-cloud.yml`.
