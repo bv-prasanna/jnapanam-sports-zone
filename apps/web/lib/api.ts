@@ -70,7 +70,7 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   if (!headers.has("Content-Type") && init.body && !multipart) headers.set("Content-Type", "application/json");
   // Public auth endpoints must never send stale JWTs. Spring's bearer filter
   // validates a supplied token even when the endpoint itself is permitAll().
-  const publicAuthPath = ["/api/v1/auth/login", "/api/v1/auth/register"].includes(path)
+  const publicAuthPath = ["/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/logout"].includes(path)
     || path.startsWith("/api/v1/auth/otp/") || path.startsWith("/api/v1/auth/password/");
   if (publicAuthPath) {
     headers.delete("Authorization");
