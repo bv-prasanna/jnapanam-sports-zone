@@ -101,7 +101,7 @@ export default function ProfileScreen(){
      if(!asset)return;
      const mime='mimeType'in asset?asset.mimeType||'image/jpeg':'image/jpeg';
      if(!['image/jpeg','image/png','application/pdf'].includes(mime)){setError(t('mobileProfile.proofInvalid'));return;}
-     const bytes='fileSize'in asset?asset.fileSize:asset.size;
+     const bytes=source==='camera'?(asset as ImagePicker.ImagePickerAsset).fileSize:(asset as DocumentPicker.DocumentPickerAsset).size;
      if(!bytes||bytes>2*1024*1024){setError(t('mobileProfile.proofLimit'));return;}
      const body=new FormData();body.append('type',proofType);
      const name=('name'in asset?asset.name:asset.fileName)||'address-proof';
