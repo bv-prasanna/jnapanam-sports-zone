@@ -79,7 +79,10 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public List<NotificationResponse> mine(UUID userId) {
-        return notifications.findByUserIdOrderByCreatedAtDesc(userId).stream().map(NotificationResponse::from).toList();
+        // Email and SMS are separate delivery records, not additional inbox messages.
+        return notifications.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .filter(notification -> notification.getChannel() == NotificationChannel.IN_APP)
+                .map(NotificationResponse::from).toList();
     }
 
     @Transactional

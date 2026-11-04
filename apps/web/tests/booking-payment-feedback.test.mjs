@@ -37,3 +37,11 @@ test('generated payment receipt uses the current shared Jnapanam contact numbers
  assert.match(page,/CONTACT_PHONES\.map\(p=>p\.display\)/);
  assert.doesNotMatch(page,/82960 22107/);
 });
+
+test('booking history displays independent booking and payment status',async()=>{
+ const page=await source('app/dashboard/page.tsx');
+ const bookings=page.slice(page.indexOf('function Bookings('),page.indexOf('function feedbackClass('));
+ assert.match(bookings,/<th>Booking status<\/th><th>Payment<\/th>/);
+ assert.match(bookings,/prettyStatus\(String\(row\.paymentStatus\|\|""\)\)/);
+ assert.match(bookings,/row\.paymentStatus==="UNPAID"/);
+});
