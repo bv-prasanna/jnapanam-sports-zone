@@ -135,6 +135,7 @@ const en = {
     upcomingEvent: 'UPCOMING EVENT', championship: 'Jnapanam Badminton Championship', registrationsOpeningSoon: 'Registrations opening soon',
   },
   bookings: {
+    proofChecking:'Checking address proof verification…',proofRequired:'Address proof required before booking. Upload DL, Voter ID or Passport in My Profile.',proofRejected:'Address proof rejected. Upload a corrected document in My Profile before booking.',proofPending:'Verification pending — your document has been uploaded and is awaiting review.',proofApproved:'Address proof approved — booking is available.',facilityTerms:'Facility rules & conditions',termsAgreement:'I have read and agree to these rules.',termsRequired:'Please accept facility rules before booking.',
     refreshPrices:'Please refresh slot prices before booking.',includingTax:'incl. tax',priceUnavailable:'Price is temporarily unavailable',openChoices:'Open available choices',
     loginDescription: 'Sign in to view and create your bookings.',
     emptyTitle: 'No bookings yet',

@@ -49,7 +49,7 @@ export default function AdminBookingExplorer(){
   useEffect(()=>{if(ready&&!allowed)router.replace(user?"/dashboard":"/login")},[ready,allowed,user,router]);
   useEffect(()=>{if(!allowed)return;Promise.all([api<Sport[]>("/api/v1/admin/catalog/sports"),api<Facility[]>("/api/v1/admin/catalog/facilities")]).then(([s,f])=>{setSports(s.filter(x=>x.status!=="INACTIVE"));setFacilities(f.filter(x=>x.status!=="INACTIVE"))}).catch(()=>setError("Unable to load sport/facility filters."))},[allowed]);
 
-  const availableFacilities=useMemo(()=>facilities.filter(f=>!sport||f.sportName===sport||f.sportCode===sport),[facilities,sport]);
+  const availableFacilities=useMemo(()=>facilities.filter(f=>!sport||f.sportCode?.toLowerCase()===sport.toLowerCase()),[facilities,sport]);
   useEffect(()=>{if(facilityId&&!availableFacilities.some(f=>f.id===facilityId))setFacilityId("")},[availableFacilities,facilityId]);
 
   const load=useCallback(async()=>{
@@ -99,8 +99,8 @@ export default function AdminBookingExplorer(){
     <header className={styles.header}><div><span>ADMIN</span><h1>Booking Explorer</h1><p>Find bookings, inspect payment details and take permitted booking actions.</p></div></header>
     <section className={styles.presets}>{(["TODAY","TOMORROW","WEEK","MONTH","CUSTOM"] as RangePreset[]).map(x=><button key={x} className={preset===x?styles.active:""} onClick={()=>applyPreset(x)}>{x==="WEEK"?"This week":x==="MONTH"?"This month":x[0]+x.slice(1).toLowerCase()}</button>)}</section>
     <section className={styles.filters}>
-      <label>Sport<select value={sport} onChange={e=>{setSport(e.target.value);setFacilityId("")}}><option value="">All sports</option>{sports.map(s=><option key={s.code} value={s.name}>{s.name}</option>)}</select></label>
-      <label>Facility<select value={facilityId} onChange={e=>setFacilityId(e.target.value)}><option value="">All facilities</option>{availableFacilities.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
+      <label>Sport<select value={sport} onChange={e=>{setSport(e.target.value);setFacilityId("")}}><option value="">All sports</option>{sports.map(s=><option key={s.code} value={s.code}>{s.name}</option>)}</select></label>
+      <label>Facility<select value={facilityId} onChange={e=>setFacilityId(e.target.value)}><option value="">All facilities</option>{availableFacilities.map(f=><option key={f.id} value={f.id}>{f.name} · {f.sportName||f.sportCode||"Unknown sport"}</option>)}</select></label>
       <label>From<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setPreset("CUSTOM")}}/></label><label>To<input type="date" value={to} onChange={e=>{setTo(e.target.value);setPreset("CUSTOM")}}/></label>
       <label>Booking status<select value={status} onChange={e=>setStatus(e.target.value)}><option value="">All statuses</option>{["PENDING_PAYMENT","CONFIRMED","PAYMENT_EXPIRED","NO_SHOW","CANCELLED"].map(x=><option key={x}>{x}</option>)}</select></label>
       <label>Payment<select value={paymentStatus} onChange={e=>setPaymentStatus(e.target.value)}><option value="">All payments</option>{["NOT_REQUIRED","UNPAID","PAID","REFUNDED"].map(x=><option key={x}>{x}</option>)}</select></label>

@@ -101,6 +101,10 @@ public class PaymentService {
         PaymentOrder order = new PaymentOrder(user, request.purpose(), request.referenceId(), original,
                 properties.currency(), gateway.provider(), key);
         order.pricing(original, applied.discountPaise(), applied.code(), points, loyaltyValue);
+        // Razorpay's Orders API requires at least 100 paise. Fail within the
+        // transaction before persisting any order or discount/loyalty redemption.
+        if ("RAZORPAY".equals(gateway.provider()) && order.getAmountPaise() < 100)
+            throw new BadRequestException("Online payment amount must be at least ₹1 after discounts.");
         if(billingTax!=null)billingTax.snapshot(order);
         orders.save(order);
         promotionService.redeem(applied, user, order);

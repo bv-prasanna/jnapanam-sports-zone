@@ -178,5 +178,5 @@ test("payment-error message remains visible after booking or slot refresh",async
  assert.match(page,/Payment not confirmed for booking/);
  assert.match(page,/Do not pay twice if money was debited/);
  assert.match(page,/setMessage\(warning\)/);
- assert.match(page,/finally\{setMessage\(result\);?\}/);
+ assert.match(page,/finally\{setMessageKind\("success"\);setMessage\(result\);?\}/);
 });

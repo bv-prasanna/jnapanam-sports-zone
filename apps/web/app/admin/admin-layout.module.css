@@ -43,3 +43,7 @@
  .sidebar{visibility:hidden;pointer-events:none}
  .sidebar.sidebarOpen{visibility:visible;pointer-events:auto;transform:translateX(0)}
 }
+
+/* Authentic uploaded logo, shared by public and Admin navigation. */
+.brandIcon{background:#fffdf8;border:1px solid var(--admin-line);overflow:hidden}
+.brandIcon img{width:100%;height:100%;object-fit:contain;display:block}

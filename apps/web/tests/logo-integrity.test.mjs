@@ -1,19 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
-const root = new URL("../", import.meta.url);
-const image = new URL("../public/images/jnapanam-logo.jpg", import.meta.url);
-const headerCss = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
-const footer = readFileSync(new URL("../components/site-footer.tsx", import.meta.url), "utf8");
-test("brand uses a nonempty JPEG with valid SOI and EOI markers", () => {
- const bytes = readFileSync(image);
- assert.ok(bytes.length > 10_000);
- assert.equal(bytes[0], 0xff); assert.equal(bytes[1], 0xd8);
- assert.equal(bytes.at(-2), 0xff); assert.equal(bytes.at(-1), 0xd9);
+import {readFileSync} from "node:fs";
+const png=new URL("../public/images/jnapanam-logo.png",import.meta.url);
+test("uploaded Jnapanam PNG is a valid nonempty logo",()=>{
+ const b=readFileSync(png);
+ assert.ok(b.length>20_000);
+ assert.deepEqual([...b.subarray(0,8)],[137,80,78,71,13,10,26,10]);
 });
-test("header and footer use the same logo and legacy PNG is removed", () => {
- assert.ok(headerCss.includes("jnapanam-logo.jpg"));
- assert.ok(footer.includes("jnapanam-logo.jpg"));
- assert.equal(existsSync(new URL("../public/images/jnapanam-logo.png", import.meta.url)), false);
+test("web header footer favicon and admin use the same uploaded logo",()=>{
+ const css=readFileSync(new URL("../app/globals.css",import.meta.url),"utf8");
+ const footer=readFileSync(new URL("../components/site-footer.tsx",import.meta.url),"utf8");
+ const layout=readFileSync(new URL("../app/layout.tsx",import.meta.url),"utf8");
+ const admin=readFileSync(new URL("../app/admin/layout.tsx",import.meta.url),"utf8");
+ for(const source of [css,footer,layout,admin])assert.ok(source.includes("jnapanam-logo.png"));
 });

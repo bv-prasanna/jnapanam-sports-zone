@@ -7,3 +7,11 @@
 .receipt,.cols,.cols>*{min-width:0;overflow-wrap:anywhere}.table{min-width:520px}.receipt{overflow-x:auto}
 @media(max-width:600px){.paper{width:100%;padding:10px}.toolbar{gap:9px}}
 @media print{.paper{width:100%;background:#fff}.receipt{overflow:visible}.table{min-width:0}}
+
+/* Invoice presentation uses readable totals and a scrollable tax/discount table. */
+.receipt{overflow-wrap:anywhere;min-width:0}.receipt .table{border-collapse:collapse}
+.receipt .table td,.receipt .table th{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line,#e4d6be)}
+.receipt .table td:last-child,.receipt .table th:last-child{text-align:right}
+.receipt .table .total{background:#f5ecd9;color:var(--olive,#28330f);font-weight:800}
+.receipt header{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+@media print{.toolbar button,.receipt button{display:none!important}.receipt{page-break-inside:avoid}}

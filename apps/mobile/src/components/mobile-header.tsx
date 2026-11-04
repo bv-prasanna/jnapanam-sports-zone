@@ -57,7 +57,7 @@ export function MobileHeader() {
           <MaterialCommunityIcons name="menu" size={28} color={BrandColors.white}/>
         </Pressable>
         <Pressable onPress={()=>navigate('/')} accessibilityRole="button" accessibilityLabel={t('navigation.home')} style={styles.identity}>
-          <Image source={require('../../assets/images/jnapanam-logo-mobile.jpg')} style={styles.logo} resizeMode="contain"/>
+          <Image source={require('../../assets/images/jnapanam-brand.png')} style={styles.logo} resizeMode="contain"/>
           <View style={styles.nameWrap}><Text style={styles.brand} numberOfLines={1}>Jnapanam Sports Zone</Text>
             <Text style={styles.location} numberOfLines={1}>{t('common.location')}</Text></View>
         </Pressable>

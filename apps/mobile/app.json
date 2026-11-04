@@ -4,11 +4,11 @@
     "slug": "jnapanam-sports-zone",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/jnapanam-brand.png",
     "scheme": "jnapanamsportszone",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/jnapanam-brand.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.jnapanam.sportszone"
     },
@@ -16,13 +16,13 @@
       "package": "com.jnapanam.sportszone",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/android-icon-foreground.png"
+        "foregroundImage": "./assets/images/jnapanam-brand.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/jnapanam-brand.png"
     },
     "plugins": [
       "expo-router",
@@ -30,7 +30,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/jnapanam-brand.png",
           "imageWidth": 140
         }
       ],
