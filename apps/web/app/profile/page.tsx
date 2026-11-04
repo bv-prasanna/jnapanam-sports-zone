@@ -28,14 +28,14 @@ export default function ProfilePage(){
   const [passwordError,setPasswordError]=useState("");
   const [uploading,setUploading]=useState(false);
   const [proofType,setProofType]=useState("DL");
-  const [proofStatus,setProofStatus]=useState("NOT_SUBMITTED");
+  const [proofStatus,setProofStatus]=useState("NOT_SUBMITTED");const [proofReviewNote,setProofReviewNote]=useState<string|null>(null);
   const [proofBusy,setProofBusy]=useState(false);
-  useEffect(()=>{if(user)api<{status:string}>("/api/v1/profile/address-proof").then(x=>setProofStatus(x.status)).catch(()=>{})},[user?.id]);
+  useEffect(()=>{if(user)api<{status:string;reviewNote?:string|null}>("/api/v1/profile/address-proof").then(x=>{setProofStatus(x.status);setProofReviewNote(x.reviewNote||null)}).catch(()=>{})},[user?.id]);
   async function uploadProof(event:ChangeEvent<HTMLInputElement>){
     const file=event.target.files?.[0];if(!file)return;
     if(file.size>2*1024*1024||!["image/jpeg","image/png","application/pdf"].includes(file.type)){setError("Use JPG, PNG or PDF of 2 MB or less.");return}
     const form=new FormData();form.append("type",proofType);form.append("file",file);
-    try{setProofBusy(true);setError("");const value=await api<{status:string}>("/api/v1/profile/address-proof",{method:"POST",body:form});setProofStatus(value.status);setMessage("Address proof submitted for review.")}
+    try{setProofBusy(true);setError("");const value=await api<{status:string}>("/api/v1/profile/address-proof",{method:"POST",body:form});setProofStatus(value.status);setProofReviewNote(null);setMessage("Address proof submitted for review. Verification pending.")}
     catch(err){setError(err instanceof ApiError?err.message:"Upload failed")}
     finally{setProofBusy(false);event.target.value=""}
   }
@@ -101,7 +101,7 @@ export default function ProfilePage(){
         <section className={styles.proofPanel} aria-label="First booking verification">
           <div className={styles.proofIntro}>
             <h3>Address proof (required before first booking)</h3>
-            <p>Upload one document showing your address. Status: <strong className={styles.proofStatus}>{proofStatus.replaceAll("_"," ")}</strong></p>
+            <p>{proofStatus==="PENDING"?"Verification pending — document uploaded, awaiting admin review.":proofStatus==="APPROVED"?"Verification approved — you may book facilities.":proofStatus==="REJECTED"?"Document rejected. Please upload a corrected address proof before booking.":"Upload a DL, Voter ID or Passport before booking."} Status: <strong className={styles.proofStatus}>{proofStatus.replaceAll("_"," ")}</strong></p>{proofStatus==="REJECTED"&&proofReviewNote&&<p role="alert">Reason: {proofReviewNote}</p>}
           </div>
           <div className={styles.proofFields}>
             <label>Document type

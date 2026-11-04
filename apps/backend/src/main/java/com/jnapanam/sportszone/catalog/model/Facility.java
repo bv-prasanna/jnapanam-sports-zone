@@ -19,6 +19,7 @@ public class Facility {
     @Column(nullable = false) private int capacity;
     @Column(name = "buffer_minutes", nullable = false) private int bufferMinutes;
     @Column(name = "terms_and_conditions", length = 3000) private String termsAndConditions;
+    @Column(name = "terms_and_conditions_kn", length = 3000) private String termsAndConditionsKn;
     @Column(name = "booking_price", nullable = false, precision = 12, scale = 2) private BigDecimal bookingPrice;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) private CatalogueStatus status;
     @Column(name = "suspended_from") private LocalDate suspendedFrom;
@@ -60,11 +61,15 @@ public class Facility {
     }
 
     public void configureBookingRules(int bufferMinutes, String termsAndConditions) {
+        configureBookingRules(bufferMinutes,termsAndConditions,null);
+    }
+    public void configureBookingRules(int bufferMinutes, String termsAndConditions, String termsAndConditionsKn) {
         if (bufferMinutes < 0 || bufferMinutes > 120) throw new IllegalArgumentException("Invalid buffer minutes");
         this.bufferMinutes = bufferMinutes;
         this.termsAndConditions = trimToNull(termsAndConditions) == null
             ? "Gutka, cigarettes, smoking and tobacco are not permitted. Follow the safety and hygiene instructions of the facility operator."
             : trimToNull(termsAndConditions);
+        this.termsAndConditionsKn=trimToNull(termsAndConditionsKn)==null ? "ಗುಟ್ಕಾ, ಸಿಗರೇಟ್, ಧೂಮಪಾನ ಮತ್ತು ತಂಬಾಕು ಬಳಕೆಯನ್ನು ನಿಷೇಧಿಸಲಾಗಿದೆ. ಸೌಲಭ್ಯದ ನಿರ್ವಾಹಕರ ಸುರಕ್ಷತೆ ಮತ್ತು ಸ್ವಚ್ಛತಾ ಸೂಚನೆಗಳನ್ನು ಪಾಲಿಸಿ." : trimToNull(termsAndConditionsKn);
         this.updatedAt = Instant.now();
     }
 
@@ -86,6 +91,7 @@ public class Facility {
     public int getCapacity() { return capacity; }
     public int getBufferMinutes() { return bufferMinutes; }
     public String getTermsAndConditions() { return termsAndConditions; }
+    public String getTermsAndConditionsKn() { return termsAndConditionsKn; }
     public BigDecimal getBookingPrice() { return bookingPrice; }
     public CatalogueStatus getStatus() { return status; }
     public LocalDate getSuspendedFrom() { return suspendedFrom; }

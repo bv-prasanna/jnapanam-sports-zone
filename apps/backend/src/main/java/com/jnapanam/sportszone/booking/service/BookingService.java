@@ -25,16 +25,27 @@ public class BookingService {
 
  @org.springframework.beans.factory.annotation.Autowired
  public void identityDocumentDb(JdbcTemplate jdbc){this.identityJdbc=jdbc;}
- private void requireFirstBookingDocument(UUID userId){
+ private void requireBookingAddressProof(UUID userId){
   if(identityJdbc==null)throw new IllegalStateException("Identity document store is unavailable");
-  Boolean hasBookings=identityJdbc.queryForObject("select exists(select 1 from bookings where user_id=?)",Boolean.class,userId);
-  if(Boolean.TRUE.equals(hasBookings))return;
-  Boolean hasProof=identityJdbc.queryForObject("select exists(select 1 from booking_address_proofs where user_id=? and status in ('PENDING','APPROVED'))",Boolean.class,userId);
-  if(!Boolean.TRUE.equals(hasProof))throw new ConflictException("Upload a valid DL, Voter ID or Passport from My Profile before your first booking");
+  // Check the latest document on EVERY new booking, even for returning customers.
+  // Previously an earlier booking bypassed all future document rejections.
+  List<String> statuses=identityJdbc.query(
+      "select status from booking_address_proofs where user_id=? order by uploaded_at desc limit 1",
+      (rs,n)->rs.getString(1),userId);
+  String status=statuses.isEmpty()?"NOT_SUBMITTED":statuses.get(0);
+  if(!bookingProofAllowsBooking(status))
+      throw new ConflictException(bookingProofMessage(status));
+ }
+ static boolean bookingProofAllowsBooking(String status){
+   return "PENDING".equals(status)||"APPROVED".equals(status);
+ }
+ static String bookingProofMessage(String status){
+   if("REJECTED".equals(status)) return "Address proof was rejected. Upload a corrected DL, Voter ID or Passport in My Profile before booking.";
+   return "Address proof is required. Upload a valid DL, Voter ID or Passport in My Profile before booking.";
  }
  @Transactional
  public HoldResponse hold(UUID userId,HoldRequest request){
-  requireFirstBookingDocument(userId);
+  requireBookingAddressProof(userId);
   cleanupExpired(); User user=requireUser(userId); BookingSlot slot=slots.findLocked(request.slotId()).orElseThrow(()->new NotFoundException("Slot not found"));
   if (!slot.getFacility().isAvailableOn(slot.getDate())) throw new ConflictException("Facility or sport is suspended for this date");
   if(slot.getDate().isBefore(LocalDate.now(ZoneId.of("Asia/Kolkata")))||!LocalDateTime.of(slot.getDate(),slot.getStartTime()).isAfter(LocalDateTime.now(ZoneId.of("Asia/Kolkata")))) throw new ConflictException("This slot has already started or passed");
@@ -43,7 +54,7 @@ public class BookingService {
  }
  @Transactional
  public BookingResponse confirm(UUID userId,ConfirmRequest request){
-  requireFirstBookingDocument(userId);
+  requireBookingAddressProof(userId);
   BookingHold hold=holds.findLocked(request.holdId()).orElseThrow(()->new NotFoundException("Hold not found")); assertOwner(hold.getUser(),userId);
   if(hold.getStatus()!=HoldStatus.ACTIVE) throw new ConflictException("Hold is no longer active");
   BookingSlot slot=slots.findLocked(hold.getSlot().getId()).orElseThrow(()->new NotFoundException("Slot not found"));

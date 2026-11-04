@@ -98,7 +98,7 @@ public class CatalogueService {
         if (facilities.existsByCodeIgnoreCase(code)) throw new ConflictException("Facility code already exists");
         Sport sport = requireSport(request.sportCode());
         Facility facility = new Facility(sport, code, request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
-        facility.configureBookingRules(request.bufferMinutes()==null?0:request.bufferMinutes(), request.termsAndConditions());
+        facility.configureBookingRules(request.bufferMinutes()==null?0:request.bufferMinutes(), request.termsAndConditions(),request.termsAndConditionsKn());
         return FacilityResponse.from(facilities.save(facility));
     }
 
@@ -107,7 +107,7 @@ public class CatalogueService {
         Facility facility = requireFacility(id);
         if (request.code() != null && !request.code().isBlank() && !facility.getCode().equalsIgnoreCase(request.code())) throw new BadRequestException("Facility code cannot be changed");
         facility.update(requireSport(request.sportCode()), request.name(), request.description(), request.locationLabel(), request.slotDurationMinutes(), request.capacity(), request.bookingPrice());
-        facility.configureBookingRules(request.bufferMinutes()==null?0:request.bufferMinutes(), request.termsAndConditions());
+        facility.configureBookingRules(request.bufferMinutes()==null?0:request.bufferMinutes(), request.termsAndConditions(),request.termsAndConditionsKn());
         return FacilityResponse.from(facility);
     }
 

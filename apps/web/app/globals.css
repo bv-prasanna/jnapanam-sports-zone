@@ -364,3 +364,8 @@
    Booking feedback uses an explicit success/error state, not word matching. */
 .form-note.error{border:1px solid #e7a498!important;background:#fff0ed!important;color:#912914!important;font-weight:750!important}
 .form-note.error[role="alert"]{white-space:normal;line-height:1.55;overflow-wrap:anywhere}
+
+/* Address proof state is explicit; missing/rejected documents cannot be booked. */
+.customer-booking-proof{max-width:100%;overflow-wrap:anywhere;border:1px solid var(--line,#e4d6be);padding:10px 13px;border-radius:10px;background:#f7f4e8;line-height:1.5}
+.customer-booking-proof.proof-blocked{background:#fff0ed;border-color:#dca38d;color:#8b2c12}
+.customer-booking-proof a{font-weight:750;text-decoration:underline}

@@ -14,12 +14,12 @@ import org.springframework.web.multipart.MultipartFile;
 public class BookingAddressProofController {
  private final JdbcTemplate jdbc;
  public BookingAddressProofController(JdbcTemplate jdbc){this.jdbc=jdbc;}
- public record Status(String documentType,String status,boolean uploaded){}
+ public record Status(String documentType,String status,boolean uploaded,String reviewNote){}
  @GetMapping
  public Status status(@org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt){
   UUID id=UUID.fromString(jwt.getSubject());
-  var rows=jdbc.queryForList("select document_type,status from booking_address_proofs where user_id=? order by uploaded_at desc limit 1",id);
-  return rows.isEmpty()?new Status(null,"NOT_SUBMITTED",false):new Status((String)rows.get(0).get("document_type"),(String)rows.get(0).get("status"),true);
+  var rows=jdbc.queryForList("select document_type,status,review_note from booking_address_proofs where user_id=? order by uploaded_at desc limit 1",id);
+  return rows.isEmpty()?new Status(null,"NOT_SUBMITTED",false,null):new Status((String)rows.get(0).get("document_type"),(String)rows.get(0).get("status"),true,(String)rows.get(0).get("review_note"));
  }
  @PostMapping(consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
  public Status upload(@org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt,
@@ -37,6 +37,6 @@ public class BookingAddressProofController {
   jdbc.update("delete from booking_address_proofs where user_id=?",id);
   jdbc.update("insert into booking_address_proofs(id,user_id,document_type,content_type,original_filename,document_bytes,status) values(?,?,?,?,?,?,'PENDING')",
    UUID.randomUUID(),id,type,mime,"address-proof",bytes);
-  return new Status(type,"PENDING",true);
+  return new Status(type,"PENDING",true,null);
  }
 }

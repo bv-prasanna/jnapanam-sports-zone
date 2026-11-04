@@ -29,6 +29,7 @@ type Facility = {
   locationLabel?: string;
   bookingPrice: number;
   termsAndConditions?: string;
+  termsAndConditionsKn?: string;
   bufferMinutes?: number;
 };
 
@@ -155,6 +156,7 @@ export default function BookingsScreen() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [facilityId, setFacilityId] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [proof, setProof] = useState<{status:string;reviewNote?:string|null}|null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [quotes, setQuotes] = useState<Record<string, SlotQuote>>({});
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -169,14 +171,16 @@ export default function BookingsScreen() {
     setLoading(true);
     setError('');
     try {
-      const [availableSports, availableFacilities, myBookings] = await Promise.all([
+      const [availableSports, availableFacilities, myBookings, verification] = await Promise.all([
         api<Sport[]>('/api/v1/public/sports'),
         api<Facility[]>('/api/v1/public/facilities'),
         api<Booking[]>('/api/v1/bookings/me'),
+        api<{status:string;reviewNote?:string|null}>('/api/v1/profile/address-proof'),
       ]);
       setSports(availableSports);
       setFacilities(availableFacilities);
       setBookings(myBookings);
+      setProof(verification);
       setSportCode((current) => current && availableFacilities.some(item => item.sportCode === current)
         ? current : availableFacilities[0]?.sportCode || availableSports[0]?.code || '');
     } catch (reason) {
@@ -228,8 +232,11 @@ export default function BookingsScreen() {
   }
 
   async function book(slotId: string, paymentOption: 'PAY_NOW' | 'PAY_AT_VENUE') {
+    if(!proof||!['PENDING','APPROVED'].includes(proof.status)){
+      setError(proof?.status==='REJECTED'?t('bookings.proofRejected'):t('bookings.proofRequired'));return;
+    }
     if (facilities.find(item => item.id === facilityId)?.termsAndConditions && !termsAccepted) {
-      setError('Please accept the facility rules before booking.'); return;
+      setError(t('bookings.termsRequired')); return;
     }
     if (!quotes[slotId]) { setError(t("bookings.refreshPrices")); return; }
     const key = `${slotId}-${paymentOption}`;
@@ -314,6 +321,15 @@ export default function BookingsScreen() {
         {!!message && <Text style={styles.message}>{message}</Text>}
 
         <Text style={styles.sectionTitle}>{t('bookings.bookFacility')}</Text>
+        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')} disabled={proof?.status==='APPROVED'}
+          style={{marginBottom:12,padding:13,borderRadius:10,backgroundColor:proof?.status==='REJECTED'?'#fff0ed':BrandColors.surface,borderWidth:1,borderColor:BrandColors.border}}>
+          <Text style={{color:BrandColors.textPrimary}}>
+            {!proof?t('bookings.proofChecking'):proof.status==='PENDING'?t('bookings.proofPending'):
+              proof.status==='APPROVED'?t('bookings.proofApproved'):
+              proof.status==='REJECTED'?t('bookings.proofRejected'):t('bookings.proofRequired')}
+          </Text>
+          {!!proof?.reviewNote&&proof.status==='REJECTED'&&<Text style={{color:'#9b2810'}}>{proof.reviewNote}</Text>}
+        </Pressable>
         {loading && !sports.length ? (
           <ActivityIndicator color={BrandColors.accent} />
         ) : (
@@ -393,9 +409,9 @@ export default function BookingsScreen() {
           <Pressable accessibilityRole="checkbox" accessibilityState={{checked:termsAccepted}}
             onPress={() => setTermsAccepted(v => !v)}
             style={{marginTop:14,padding:14,borderRadius:12,backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border}}>
-            <Text style={{fontWeight:'900',color:BrandColors.textPrimary}}>{termsAccepted ? '☑' : '☐'} Facility rules & conditions</Text>
-            <Text style={{color:BrandColors.textSecondary,marginTop:6,lineHeight:20}}>{facilities.find(item => item.id === facilityId)?.termsAndConditions}</Text>
-            <Text style={{color:BrandColors.textPrimary,marginTop:6}}>I have read and agree to these rules.</Text>
+            <Text style={{fontWeight:'900',color:BrandColors.textPrimary}}>{termsAccepted ? '☑' : '☐'} {t('bookings.facilityTerms')}</Text>
+            <Text style={{color:BrandColors.textSecondary,marginTop:6,lineHeight:20}}>{i18n.language.startsWith('kn')?(facilities.find(item => item.id === facilityId)?.termsAndConditionsKn||facilities.find(item => item.id === facilityId)?.termsAndConditions):facilities.find(item => item.id === facilityId)?.termsAndConditions}</Text>
+            <Text style={{color:BrandColors.textPrimary,marginTop:6}}>{t('bookings.termsAgreement')}</Text>
           </Pressable>
         )}
         {!!slots.length && (

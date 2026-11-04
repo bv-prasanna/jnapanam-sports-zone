@@ -85,6 +85,13 @@ public class VenueBillingService {
         body.put("receiptNumber",o.getReceiptNumber());
         body.put("status",o.getStatus().name());
         body.put("paymentAmountPaise",o.getAmountPaise());
+        body.put("originalAmountPaise",o.getOriginalAmountPaise());
+        body.put("promotionCode",o.getPromotionCode());
+        body.put("billingTaxablePaise",o.getBillingTaxablePaise());
+        body.put("billingTaxPaise",o.getBillingTaxPaise());
+        body.put("billingGrossPaise",o.getBillingGrossPaise());
+        body.put("billingLoyaltyTenderPaise",o.getBillingLoyaltyTenderPaise());
+        body.put("billingRatePercent",o.getBillingRatePercent());
         body.put("discountPaise",o.getDiscountPaise());
         body.put("loyaltyPointsUsed",o.getLoyaltyPointsUsed());
         body.put("purpose",o.getPurpose().name());
@@ -92,6 +99,11 @@ public class VenueBillingService {
         if(o.getPurpose()==PaymentPurpose.BOOKING){
             Booking b=bookings.findById(o.getReferenceId()).orElseThrow(()->new NotFoundException("Booking not found"));
             body.put("bookingNumber",b.getBookingNumber());
+            body.put("facilityName",b.getSlot().getFacility().getName());
+            body.put("sportName",b.getSlot().getFacility().getSport().getName());
+            body.put("slotDate",b.getSlot().getDate().toString());
+            body.put("startTime",b.getSlot().getStartTime().toString());
+            body.put("endTime",b.getSlot().getEndTime().toString());
             body.put("basePaise",b.getPriceBasePaise());
             body.put("taxablePaise",b.getPriceSubtotalPaise());
             body.put("quotedTaxPaise",b.getPriceTaxPaise());

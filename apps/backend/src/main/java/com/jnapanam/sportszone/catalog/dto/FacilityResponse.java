@@ -8,13 +8,13 @@ import java.math.BigDecimal;
 public record FacilityResponse(UUID id, String code, String name, String description, String locationLabel,
                                int slotDurationMinutes, int capacity, BigDecimal bookingPrice, String sportCode, String sportName,
                                String status, LocalDate suspendedFrom, LocalDate suspendedUntil, String statusReason,
-                               int bufferMinutes, String termsAndConditions) {
+                               int bufferMinutes, String termsAndConditions,String termsAndConditionsKn) {
     public static FacilityResponse from(Facility facility) {
         return new FacilityResponse(facility.getId(), facility.getCode(), facility.getName(), facility.getDescription(),
                 facility.getLocationLabel(), facility.getSlotDurationMinutes(), facility.getCapacity(), facility.getBookingPrice(),
                 facility.getSport().getCode(), facility.getSport().getName(), effectiveStatus(facility),
                 effectiveFrom(facility), effectiveUntil(facility), effectiveReason(facility),
-                facility.getBufferMinutes(), facility.getTermsAndConditions());
+                facility.getBufferMinutes(), facility.getTermsAndConditions(),facility.getTermsAndConditionsKn());
     }
     private static boolean inherited(Facility f) {
         return f.getSport().getStatus() == com.jnapanam.sportszone.catalog.model.CatalogueStatus.INACTIVE
