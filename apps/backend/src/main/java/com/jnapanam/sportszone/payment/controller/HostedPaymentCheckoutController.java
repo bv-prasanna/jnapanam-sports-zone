@@ -81,7 +81,7 @@ public class HostedPaymentCheckoutController {
             button{background:#c83a0a;color:white;border:0;border-radius:10px;padding:14px 26px;font-size:17px}
             button:disabled{opacity:.55}</style></head><body>
             <h2>Jnapanam Sports Zone</h2><p>Secure payment through Razorpay</p>
-            <button id="pay" disabled>Preparing checkout…</button><p id="status"></p>
+            <button id="pay" disabled>Preparing checkout…</button><p id="status"></p>\n            <p id="return-app" style="display:none"><a href="jnapanamsportszone:///payment-return">Return to Jnapanam app</a></p>
             <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
             <script>
             const options = __OPTIONS__;
@@ -106,8 +106,12 @@ public class HostedPaymentCheckoutController {
                       })
                     });
                     if(!result.ok) throw new Error('Verification was not confirmed');
-                    status.textContent='Payment successful. Return to Jnapanam app.';
+                    status.textContent='Payment verified. Returning to Jnapanam app…';
                     button.style.display='none';
+                    document.getElementById('return-app').style.display='block';
+                    // Only a successful, server-verified capture may initiate the
+                    // app return. The app independently re-reads payment status.
+                    window.location.replace('jnapanamsportszone:///payment-return');
                   } catch(e) {
                     status.textContent='Payment verification pending. Return to app and refresh; do not pay again until status is checked.';
                   }
