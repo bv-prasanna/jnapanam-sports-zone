@@ -402,9 +402,11 @@ public class PaymentService {
     /** Confirm relevant product fulfilment messages only after payment is verified. */
     private void notifyFulfilment(PaymentOrder order) {
         switch (order.getPurpose()) {
-            case BOOKING -> bookings.findById(order.getReferenceId()).ifPresent(booking ->
-                    notificationService.lifecycle(order.getUser().getId(), "BOOKING", "Booking payment confirmed",
-                            "Booking " + booking.getBookingNumber() + " is paid and confirmed."));
+            case BOOKING -> bookings.findById(order.getReferenceId())
+                    .filter(booking -> booking.getStatus() == BookingStatus.CONFIRMED
+                            && booking.getPaymentStatus() == BookingPaymentStatus.PAID)
+                    .ifPresent(booking -> notificationService.lifecycle(order.getUser().getId(), "BOOKING",
+                            "Booking payment confirmed", "Booking " + booking.getBookingNumber() + " is paid and confirmed."));
             case MEMBERSHIP -> memberships.findById(order.getReferenceId()).ifPresent(membership ->
                     notificationService.lifecycle(order.getUser().getId(), "MEMBERSHIP", "Membership activated",
                             membership.getPlan().getName() + " membership is active."));
