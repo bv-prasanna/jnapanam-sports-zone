@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class AppReleaseService {
     public static final String DOWNLOAD_PAGE = "https://jnapanam.in/app";
     private final JdbcTemplate jdbc;
+    // Avoid one PostgreSQL SELECT per mobile API request; refresh automatically in 30s.
+    private volatile Cached publicCache;
+    private record Cached(PublicPolicy value,long validUntilMillis) {}
     public AppReleaseService(JdbcTemplate jdbc) { this.jdbc=jdbc; }
 
     public record Policy(int latestVersionCode, String latestVersionName,
@@ -35,9 +38,14 @@ public class AppReleaseService {
 
     @Transactional(readOnly=true)
     public PublicPolicy publicPolicy() {
+        Cached cached=publicCache;
+        long now=System.currentTimeMillis();
+        if(cached!=null&&cached.validUntilMillis()>now)return cached.value();
         Policy p=admin();
-        return new PublicPolicy(p.apkUrl()!=null,p.latestVersionCode(),p.latestVersionName(),
+        PublicPolicy value=new PublicPolicy(p.apkUrl()!=null,p.latestVersionCode(),p.latestVersionName(),
             p.minimumSupportedVersionCode(),p.updateMode(),p.releaseNotes(),DOWNLOAD_PAGE);
+        publicCache=new Cached(value,now+30_000);
+        return value;
     }
 
     @Transactional(readOnly=true)
@@ -65,6 +73,7 @@ public class AppReleaseService {
         if(notes!=null&&notes.length()>1500)throw new BadRequestException("Release notes must be at most 1500 characters");
         jdbc.update("UPDATE mobile_app_release_policy SET latest_version_code=?,latest_version_name=?,minimum_supported_version_code=?,update_mode=?,apk_url=?,release_notes=?,updated_by=?,updated_at=now() WHERE id=1",
             c.latestVersionCode(),version,c.minimumSupportedVersionCode(),mode,url,notes,actor);
+        publicCache=null;
         return admin();
     }
 
