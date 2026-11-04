@@ -64,7 +64,8 @@ export default function OperationsScreen() {
   const today = useMemo(() => localDateValue(), []);
   const [selectedDate,setSelectedDate]=useState(today);
   const [manualBooking,setManualBooking]=useState<Booking|null>(null);
-  const [identity,setIdentity]=useState<{customerName:string;profilePhotoUrl?:string;photoAvailable:boolean;documentType?:string;documentStatus?:string}|null>(null);
+  const [identity,setIdentity]=useState<{customerName:string;profilePhotoUrl?:string;photoAvailable:boolean;documentAvailable:boolean;documentType?:string;documentStatus?:string}|null>(null);
+  const [documentPreview,setDocumentPreview]=useState<string|null>(null);
   const [identityBusy,setIdentityBusy]=useState(false);
   const [manualVerified,setManualVerified]=useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -173,10 +174,19 @@ export default function OperationsScreen() {
       'cancel-and-refund': 'Cancel this paid booking and initiate its refund?',
     };
     if(action==='check-in'){
-      setManualBooking(booking);setIdentity(null);setManualVerified(false);setIdentityBusy(true);
-      void api<{customerName:string;profilePhotoUrl?:string;photoAvailable:boolean;documentType?:string;documentStatus?:string}>('/api/v1/operations/bookings/'+encodeURIComponent(booking.bookingNumber)+'/identity')
-       .then(setIdentity).catch(e=>setError(e instanceof ApiError?e.message:'Unable to load customer identity evidence.'))
-       .finally(()=>setIdentityBusy(false));
+      setManualBooking(booking);setIdentity(null);setDocumentPreview(null);setManualVerified(false);setIdentityBusy(true);
+      const url='/api/v1/operations/bookings/'+encodeURIComponent(booking.bookingNumber)+'/identity';
+      void (async()=>{
+        try{
+          const info=await api<{customerName:string;profilePhotoUrl?:string;photoAvailable:boolean;documentAvailable:boolean;documentType?:string;documentStatus?:string}>(url);
+          setIdentity(info);
+          if(info.documentAvailable){
+            const preview=await api<{mediaType:string;dataBase64:string}>(url+'/document-preview');
+            setDocumentPreview('data:'+preview.mediaType+';base64,'+preview.dataBase64);
+          }
+        }catch(e){setError(e instanceof ApiError?e.message:'Unable to load identity document. Use the web check-in console.')}
+        finally{setIdentityBusy(false);}
+      })();
       return;
     }
     Alert.alert(action.replaceAll('-', ' ').replace('/', ' ').toUpperCase(), messages[action], [
@@ -258,12 +268,13 @@ export default function OperationsScreen() {
         {identityBusy&&<ActivityIndicator color={BrandColors.accent}/>}
         {identity?.profilePhotoUrl?<Image source={{uri:identity.profilePhotoUrl}} style={styles.manualPhoto}/>:<Text style={styles.error}>No uploaded profile photo. Compare the customer's physical ID and use the web check-in console for document review.</Text>}
         <Text style={styles.muted}>Document: {identity?.documentType||'Not uploaded'} · {identity?.documentStatus||'No status'}</Text>
-        <Text style={styles.muted}>Ask the customer to show the original ID. The staff-only web console can display the uploaded document for detailed comparison.</Text>
+        {documentPreview&&<Image source={{uri:documentPreview}} resizeMode="contain" style={styles.documentPreview} accessibilityLabel="Private preview of uploaded identity document"/>}
+        <Text style={styles.muted}>Compare this uploaded photo and document to the customer and their original ID. If a preview is unavailable, use the secure web console.</Text>
         <Pressable style={styles.manualCheck} onPress={()=>setManualVerified(v=>!v)}>
           <MaterialCommunityIcons name={manualVerified?'checkbox-marked':'checkbox-blank-outline'} size={25} color={BrandColors.primary}/>
           <Text style={styles.customer}>I verified the customer's identity and confirmed payment.</Text>
         </Pressable>
-        <Pressable disabled={!manualVerified||identityBusy||!!busy} style={[styles.scanButton,(!manualVerified||identityBusy)&&styles.disabled]}
+        <Pressable disabled={!manualVerified||identityBusy||!documentPreview||!identity?.photoAvailable||!!busy} style={[styles.scanButton,(!manualVerified||identityBusy||!documentPreview||!identity?.photoAvailable)&&styles.disabled]}
           onPress={()=>{if(manualBooking){const booking=manualBooking;setManualBooking(null);void run(booking,'check-in');}}}>
           <Text style={styles.scanText}>Confirm manual check-in</Text></Pressable>
         <Pressable style={styles.dateButton} onPress={()=>setManualBooking(null)}><Text style={styles.dateText}>Close</Text></Pressable>
@@ -290,7 +301,7 @@ const styles = StyleSheet.create({
   dateButton:{padding:12,borderWidth:1,borderColor:BrandColors.border,borderRadius:12,alignItems:'center',flex:1},
   dateSelected:{backgroundColor:BrandColors.primary,borderColor:BrandColors.primary},dateText:{color:BrandColors.primary,fontWeight:'800'},
   dateSelectedText:{color:'#fff'},manualBackdrop:{flex:1,backgroundColor:'#0009',justifyContent:'center',padding:15},
-  manualCard:{backgroundColor:'#fff',borderRadius:17,padding:20,gap:12},manualPhoto:{width:132,height:132,borderRadius:14},
+  manualCard:{backgroundColor:'#fff',borderRadius:17,padding:20,gap:12},manualPhoto:{width:132,height:132,borderRadius:14},documentPreview:{width:'100%',height:250,borderRadius:12,backgroundColor:'#f5f0e7'},
   manualCheck:{flexDirection:'row',gap:10,alignItems:'center'},disabled:{opacity:.5},
 center:{flex:1,padding:28,alignItems:'center',justifyContent:'center',backgroundColor:BrandColors.background,gap:8},
   heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},eyebrow:{color:BrandColors.accent,fontSize:12,fontWeight:'900',letterSpacing:1.3},title:{color:BrandColors.textPrimary,fontSize:30,fontWeight:'900',marginTop:4},muted:{color:BrandColors.textSecondary,fontSize:15,lineHeight:22},
