@@ -28,7 +28,11 @@ public class VenueCheckInController {
     @PostMapping("/{venueCode}/{bookingNumber}")
     public BookingResponse checkIn(Authentication authentication, @PathVariable String venueCode,
             @PathVariable String bookingNumber) {
-        return service.checkIn(user(authentication), venueCode, bookingNumber);
+        // A public venue-code poster is not proof that the booked customer is on site.
+        // Operator scanning now verifies both the signed booking pass and customer ID.
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.GONE,
+                "Customer self check-in by venue code is retired. Ask the operator to scan your booking QR.");
     }
 
     private static UUID user(Authentication authentication) {
