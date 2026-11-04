@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import i18n from '@/i18n';
+import {announceServerRequiredUpdate,installedAndroidBuild} from '@/lib/app-release';
 import { getEventLocationHeaders } from './event-location';
 
 export type TokenResponse = {
@@ -40,6 +41,7 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
         Accept:'application/json',
         ...(options.body && !(options.body instanceof FormData)?{'Content-Type':'application/json'}:{}),
         ...(!publicAuth&&accessToken?{Authorization:'Bearer '+accessToken}:{}),
+        ...(Platform.OS==='android'?{'X-Jnapanam-Platform':'android','X-Jnapanam-Version-Code':String(installedAndroidBuild())}:{}),
         ...geoHeaders,...options.headers
       }
     });
@@ -49,6 +51,7 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
   }
   if(!response.ok){
     const status=response.status;
+    if(status===426){announceServerRequiredUpdate();throw new ApiError('A Jnapanam app update is required. Open the update screen.',426);}
     if(status===401)throw new ApiError(friendly('session'),status);
     if(status>=500)throw new ApiError(friendly('server'),status);
     let message=friendly('generic');
