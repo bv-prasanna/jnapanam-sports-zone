@@ -13,3 +13,10 @@ test("public login and registration OTP endpoints never receive cached bearer au
 test("registration request disables automatic token refresh", () => {
   assert.match(api, /requestRegistrationOtp\(mobile:string\).*false\);/);
 });
+
+test("web customer password sign-in explains and accepts email MFA code",()=>{
+  const login=readFileSync(new URL("../app/login/page.tsx",import.meta.url),"utf8");
+  assert.match(login,/6-digit code sent to your registered email address/);
+  assert.match(login,/mfaRequired&&<label>Email verification code/);
+  assert.match(api,/if \(response.status === 401 \|\| response.status === 403\) \{ clearSession\(\); return null; \}/);
+});
