@@ -369,3 +369,9 @@
 .customer-booking-proof{max-width:100%;overflow-wrap:anywhere;border:1px solid var(--line,#e4d6be);padding:10px 13px;border-radius:10px;background:#f7f4e8;line-height:1.5}
 .customer-booking-proof.proof-blocked{background:#fff0ed;border-color:#dca38d;color:#8b2c12}
 .customer-booking-proof a{font-weight:750;text-decoration:underline}
+
+/* Long booking/payment dialogs scroll on smaller screens. */
+.portal-dialog-backdrop{overflow-y:auto;overscroll-behavior:contain;align-items:safe center}
+.portal-dialog{max-height:calc(100dvh - 2.5rem);overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.booking-detail-grid strong,.booking-detail-grid span{overflow-wrap:anywhere;word-break:break-word}
+@media(max-width:520px){.booking-detail-grid{grid-template-columns:minmax(0,1fr)}}
