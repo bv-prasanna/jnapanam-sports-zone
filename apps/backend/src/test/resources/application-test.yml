@@ -12,6 +12,8 @@ spring:
     enabled: true
 
 app:
+  security:
+    customer-mfa-required: false
   payment:
     provider: mock
     currency: INR
