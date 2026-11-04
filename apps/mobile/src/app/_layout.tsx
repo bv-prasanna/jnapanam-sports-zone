@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useColorScheme } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import {AppUpdateGate} from '@/components/app-update-gate';
 import { AuthProvider } from '@/features/auth/auth-context';
 import { getStoredValue } from '@/lib/storage';
 
@@ -20,6 +21,6 @@ function LanguageBootstrap(){
 export default function RootLayout(){
   const scheme=useColorScheme();
   return <ThemeProvider value={scheme==='dark'?DarkTheme:DefaultTheme}>
-    <AuthProvider><LanguageBootstrap/><AnimatedSplashOverlay/><AppTabs/></AuthProvider>
+    <AuthProvider><LanguageBootstrap/><AnimatedSplashOverlay/><AppUpdateGate><AppTabs/></AppUpdateGate></AuthProvider>
   </ThemeProvider>;
 }
