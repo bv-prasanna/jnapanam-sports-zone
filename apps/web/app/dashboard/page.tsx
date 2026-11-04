@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useCallback, useEffect, useState } from "react"; import { useRouter } from "next/navigation";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react"; import { useRouter } from "next/navigation";
 import {useFeatureVisibility} from "@/lib/features"; import { SiteHeader } from "@/components/site-header"; import { MyGrowthDashboard } from "@/components/my-growth-dashboard"; import { SiteFooter } from "@/components/site-footer"; import { useApp } from "@/components/app-provider"; import { api, ApiError } from "@/lib/api";
 import {CONTACT_PHONES} from "@/lib/contact";
 
@@ -118,7 +118,7 @@ function Profile({user}:{user:Row}){
  const [message,setMessage]=useState("");
  const [saving,setSaving]=useState(false);
  const [uploading,setUploading]=useState(false);
- async function uploadPhoto(event:React.ChangeEvent<HTMLInputElement>){
+ async function uploadPhoto(event:ChangeEvent<HTMLInputElement>){
    const file=event.target.files?.[0];if(!file)return;
    if(!["image/jpeg","image/png","image/webp"].includes(file.type)){setMessage("Choose a JPG, PNG or WebP photo.");return;}
    setUploading(true);setMessage("");
