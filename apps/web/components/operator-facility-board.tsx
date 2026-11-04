@@ -16,6 +16,8 @@ type SlotGroup={key:string;startTime:string;endTime:string;capacity:number|null;
 const readable=(s?:string)=>s?s.replaceAll("_"," ").toLowerCase().replace(/^./,letter=>letter.toUpperCase()):"—";
 const clock=(s?:string)=>s?s.slice(0,5):"—";
 const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const shiftDate=(value:string,days:number)=>{const d=new Date(value+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)};
+const indiaClock=()=>new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Kolkata",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
 
 export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Props){
  const [facilities,setFacilities]=useState<Facility[]>([]);
@@ -26,6 +28,8 @@ export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Pr
  const [slotError,setSlotError]=useState("");
  const [slotBusy,setSlotBusy]=useState(false);
  const [search,setSearch]=useState("");
+ const [expandedSlot,setExpandedSlot]=useState<string|null>(null);
+ useEffect(()=>setExpandedSlot(null),[date,selectedFacility]);
  const loadFacilities=useCallback(async()=>{
    setAssignedBusy(true);setFacilityError("");
    try{setFacilities(await api<Facility[]>("/api/v1/operations/facilities"));}
@@ -59,6 +63,8 @@ export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Pr
      .filter(g=>!q||[g.startTime,g.endTime,...g.bookings.flatMap(b=>[b.bookingNumber,b.customerName||"",b.customerMobile||"",b.status,b.paymentStatus||""])].some(v=>v.toLowerCase().includes(q)))
      .sort((a,b)=>a.startTime.localeCompare(b.startTime)||a.endTime.localeCompare(b.endTime));
  },[slots,selectedBookings,search]);
+ const currentSlot=groups.find(g=>date===today()&&clock(g.startTime)<=indiaClock()&&indiaClock()<clock(g.endTime));
+ const openSlot=expandedSlot===null?(currentSlot?.key||""):expandedSlot;
  const activeBookings=selectedBookings.filter(b=>!["CANCELLED","NO_SHOW","PAYMENT_EXPIRED"].includes(b.status));
  const pending=activeBookings.filter(b=>b.paymentStatus==="UNPAID"||b.paymentStatus==="PENDING").length;
  const checkedIn=activeBookings.filter(b=>b.checkedInAt&&!b.checkedOutAt).length;
@@ -70,7 +76,7 @@ export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Pr
  };
  return <section className={styles.board}>
    <div className={styles.toolbar}><div><span className={styles.eyebrow}>ASSIGNED FACILITIES</span><h2>Facility schedule & bookings</h2><p>Select a facility to see its slots, booked customers and payment/check-in status.</p></div>
-     <div className={styles.toolActions}><label>Date<input aria-label="Booking date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><button type="button" onClick={()=>void refreshAll()}>Refresh</button></div></div>
+     <div className={styles.toolActions}><div className={styles.dayShortcuts} aria-label="Select operations date">{[["Today",0],["Tomorrow",1],["Day after",2]].map(([label,days])=><button type="button" key={label} aria-pressed={date===shiftDate(today(),Number(days))} className={date===shiftDate(today(),Number(days))?styles.activeDate:""} onClick={()=>setDate(shiftDate(today(),Number(days)))}>{label}</button>)}</div><label>Date<input aria-label="Booking date" type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><button type="button" onClick={()=>void refreshAll()}>Refresh</button></div></div>
    {facilityError&&<p className={styles.error} role="alert">{facilityError}</p>}
    {assignedBusy?<div className={styles.empty}>Loading assigned facilities…</div>:
    facilities.length===0?<div className={styles.empty}><strong>No facilities assigned</strong><p>An administrator can assign facilities under Operator Assignments.</p></div>:
@@ -92,21 +98,40 @@ export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Pr
        </div>
        {slotError&&<div className={styles.warning} role="status">{slotError}</div>}
        {slotBusy&&<p className={styles.muted}>Loading available slots…</p>}
-       <div className={styles.tableScroll}><table className={styles.table}><thead><tr><th>Slot / Capacity</th><th>Customer & Booking</th><th>Booking</th><th>Payment</th><th>Visit</th><th>Actions</th></tr></thead><tbody>
-       {groups.flatMap(g=>g.bookings.length?g.bookings.map((b,index)=>{
-         const paid=b.paymentStatus==="PAID"||b.paymentStatus==="NOT_REQUIRED";
-         const checkout=!!b.checkedInAt&&!b.checkedOutAt;
-         const checkin=!b.checkedInAt&&!["CANCELLED","NO_SHOW"].includes(b.status)&&paid;
-         const noShow=canNoShow(b);
-         return <tr key={b.id}>
-           <td>{index===0?<><strong className={styles.time}>{clock(g.startTime)} – {clock(g.endTime)}</strong><small>{g.capacity===null?"Booked slot":String(g.available)+" of "+String(g.capacity)+" places available"}</small></>:<span className={styles.muted}>↳ Same slot</span>}</td>
-           <td><b>{b.customerName||"Name unavailable"}</b><small>{b.bookingNumber}{b.customerMobile?" · "+b.customerMobile:""}</small></td>
-           <td><span className={styles.status}>{readable(b.status)}</span></td>
-           <td><span className={paid?styles.paid:styles.due}>{readable(b.paymentStatus)}</span></td>
-           <td><span className={styles.status}>{b.checkedOutAt?"Checked out":b.checkedInAt?"Checked in":"Not checked in"}</span></td>
-           <td><div className={styles.rowActions}>{checkin&&<button type="button" onClick={()=>void onAction(b,"check-in")}>Check in</button>}{checkout&&<button type="button" onClick={()=>void onAction(b,"check-out")}>Check out</button>}{noShow&&<button type="button" className={styles.secondary} onClick={()=>void onAction(b,"no-show")}>No-show</button>}{!checkin&&!checkout&&!noShow&&<small>—</small>}</div></td>
-         </tr>;
-       }):[<tr key={g.key}><td><strong className={styles.time}>{clock(g.startTime)} – {clock(g.endTime)}</strong><small>{g.available} of {g.capacity} places available</small></td><td colSpan={5} className={styles.unbooked}>No booking for this slot</td></tr>])}</tbody></table></div>
+       <div className={styles.slotAccordions} aria-label="Facility slot check-in list">
+         {groups.map(g=>{
+           const active=g.bookings.filter(b=>!["CANCELLED","NO_SHOW","PAYMENT_EXPIRED"].includes(b.status));
+           const present=active.filter(b=>!!b.checkedInAt&&!b.checkedOutAt).length;
+           const awaiting=active.filter(b=>b.status==="CONFIRMED"&&!b.checkedInAt&&(b.paymentStatus==="PAID"||b.paymentStatus==="NOT_REQUIRED")).length;
+           const expanded=openSlot===g.key;
+           return <section key={g.key} className={expanded?styles.slotExpanded:styles.slotCard}>
+             <button className={styles.slotHeading} type="button" aria-expanded={expanded} onClick={()=>setExpandedSlot(expanded?"":g.key)}>
+               <strong>{clock(g.startTime)} – {clock(g.endTime)}</strong>
+               <span>Bookings: {active.length}{g.capacity===null?"":` / ${g.capacity} capacity`}</span>
+               <span>Checked in: {present}</span>
+               <span>Yet to check in: {awaiting}</span>
+               <b aria-hidden="true">{expanded?"−":"+"}</b>
+             </button>
+             {expanded&&<div className={styles.slotDetail}>
+               {g.bookings.length?g.bookings.map(b=>{
+                 const paid=b.paymentStatus==="PAID"||b.paymentStatus==="NOT_REQUIRED";
+                 const checkout=!!b.checkedInAt&&!b.checkedOutAt;
+                 const checkin=!b.checkedInAt&&b.status==="CONFIRMED"&&paid;
+                 return <article key={b.id} className={styles.customerRow}>
+                   <div><b>{b.customerName||"Name unavailable"}</b><small>{b.bookingNumber}{b.customerMobile?" · "+b.customerMobile:""}</small></div>
+                   <div><span className={styles.status}>{readable(b.status)}</span> <span className={paid?styles.paid:styles.due}>{readable(b.paymentStatus)}</span></div>
+                   <div><span className={styles.status}>{b.checkedOutAt?"Checked out":b.checkedInAt?"Checked in":"Not checked in"}</span></div>
+                   <div className={styles.rowActions}>
+                     {checkin&&<button type="button" onClick={()=>void onAction(b,"check-in")}>Verify & check in</button>}
+                     {checkout&&<button type="button" onClick={()=>void onAction(b,"check-out")}>Check out</button>}
+                     {canNoShow(b)&&<button type="button" className={styles.secondary} onClick={()=>void onAction(b,"no-show")}>No-show</button>}
+                   </div>
+                 </article>;
+               }):<p className={styles.unbooked}>No booking for this slot.</p>}
+             </div>}
+           </section>;
+         })}
+       </div>
        {groups.length===0&&<div className={styles.empty}><strong>No slots or bookings found</strong><p>{search?"Try another search.":"No slots or bookings are recorded for this facility and date."}</p></div>}
        <p className={styles.note}>Showing {activeBookings.length} active and {selectedBookings.length-activeBookings.length} inactive/history bookings on {date}. Future bookings appear when their booking date is selected. Includes cancelled, expired, no-show and checked-out bookings for shift history. Availability is shown for upcoming slots; past booked slots remain visible.</p>
      </div>
