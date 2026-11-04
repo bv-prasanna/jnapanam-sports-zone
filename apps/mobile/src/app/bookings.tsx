@@ -177,7 +177,8 @@ export default function BookingsScreen() {
       setSports(availableSports);
       setFacilities(availableFacilities);
       setBookings(myBookings);
-      setSportCode((current) => current || availableSports[0]?.code || availableFacilities[0]?.sportCode || '');
+      setSportCode((current) => current && availableFacilities.some(item => item.sportCode === current)
+        ? current : availableFacilities[0]?.sportCode || availableSports[0]?.code || '');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('common.tryAgain'));
     } finally {
