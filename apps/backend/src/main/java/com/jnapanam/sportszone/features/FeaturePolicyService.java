@@ -20,7 +20,7 @@ public class FeaturePolicyService {
     public List<FeatureSetting> list() {
         return jdbc.query("SELECT code,enabled,allowed_roles FROM feature_visibility ORDER BY code",
                 (rs,n) -> new FeatureSetting(rs.getString("code"), rs.getBoolean("enabled"),
-                        List.of(rs.getString("allowed_roles").split(","))));
+                        rs.getString("allowed_roles").isBlank() ? List.of() : List.of(rs.getString("allowed_roles").split(","))));
     }
     @Transactional(readOnly = true)
     public boolean visibleFor(String feature, String role) {
@@ -29,7 +29,7 @@ public class FeaturePolicyService {
     }
     @Transactional
     public FeatureSetting change(String code, ChangeRequest change) {
-        if (change == null || change.allowedRoles() == null || change.allowedRoles().isEmpty()
+        if (change == null || change.allowedRoles() == null || (change.enabled() && change.allowedRoles().isEmpty())
                 || change.allowedRoles().stream().anyMatch(role -> !VALID_ROLES.contains(role)))
             throw new BadRequestException("Select at least one valid role");
         if (!list().stream().anyMatch(f -> f.code().equals(code)))
@@ -37,7 +37,7 @@ public class FeaturePolicyService {
         String roles = String.join(",", new TreeSet<>(change.allowedRoles()));
         jdbc.update("UPDATE feature_visibility SET enabled=?, allowed_roles=?, updated_at=NOW() WHERE code=?",
                 change.enabled(), roles, code);
-        return new FeatureSetting(code, change.enabled(), List.of(roles.split(",")));
+        return new FeatureSetting(code, change.enabled(), roles.isBlank() ? List.of() : List.of(roles.split(",")));
     }
     @Transactional(readOnly = true)
     public void requireCustomerFeature(String feature) {

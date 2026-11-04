@@ -59,9 +59,9 @@ export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Pr
      .filter(g=>!q||[g.startTime,g.endTime,...g.bookings.flatMap(b=>[b.bookingNumber,b.customerName||"",b.customerMobile||"",b.status,b.paymentStatus||""])].some(v=>v.toLowerCase().includes(q)))
      .sort((a,b)=>a.startTime.localeCompare(b.startTime)||a.endTime.localeCompare(b.endTime));
  },[slots,selectedBookings,search]);
- const activeBookings=selectedBookings.filter(b=>!["CANCELLED","NO_SHOW"].includes(b.status));
+ const activeBookings=selectedBookings.filter(b=>!["CANCELLED","NO_SHOW","PAYMENT_EXPIRED"].includes(b.status));
  const pending=activeBookings.filter(b=>b.paymentStatus==="UNPAID"||b.paymentStatus==="PENDING").length;
- const checkedIn=selectedBookings.filter(b=>b.checkedInAt&&!b.checkedOutAt).length;
+ const checkedIn=activeBookings.filter(b=>b.checkedInAt&&!b.checkedOutAt).length;
  const refreshAll=async()=>{await Promise.all([reload(),reloadSlots(),loadFacilities()]);};
  const canNoShow=(b:OperatorBooking)=>{
    if(b.checkedInAt||["CANCELLED","NO_SHOW"].includes(b.status))return false;
@@ -76,7 +76,7 @@ export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Pr
    facilities.length===0?<div className={styles.empty}><strong>No facilities assigned</strong><p>An administrator can assign facilities under Operator Assignments.</p></div>:
    <>
      <div className={styles.tabs} role="tablist" aria-label="Assigned facilities">{facilities.map(f=>{
-       const num=bookings.filter(b=>b.facilityId===f.facilityId).length;
+       const num=bookings.filter(b=>b.facilityId===f.facilityId&&!["CANCELLED","NO_SHOW","PAYMENT_EXPIRED"].includes(b.status)).length;
        return <button key={f.facilityId} type="button" role="tab" aria-selected={selectedFacility===f.facilityId}
          className={selectedFacility===f.facilityId?styles.selected:""} onClick={()=>{setSelectedFacility(f.facilityId);setSearch("");}}>
          <span>{f.facilityName}</span><small>{f.sportName} · {num} bookings</small></button>;
@@ -85,7 +85,7 @@ export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Pr
        <div className={styles.panelHeading}><div><h3>{chosen?.facilityName||"Facility"}</h3><p>{chosen?.sportName} · {date}</p></div>
          <input aria-label="Search bookings" type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search time, customer, booking or status"/></div>
        <div className={styles.metrics}>
-         <article><span>Total bookings</span><strong>{selectedBookings.length}</strong></article>
+         <article><span>Active bookings</span><strong>{activeBookings.length}</strong></article>
          <article><span>Checked in</span><strong>{checkedIn}</strong></article>
          <article><span>Payment pending</span><strong>{pending}</strong></article>
          <article><span>Slots displayed</span><strong>{groups.length}</strong></article>
@@ -108,7 +108,7 @@ export function OperatorFacilityBoard({date,setDate,bookings,reload,onAction}:Pr
          </tr>;
        }):[<tr key={g.key}><td><strong className={styles.time}>{clock(g.startTime)} – {clock(g.endTime)}</strong><small>{g.available} of {g.capacity} places available</small></td><td colSpan={5} className={styles.unbooked}>No booking for this slot</td></tr>])}</tbody></table></div>
        {groups.length===0&&<div className={styles.empty}><strong>No slots or bookings found</strong><p>{search?"Try another search.":"No slots or bookings are recorded for this facility and date."}</p></div>}
-       <p className={styles.note}>Includes cancelled, no-show and checked-out bookings for shift history. Availability is shown for upcoming slots; past booked slots remain visible.</p>
+       <p className={styles.note}>Showing {activeBookings.length} active and {selectedBookings.length-activeBookings.length} inactive/history bookings on {date}. Future bookings appear when their booking date is selected. Includes cancelled, expired, no-show and checked-out bookings for shift history. Availability is shown for upcoming slots; past booked slots remain visible.</p>
      </div>
    </>}
  </section>;

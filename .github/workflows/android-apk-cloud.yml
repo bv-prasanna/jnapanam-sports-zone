@@ -150,7 +150,18 @@ jobs:
           fi
           test -n "$SDKMANAGER" && test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --sdk_root="$SDK" --licenses >/dev/null || true
-          "$SDKMANAGER" --sdk_root="$SDK" "ndk;27.1.12297006" "platform-tools"
+          # Retry transient truncated NDK archives from the hosted SDK mirror.
+          for attempt in 1 2 3; do
+            if "$SDKMANAGER" --sdk_root="$SDK" "ndk;27.1.12297006" "platform-tools" &&
+               test -s "$SDK/ndk/27.1.12297006/source.properties"; then
+              echo "NDK installed on attempt $attempt"
+              break
+            fi
+            echo "::warning::Android SDK download attempt $attempt failed; retrying"
+            rm -rf "$SDK/.temp" "$SDK/ndk/27.1.12297006"
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep $((attempt*10))
+          done
           test -s "$SDK/ndk/27.1.12297006/source.properties"
           echo "Required NDK 27.1.12297006 installed"
       - name: Build installable debug APK

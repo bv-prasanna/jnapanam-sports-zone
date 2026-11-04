@@ -16,7 +16,7 @@ type Booking = {
   checkedInBy?:string; checkedOutBy?:string; onsitePaymentMethod?:string; onsitePaymentReference?:string; statusReason?:string;
 };
 type Payment = { id:string; referenceId?:string; purpose?:string; receiptNumber?:string; status?:string; amountPaise?:number; originalAmountPaise?:number; discountPaise?:number; provider?:string; providerPaymentId?:string; paidAt?:string; createdAt?:string };
-type RangePreset = "TODAY"|"TOMORROW"|"WEEK"|"MONTH"|"CUSTOM";
+type RangePreset = "ALL"|"TODAY"|"TOMORROW"|"WEEK"|"MONTH"|"CUSTOM";
 type CapacityAudit={slotId:string;facilityName:string;sportName:string;date:string;startTime:string;endTime:string;
  capacity:number;heldCount:number;bookedCount:number;available:number;activeHolds:number;
  activeBookings:number;pendingPayment:number;confirmed:number;expiredBookings:number;countersMismatch:boolean};
@@ -36,7 +36,7 @@ export default function AdminBookingExplorer(){
   const allowed=!!user?.roles.some(role=>["SUPER_ADMIN","ADMIN"].includes(role));
   const today=todayLocal();
   const [sport,setSport]=useState(""); const [facilityId,setFacilityId]=useState("");
-  const [from,setFrom]=useState(today); const [to,setTo]=useState(today); const [preset,setPreset]=useState<RangePreset>("TODAY");
+  const [from,setFrom]=useState(""); const [to,setTo]=useState(""); const [preset,setPreset]=useState<RangePreset>("ALL");
   const [status,setStatus]=useState(""); const [paymentStatus,setPaymentStatus]=useState(""); const [query,setQuery]=useState("");
   const [sports,setSports]=useState<Sport[]>([]); const [facilities,setFacilities]=useState<Facility[]>([]); const [bookings,setBookings]=useState<Booking[]>([]);
   const [selected,setSelected]=useState<Booking|null>(null); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [notice,setNotice]=useState("");
@@ -60,8 +60,8 @@ export default function AdminBookingExplorer(){
   },[allowed,from,to,sport,facilityId,status,paymentStatus,query]);
   useEffect(()=>{void load()},[load]);
 
-  function applyPreset(next:RangePreset){setPreset(next);if(next==="CUSTOM")return;const base=today;if(next==="TODAY"){setFrom(base);setTo(base)}else if(next==="TOMORROW"){const d=addDays(base,1);setFrom(d);setTo(d)}else if(next==="WEEK"){setFrom(base);setTo(addDays(base,6))}else{setFrom(base.slice(0,7)+"-01");setTo(monthEnd(base))}}
-  function clear(){setSport("");setFacilityId("");setStatus("");setPaymentStatus("");setQuery("");setFrom(today);setTo(today);setPreset("TODAY")}
+  function applyPreset(next:RangePreset){setPreset(next);if(next==="CUSTOM")return;if(next==="ALL"){setFrom("");setTo("");return;}const base=today;if(next==="TODAY"){setFrom(base);setTo(base)}else if(next==="TOMORROW"){const d=addDays(base,1);setFrom(d);setTo(d)}else if(next==="WEEK"){setFrom(base);setTo(addDays(base,6))}else{setFrom(base.slice(0,7)+"-01");setTo(monthEnd(base))}}
+  function clear(){setSport("");setFacilityId("");setStatus("");setPaymentStatus("");setQuery("");setFrom("");setTo("");setPreset("ALL")}
   async function inspectCapacity(){
     if(!auditFacility){setAuditError("Select a facility before inspecting capacity.");return;}
     setAuditBusy(true);setAuditError("");setAuditRows(null);
@@ -74,8 +74,8 @@ export default function AdminBookingExplorer(){
 
   async function runAction(row:Booking,kind:ActionKind){
     const label=kind.replace("-"," ");
-    if((kind==="cancel"||kind==="no-show")&&!window.confirm(`${kind==="cancel"?"Cancel":"Mark no-show for"} booking ${row.bookingNumber}?`))return;
-    try{setActionBusy(row.id+kind);setError("");setNotice("");const url=kind==="check-out"?`/api/v1/operations/bookings/${row.id}/check-out`:`/api/v1/operations/bookings/${row.id}/${kind}`;await api(url,{method:"POST",body:kind==="check-out"?undefined:JSON.stringify({reason:kind==="cancel"?"Cancelled by administrator":"Customer did not arrive within the grace period"})});setSelected(null);setNotice(`Booking ${label} completed.`);await load()}catch(e){setError(message(e,`Unable to ${label} this booking.`))}finally{setActionBusy("")}
+    if((kind==="cancel"||kind==="no-show")&&!window.confirm(kind==="cancel" ? `Cancel booking ${row.bookingNumber}? This does NOT automatically refund captured money. Check Admin → Payments and Razorpay, then request a refund separately according to the venue policy.` : `Mark booking ${row.bookingNumber} as no-show?`))return;
+    try{setActionBusy(row.id+kind);setError("");setNotice("");const url=kind==="check-out"?`/api/v1/operations/bookings/${row.id}/check-out`:`/api/v1/operations/bookings/${row.id}/${kind}`;await api(url,{method:"POST",body:kind==="check-out"?undefined:JSON.stringify({reason:kind==="cancel"?"Cancelled by administrator":"Customer did not arrive within the grace period"})});setSelected(null);setNotice(kind==="cancel"&&row.paymentStatus==="PAID" ? `Booking ${row.bookingNumber} cancelled. Captured payment is NOT automatically refunded. Review Admin → Payments and Razorpay before taking a separate refund action.` : `Booking ${label} completed.`);await load()}catch(e){setError(message(e,`Unable to ${label} this booking.`))}finally{setActionBusy("")}
   }
 
   async function checkIn(event:FormEvent<HTMLFormElement>){
@@ -90,14 +90,14 @@ export default function AdminBookingExplorer(){
   }
 
   const linkedPayments=useMemo(()=>selected?payments.filter(p=>p.purpose==="BOOKING"&&String(p.referenceId)===String(selected.id)):[],[payments,selected]);
-  const counts=useMemo(()=>({total:bookings.length,confirmed:bookings.filter(b=>b.status==="CONFIRMED").length,paymentDue:bookings.filter(b=>["UNPAID","PENDING"].includes(String(b.paymentStatus))).length,checkedIn:bookings.filter(b=>!!b.checkedInAt&&!b.checkedOutAt).length,completed:bookings.filter(b=>!!b.checkedOutAt).length,cancelled:bookings.filter(b=>b.status==="CANCELLED").length}),[bookings]);
+  const counts=useMemo(()=>({total:bookings.length,confirmed:bookings.filter(b=>b.status==="CONFIRMED").length,paymentDue:bookings.filter(b=>["CONFIRMED","PENDING_PAYMENT"].includes(b.status)&&["UNPAID","PENDING"].includes(String(b.paymentStatus))).length,checkedIn:bookings.filter(b=>!!b.checkedInAt&&!b.checkedOutAt).length,completed:bookings.filter(b=>!!b.checkedOutAt).length,cancelled:bookings.filter(b=>b.status==="CANCELLED").length}),[bookings]);
 
   function actionButtons(row:Booking){const confirmed=row.status==="CONFIRMED";const pending=["CONFIRMED","PENDING_PAYMENT"].includes(row.status);return <div className={styles.detailActions}>{confirmed&&!row.checkedInAt&&<button onClick={()=>{setCheckingIn(row);setIdentityVerified(false);setVerificationNote("");setError("")}}>Check in</button>}{row.checkedInAt&&!row.checkedOutAt&&<button disabled={!!actionBusy} onClick={()=>void runAction(row,"check-out")}>Check out</button>}{confirmed&&!row.checkedInAt&&<button disabled={!!actionBusy} onClick={()=>void runAction(row,"no-show")}>No-show</button>}{pending&&<button className={styles.danger} disabled={!!actionBusy} onClick={()=>void runAction(row,"cancel")}>Cancel booking</button>}</div>}
 
   if(!ready||!allowed)return <main className={styles.page}>Checking access…</main>;
   return <main className={styles.page}>
     <header className={styles.header}><div><span>ADMIN</span><h1>Booking Explorer</h1><p>Find bookings, inspect payment details and take permitted booking actions.</p></div></header>
-    <section className={styles.presets}>{(["TODAY","TOMORROW","WEEK","MONTH","CUSTOM"] as RangePreset[]).map(x=><button key={x} className={preset===x?styles.active:""} onClick={()=>applyPreset(x)}>{x==="WEEK"?"This week":x==="MONTH"?"This month":x[0]+x.slice(1).toLowerCase()}</button>)}</section>
+    <section className={styles.presets}>{(["ALL","TODAY","TOMORROW","WEEK","MONTH","CUSTOM"] as RangePreset[]).map(x=><button key={x} className={preset===x?styles.active:""} onClick={()=>applyPreset(x)}>{x==="ALL"?"All dates":x==="WEEK"?"This week":x==="MONTH"?"This month":x[0]+x.slice(1).toLowerCase()}</button>)}</section>
     <section className={styles.filters}>
       <label>Sport<select value={sport} onChange={e=>{setSport(e.target.value);setFacilityId("")}}><option value="">All sports</option>{sports.map(s=><option key={s.code} value={s.code}>{s.name}</option>)}</select></label>
       <label>Facility<select value={facilityId} onChange={e=>setFacilityId(e.target.value)}><option value="">All facilities</option>{availableFacilities.map(f=><option key={f.id} value={f.id}>{f.name} · {f.sportName||f.sportCode||"Unknown sport"}</option>)}</select></label>
@@ -106,6 +106,7 @@ export default function AdminBookingExplorer(){
       <label>Payment<select value={paymentStatus} onChange={e=>setPaymentStatus(e.target.value)}><option value="">All payments</option>{["NOT_REQUIRED","UNPAID","PAID","REFUNDED"].map(x=><option key={x}>{x}</option>)}</select></label>
       <label className={styles.search}>Booking / customer<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Booking no., name, mobile, email"/></label><div className={styles.filterActions}><button className={styles.primary} onClick={()=>void load()} disabled={busy}>{busy?"Loading…":"Apply filters"}</button><button onClick={clear}>Reset</button></div>
     </section>
+    {facilities.some(f=>f.sportName?.toLowerCase()==="cricket"&&/swim|shuttle|badminton/i.test(f.name))&&<div className={styles.auditWarning} role="alert">Facility catalogue mismatch: a swimming or badminton facility is assigned to Cricket. Correct its saved Sport under <Link href="/admin?view=facilities">Admin → Facilities</Link>. Existing booking/payment records will not be altered automatically.</div>}
     {notice&&<div className={styles.notice}>{notice}</div>}{error&&<div className={styles.error}>{error}</div>}
     <section className={styles.metrics}><article><strong>{counts.total}</strong><span>Results</span></article><article><strong>{counts.confirmed}</strong><span>Confirmed</span></article><article><strong>{counts.paymentDue}</strong><span>Payment due</span></article><article><strong>{counts.checkedIn}</strong><span>Checked in</span></article><article><strong>{counts.completed}</strong><span>Completed</span></article><article><strong>{counts.cancelled}</strong><span>Cancelled</span></article></section>
     <section className={styles.tableWrap}><table><thead><tr><th>Date / Slot</th><th>Sport / Facility</th><th>Customer</th><th>Booking</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead><tbody>{bookings.map(b=><tr key={b.id}><td><b>{b.date||"—"}</b><small>{b.startTime||"—"} – {b.endTime||"—"}</small></td><td><b>{b.sportName||"—"}</b><small>{b.facilityName||"—"}</small></td><td><b>{b.customerName||"—"}</b><small>{b.customerMobile||b.customerEmail||"—"}</small></td><td><b>{b.bookingNumber}</b><small>Qty {b.quantity??1}</small></td><td><b>{pretty(b.paymentStatus)}</b><small>{pretty(b.paymentOption)}</small></td><td><span className={styles.status}>{pretty(b.status)}</span></td><td><div className={styles.rowActions}><button onClick={()=>{setSelected(b);setPaymentsLoaded(false);setPayments([])}}>View</button>{actionButtons(b)}</div></td></tr>)}</tbody></table>{!busy&&bookings.length===0&&<p className={styles.empty}>No bookings match these filters. Try All sports to check the facility's saved sport assignment, or inspect slot capacity below.</p>}</section>
