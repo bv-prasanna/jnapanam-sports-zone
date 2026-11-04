@@ -114,6 +114,7 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
         const message=detail?.detail||detail?.message;
         if(typeof message==='string'&&message.includes('MFA code sent'))
           throw new ApiError(message,status);
+        throw new ApiError('Invalid credentials or verification code. Please try again.',status);
       }
       throw new ApiError(friendly('session'),status);
     }
