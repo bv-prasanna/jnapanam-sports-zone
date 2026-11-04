@@ -12,8 +12,6 @@ spring:
     enabled: true
 
 app:
-  security:
-    customer-mfa-required: false
   payment:
     provider: mock
     currency: INR
@@ -24,6 +22,7 @@ app:
     access-token-minutes: 60
     refresh-token-days: 1
     privileged-mfa-required: false
+    customer-mfa-required: false
     # Existing mobile-OTP integration tests are retained until migrated to email.
     mobile-otp-enabled: true
     # Test profile only: exercise password-reset token lifecycle without an email provider.
