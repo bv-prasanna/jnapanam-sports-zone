@@ -14,6 +14,6 @@ test('mobile booking includes today, with all venue dates based on Asia/Kolkata'
 test('mobile booking buttons remain tappable when facility rules are not yet accepted',async()=>{
  const page=await source('src/app/bookings.tsx');
  assert.match(page,/if \(facilities\.find\(item => item\.id === facilityId\)\?\.termsAndConditions && !termsAccepted\)/);
- assert.match(page,/setError\('Please accept the facility rules before booking\.'\)/);
+ assert.match(page,/setError\(t\('bookings\.termsRequired'\)\)/);
  assert.doesNotMatch(page,/disabled=\{!slot\.available \|\| !quotes\[slot\.id\] \|\| !!processing \|\| \(\(!!facilities/);
 });

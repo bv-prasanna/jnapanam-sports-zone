@@ -2,6 +2,7 @@ package com.jnapanam.sportszone.pricing;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class VenueInvoicePdfTest {
    receipt.put("billingTaxPaise",2400);receipt.put("billingGrossPaise",13400);
    receipt.put("billingRatePercent",18);
    byte[] pdf=new VenueInvoicePdfService().renderPaymentReceipt(receipt);
-   try(PDDocument document=PDDocument.load(pdf)){
+   try(PDDocument document=Loader.loadPDF(pdf)){
      var text=new PDFTextStripper().getText(document);
      assertTrue(text.contains("Discount applied"),text);
      assertTrue(text.contains("Applied offer"),text);
@@ -73,7 +74,7 @@ class VenueInvoicePdfTest {
   info.put("promotionCode","FESTIVE");info.put("couponDiscountPaise",1000);
   info.put("loyaltyPointsUsed",5);info.put("loyaltyTenderPaise",500);
   byte[] pdf=new VenueInvoicePdfService().render("JNZ26-000001","INVOICE",info);
-  try(PDDocument document=PDDocument.load(pdf)){
+  try(PDDocument document=Loader.loadPDF(pdf)){
    String text=new PDFTextStripper().getText(document);
    for(String label:List.of("TAX INVOICE","Promotional discount","CGST","SGST","Loyalty points redeemed","INVOICE TOTAL"))
      assertTrue(text.contains(label),label+" not on invoice:\n"+text);

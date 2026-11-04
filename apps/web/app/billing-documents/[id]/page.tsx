@@ -53,7 +53,7 @@ export default function BillingDocumentsPage(){
  <tr><td>SGST {d.componentMode==="CGST_SGST"&&d.taxRatePercent? `(${Number(d.taxRatePercent)/2}%)`:""}</td><td>{rs(d.sgstPaise)}</td></tr>
  <tr><td>IGST {d.componentMode==="IGST"&&d.taxRatePercent? `(${d.taxRatePercent}%)`:""}</td><td>{rs(d.igstPaise)}</td></tr>
  <tr className={styles.total}><th>{doc.kind==="CREDIT_NOTE"?"Total credit":"Invoice total"}</th><th>{rs(doc.totalPaise)}</th></tr>
- {doc.kind==="INVOICE"&&d.customerCashPaidPaise!=null&&<tr className={styles.total}><th>Customer cash paid</th><th>{rs(d.customerCashPaidPaise)}</th></tr></tbody></table>
+ {doc.kind==="INVOICE"&&d.customerCashPaidPaise!=null&&<tr className={styles.total}><th>Customer cash paid</th><th>{rs(d.customerCashPaidPaise)}</th></tr>}</tbody></table>
  <footer>Authorised signatory: {seller.signatory||"—"} · {doc.state}</footer>
  </article>})}
  </main>;
