@@ -359,3 +359,8 @@
 @media(max-width:1100px){.admin-dashboard-kpis .metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:770px){.admin-dashboard-kpis .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:430px){.admin-dashboard-kpis .metric-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Payment failures must be visually distinct from confirmed bookings.
+   Booking feedback uses an explicit success/error state, not word matching. */
+.form-note.error{border:1px solid #e7a498!important;background:#fff0ed!important;color:#912914!important;font-weight:750!important}
+.form-note.error[role="alert"]{white-space:normal;line-height:1.55;overflow-wrap:anywhere}

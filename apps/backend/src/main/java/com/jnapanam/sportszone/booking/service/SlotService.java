@@ -23,7 +23,7 @@ public class SlotService {
   bookings.cleanupExpired();
   bookings.cleanupUnpaid();
   if(date == null) throw new BadRequestException("date is required");
-  if(date.isBefore(LocalDate.now())) throw new BadRequestException("Past dates are not bookable");
+  if(date.isBefore(LocalDate.now(ZoneId.of("Asia/Kolkata")))) throw new BadRequestException("Past dates are not bookable");
   // Serialize materialization of this facility's slots to avoid duplicate-start races.
   Facility facility = catalogue.requireFacilityLocked(facilityId);
   if(!facility.isAvailableOn(date) || closures.existsByFacilityIdAndClosureDate(facilityId,date))

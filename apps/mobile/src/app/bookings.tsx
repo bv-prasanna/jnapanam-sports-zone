@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -58,14 +58,9 @@ type Booking = {
 
 const terminalStatuses = new Set(['CANCELLED', 'COMPLETED', 'NO_SHOW']);
 
+// Facility schedules are in Asia/Kolkata regardless of the phone's time-zone.
 function dateValue(offset: number) {
-  const value = new Date();
-  value.setDate(value.getDate() + offset);
-  // Use local calendar date, not UTC (which shifts early-morning India dates backwards).
-  const year=value.getFullYear();
-  const month=String(value.getMonth()+1).padStart(2,'0');
-  const day=String(value.getDate()).padStart(2,'0');
-  return year+'-'+month+'-'+day;
+  return new Date(Date.now() + 330 * 60_000 + offset * 86_400_000).toISOString().slice(0,10);
 }
 
 type SelectOption = { value: string; label: string; subtitle?: string };
@@ -142,8 +137,19 @@ function SelectField({
 export default function BookingsScreen() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const dates = useMemo(() => Array.from({ length: 7 }, (_, index) => dateValue(index + 1)), []);
-  const [date, setDate] = useState(dates[0]);
+  const [today, setToday] = useState(() => dateValue(0));
+  const dates = useMemo(() => Array.from({ length: 7 }, (_, index) => {
+    const value = new Date(today + 'T00:00:00Z');
+    value.setUTCDate(value.getUTCDate() + index);
+    return value.toISOString().slice(0,10);
+  }), [today]);
+  const [date, setDate] = useState(() => dateValue(0));
+  // Refresh the venue date after midnight when the customer returns to this tab.
+  useFocusEffect(useCallback(() => {
+    const current = dateValue(0);
+    setToday(current);
+    setDate(selected => selected < current ? current : selected);
+  }, []));
   const [sports, setSports] = useState<Sport[]>([]);
   const [sportCode, setSportCode] = useState('');
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -413,7 +419,7 @@ export default function BookingsScreen() {
                   </View>
                   <View style={styles.actionRow}>
                     <Pressable
-                      disabled={!slot.available || !quotes[slot.id] || !!processing || (!!facilities.find(item => item.id === facilityId)?.termsAndConditions && !termsAccepted)}
+                      disabled={!slot.available || !quotes[slot.id] || !!processing}
                       style={[styles.payButton, (!slot.available || !quotes[slot.id] || !!processing) && styles.disabled]}
                       onPress={() => void book(slot.id, 'PAY_NOW')}
                     >
@@ -424,7 +430,7 @@ export default function BookingsScreen() {
                       )}
                     </Pressable>
                     <Pressable
-                      disabled={!slot.available || !quotes[slot.id] || !!processing || (!!facilities.find(item => item.id === facilityId)?.termsAndConditions && !termsAccepted)}
+                      disabled={!slot.available || !quotes[slot.id] || !!processing}
                       style={[styles.venueButton, (!slot.available || !quotes[slot.id] || !!processing) && styles.disabled]}
                       onPress={() => void book(slot.id, 'PAY_AT_VENUE')}
                     >
