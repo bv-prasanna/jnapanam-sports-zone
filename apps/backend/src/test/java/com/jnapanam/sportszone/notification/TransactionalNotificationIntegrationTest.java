@@ -1,6 +1,8 @@
 package com.jnapanam.sportszone.notification;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -37,6 +39,7 @@ class TransactionalNotificationIntegrationTest {
 
         mvc.perform(get("/api/v1/notifications/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].channel", everyItem(is("IN_APP"))))
                 .andExpect(jsonPath("$[*].category", hasItem("ACCOUNT")))
                 .andExpect(jsonPath("$[*].subject", hasItem("Welcome to Jnapanam Sports Zone")));
 
@@ -47,6 +50,7 @@ class TransactionalNotificationIntegrationTest {
 
         mvc.perform(get("/api/v1/notifications/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].channel", everyItem(is("IN_APP"))))
                 .andExpect(jsonPath("$[*].category", hasItem("SECURITY")))
                 .andExpect(jsonPath("$[*].subject", hasItem("Password reset requested")));
     }
