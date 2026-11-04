@@ -170,11 +170,36 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
-      - name: Create disposable UAT signing key
+      - name: Restore persistent APK signing key (or fallback for non-upgradable UAT)
         if: github.event_name == 'push' || inputs.build_type == 'release-uat'
         shell: bash
+        env:
+          JNAPANAM_APK_KEYSTORE_BASE64: ${{ secrets.JNAPANAM_APK_KEYSTORE_BASE64 }}
+          JNAPANAM_APK_STORE_PASSWORD: ${{ secrets.JNAPANAM_APK_STORE_PASSWORD }}
+          JNAPANAM_APK_KEY_ALIAS: ${{ secrets.JNAPANAM_APK_KEY_ALIAS }}
+          JNAPANAM_APK_KEY_PASSWORD: ${{ secrets.JNAPANAM_APK_KEY_PASSWORD }}
         run: |
-          keytool -genkeypair -v -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -alias jnapanam-uat -keyalg RSA -keysize 3072 -validity 365 -storepass android -keypass android -dname "CN=Jnapanam UAT, OU=Testing, O=Jnapanam, C=IN"
+          set -euo pipefail
+          if [ -n "$JNAPANAM_APK_KEYSTORE_BASE64" ] && [ -n "$JNAPANAM_APK_STORE_PASSWORD" ] && [ -n "$JNAPANAM_APK_KEY_ALIAS" ] && [ -n "$JNAPANAM_APK_KEY_PASSWORD" ]; then
+            printf '%s' "$JNAPANAM_APK_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/jnapanam-uat.p12"
+            test -s "$RUNNER_TEMP/jnapanam-uat.p12"
+            keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -storepass "$JNAPANAM_APK_STORE_PASSWORD" -alias "$JNAPANAM_APK_KEY_ALIAS" >/dev/null
+            echo "ANDROID_APK_SIGNING_PERSISTENT=true" >> "$GITHUB_ENV"
+            echo "ANDROID_APK_STORE_PASSWORD=$JNAPANAM_APK_STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "ANDROID_APK_KEY_ALIAS=$JNAPANAM_APK_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ANDROID_APK_KEY_PASSWORD=$JNAPANAM_APK_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "Using reusable APK signing key from repository secrets."
+          elif [ -n "$JNAPANAM_APK_KEYSTORE_BASE64$JNAPANAM_APK_STORE_PASSWORD$JNAPANAM_APK_KEY_ALIAS$JNAPANAM_APK_KEY_PASSWORD" ]; then
+            echo "::error::Some but not all four APK signing secrets are set. Configure the full keystore before building."
+            exit 1
+          else
+            echo "::warning::No persistent signing secrets configured. This UAT APK cannot reliably upgrade any earlier separately-signed APK. Do NOT enable mandatory updates for public users yet."
+            keytool -genkeypair -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -alias jnapanam-uat -keyalg RSA -keysize 3072 -validity 365 -storepass android -keypass android -dname "CN=Jnapanam UAT, OU=Testing, O=Jnapanam, C=IN"
+            echo "ANDROID_APK_SIGNING_PERSISTENT=false" >> "$GITHUB_ENV"
+            echo "ANDROID_APK_STORE_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "ANDROID_APK_KEY_ALIAS=jnapanam-uat" >> "$GITHUB_ENV"
+            echo "ANDROID_APK_KEY_PASSWORD=android" >> "$GITHUB_ENV"
+          fi
       - name: Build minified UAT release APK
         if: github.event_name == 'push' || inputs.build_type == 'release-uat'
         shell: bash
@@ -186,7 +211,7 @@ jobs:
             -Pandroid.injected.signing.store.file="$RUNNER_TEMP/jnapanam-uat.p12" \
             -Pandroid.injected.signing.store.password=android \
             -Pandroid.injected.signing.key.alias=jnapanam-uat \
-            -Pandroid.injected.signing.key.password=android
+            -Pandroid.injected.signing.key.password="$ANDROID_APK_KEY_PASSWORD"
           test -s app/build/outputs/apk/release/app-release.apk
       - name: Report APK size and native ABI footprint
         shell: bash
