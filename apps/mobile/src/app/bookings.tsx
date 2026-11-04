@@ -489,6 +489,12 @@ export default function BookingsScreen() {
                   {booking.startTime.slice(0, 5)}–{booking.endTime.slice(0, 5)} ·{' '}
                   {booking.paymentStatus.replaceAll('_', ' ')}
                 </Text>
+                {booking.status==='CONFIRMED'&&['PAID','NOT_REQUIRED'].includes(booking.paymentStatus)&&(
+                  <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={()=>router.push({pathname:'/booking-qr',params:{id:booking.id}})}>
+                    <MaterialCommunityIcons name="qrcode" size={20} color="#fff"/>
+                    <Text style={styles.primaryButtonText}>Show check-in QR</Text>
+                  </Pressable>
+                )}
                 {!terminalStatuses.has(booking.status) && (
                   <Pressable
                     disabled={processing === `cancel-${booking.id}`}
