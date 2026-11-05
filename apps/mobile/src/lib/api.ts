@@ -110,26 +110,32 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
   }
   if(!response.ok){
     const status=response.status;
-    if(status===426){
-      announceServerRequiredUpdate();
-      throw new ApiError('A Jnapanam app update is required. Open the update screen.',426);
-    }
+    const ref=response.headers.get('X-Correlation-ID');
+    const supportRef=ref && /^[A-Za-z0-9_-]{8,80}$/.test(ref)?' Reference: '+ref:'';
+    if(status===426){announceServerRequiredUpdate();throw new ApiError('An app update is required to continue. Open the update screen.',426);}
     if(status===401){
       if(publicAuth&&path==='/api/v1/auth/login'){
         const detail=await response.json().catch(()=>null);
         const message=detail?.detail||detail?.message;
         if(typeof message==='string'&&message.includes('MFA code sent'))
-          throw new ApiError(message,status);
-        throw new ApiError('Invalid credentials or verification code. Please try again.',status);
+          throw new ApiError('MFA code sent to your registered email. Enter the 6-digit verification code.',401);
+        throw new ApiError('Invalid login details or verification code. Please try again.',401);
       }
-      throw new ApiError(friendly('session'),status);
+      if(publicAuth)throw new ApiError('We could not verify these details. Please try again.',401);
+      throw new ApiError(friendly('session'),401);
     }
-    if(status>=500)throw new ApiError(friendly('server'),status);
-    let message=friendly('generic');
+    if(status===403)throw new ApiError('You do not have permission to perform this action.',403);
+    if(status===404)throw new ApiError('The requested information could not be found. Please refresh and try again.',404);
+    if(status===408||status===504)throw new ApiError('The request took too long. Please try again.',status);
+    if(status===429)throw new ApiError('Too many attempts. Please wait a moment and try again.',429);
+    if(status>=500)throw new ApiError(friendly('server')+supportRef,status);
+    let message='Please check your details and try again.';
     try{
       const body=await response.json();
-      const raw=body?.message||body?.detail;
-      if(typeof raw==='string'&&!technical.test(raw)&&raw.length<220)message=raw;
+      const raw=body?.detail||body?.message;
+      if(typeof raw==='string'&&!technical.test(raw)&&raw.length<180
+         && !/(?:<|>|stacktrace|sql|jdbc|password[=:]|token[=:])/i.test(raw))
+        message=raw;
     }catch{}
     throw new ApiError(message,status);
   }

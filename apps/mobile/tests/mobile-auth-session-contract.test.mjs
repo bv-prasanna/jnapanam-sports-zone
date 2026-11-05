@@ -43,3 +43,12 @@ test('auth repair preserves Android version policy enforcement and does not mask
  assert.match(api,/MFA code sent/);
  assert.match(login,/setMfaRequired\(true\)/);
 });
+
+test('Android classifies permissions, limits and server references without technical errors',async()=>{
+ const api=await source('src/lib/api.ts');
+ for(const status of [403,404,429,426])assert.match(api,new RegExp('status==='+status));
+ assert.match(api,/status>=500/);
+ assert.match(api,/supportRef/);
+ assert.match(api,/Invalid login details or verification code/);
+ assert.match(api,/MFA code sent/);
+});
