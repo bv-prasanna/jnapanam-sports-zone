@@ -45,7 +45,15 @@ const en = {
     search:'Booking no., customer, mobile, facility',bookingCount:'{{count}} bookings today',
     noMatching:'No matching booking for today.',noActive:'No active bookings for this sport/facility today.',
     collect:'Collect payment',checkin:'Verify & check in',checkout:'Check out',noShow:'No-show',
-    reverse:'Reverse check-in',refund:'Cancel & refund',cancel:'Cancel'
+    reverse:'Reverse check-in',refund:'Cancel & refund',cancel:'Cancel',
+    checkinRecorded:'Check-in confirmed for {{number}}.',
+    checkoutRecorded:'Check-out recorded for {{number}}.',
+    reversalRecorded:'Check-in reversal recorded for {{number}}.',
+    noShowRecorded:'No-show recorded for {{number}}.',
+    cancelRecorded:'Booking {{number}} cancelled. Refunds must be managed separately.',
+    refundSubmitted:'Booking {{number}} cancelled. Refund requested; check its final status in Payments.',
+    paymentRecorded:'{{method}} payment recorded for {{number}}. Confirm funds were received.',
+    refreshWarning:'Booking list could not refresh. Please refresh to confirm the latest status.'
   },
   mobileCounter:{
     accessRequired:'Shop Counter access required',accessDescription:'Sign in with a Shop Keeper account.',
