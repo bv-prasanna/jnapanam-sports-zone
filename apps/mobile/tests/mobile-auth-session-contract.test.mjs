@@ -31,3 +31,24 @@ test('password sign-in still surfaces MFA challenge to mobile and keeps mobile l
  assert.match(api,/message\.includes\('MFA code sent'\)/);
  assert.match(login,/if\(message\.toLowerCase\(\)\.includes\('mfa code'\)\)setMfaRequired\(true\)/);
 });
+
+test('auth repair preserves Android version policy enforcement and does not mask MFA as expired session',async()=>{
+ const api=await source('src/lib/api.ts');
+ const login=await source('src/app/login.tsx');
+ assert.match(api,/X-Jnapanam-Platform/);
+ assert.match(api,/X-Jnapanam-Version-Code/);
+ assert.match(api,/announceServerRequiredUpdate\(\)/);
+ assert.match(api,/if\(status===426\)/);
+ assert.match(api,/if\(publicAuth&&path==='\/api\/v1\/auth\/login'\)/);
+ assert.match(api,/MFA code sent/);
+ assert.match(login,/setMfaRequired\(true\)/);
+});
+
+test('Android classifies permissions, limits and server references without technical errors',async()=>{
+ const api=await source('src/lib/api.ts');
+ for(const status of [403,404,429,426])assert.match(api,new RegExp('status==='+status));
+ assert.match(api,/status>=500/);
+ assert.match(api,/supportRef/);
+ assert.match(api,/Invalid login details or verification code/);
+ assert.match(api,/MFA code sent/);
+});
