@@ -170,7 +170,7 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
-      - name: Restore persistent APK signing key (or fallback for non-upgradable UAT)
+      - name: Load and validate permanent Android signing key
         if: github.event_name == 'push' || inputs.build_type == 'release-uat'
         shell: bash
         env:
@@ -180,26 +180,20 @@ jobs:
           JNAPANAM_APK_KEY_PASSWORD: ${{ secrets.JNAPANAM_APK_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -n "$JNAPANAM_APK_KEYSTORE_BASE64" ] && [ -n "$JNAPANAM_APK_STORE_PASSWORD" ] && [ -n "$JNAPANAM_APK_KEY_ALIAS" ] && [ -n "$JNAPANAM_APK_KEY_PASSWORD" ]; then
-            printf '%s' "$JNAPANAM_APK_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/jnapanam-uat.p12"
-            test -s "$RUNNER_TEMP/jnapanam-uat.p12"
-            keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -storepass "$JNAPANAM_APK_STORE_PASSWORD" -alias "$JNAPANAM_APK_KEY_ALIAS" >/dev/null
-            echo "ANDROID_APK_SIGNING_PERSISTENT=true" >> "$GITHUB_ENV"
-            echo "ANDROID_APK_STORE_PASSWORD=$JNAPANAM_APK_STORE_PASSWORD" >> "$GITHUB_ENV"
-            echo "ANDROID_APK_KEY_ALIAS=$JNAPANAM_APK_KEY_ALIAS" >> "$GITHUB_ENV"
-            echo "ANDROID_APK_KEY_PASSWORD=$JNAPANAM_APK_KEY_PASSWORD" >> "$GITHUB_ENV"
-            echo "Using reusable APK signing key from repository secrets."
-          elif [ -n "$JNAPANAM_APK_KEYSTORE_BASE64$JNAPANAM_APK_STORE_PASSWORD$JNAPANAM_APK_KEY_ALIAS$JNAPANAM_APK_KEY_PASSWORD" ]; then
-            echo "::error::Some but not all four APK signing secrets are set. Configure the full keystore before building."
+          if [ -z "$JNAPANAM_APK_KEYSTORE_BASE64" ] || [ -z "$JNAPANAM_APK_STORE_PASSWORD" ] || [ -z "$JNAPANAM_APK_KEY_ALIAS" ] || [ -z "$JNAPANAM_APK_KEY_PASSWORD" ]; then
+            echo "::error::All four permanent APK signing secrets are required. Refusing to generate a disposable signing certificate."
             exit 1
-          else
-            echo "::warning::No persistent signing secrets configured. This UAT APK cannot reliably upgrade any earlier separately-signed APK. Do NOT enable mandatory updates for public users yet."
-            keytool -genkeypair -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -alias jnapanam-uat -keyalg RSA -keysize 3072 -validity 365 -storepass android -keypass android -dname "CN=Jnapanam UAT, OU=Testing, O=Jnapanam, C=IN"
-            echo "ANDROID_APK_SIGNING_PERSISTENT=false" >> "$GITHUB_ENV"
-            echo "ANDROID_APK_STORE_PASSWORD=android" >> "$GITHUB_ENV"
-            echo "ANDROID_APK_KEY_ALIAS=jnapanam-uat" >> "$GITHUB_ENV"
-            echo "ANDROID_APK_KEY_PASSWORD=android" >> "$GITHUB_ENV"
           fi
+          printf '%s' "$JNAPANAM_APK_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/jnapanam-uat.p12"
+          chmod 600 "$RUNNER_TEMP/jnapanam-uat.p12"
+          test -s "$RUNNER_TEMP/jnapanam-uat.p12"
+          keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -storepass "$JNAPANAM_APK_STORE_PASSWORD" -alias "$JNAPANAM_APK_KEY_ALIAS" >/dev/null
+          echo "ANDROID_APK_SIGNING_PERSISTENT=true" >> "$GITHUB_ENV"
+          echo "ANDROID_APK_STORE_PASSWORD=$JNAPANAM_APK_STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_APK_KEY_ALIAS=$JNAPANAM_APK_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ANDROID_APK_KEY_PASSWORD=$JNAPANAM_APK_KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "Permanent Android signing keystore and alias verified."
+
       - name: Build minified UAT release APK
         if: github.event_name == 'push' || inputs.build_type == 'release-uat'
         shell: bash
@@ -213,6 +207,27 @@ jobs:
             -Pandroid.injected.signing.key.alias="$ANDROID_APK_KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$ANDROID_APK_KEY_PASSWORD"
           test -s app/build/outputs/apk/release/app-release.apk
+      - name: Verify release APK signature matches permanent keystore
+        if: github.event_name == 'push' || inputs.build_type == 'release-uat'
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          APKSIGNER="$(find "$SDK/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          test -n "$APKSIGNER" && test -x "$APKSIGNER"
+          REPORT="$RUNNER_TEMP/jnapanam-apk-signature.txt"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$REPORT"
+          actual="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$REPORT" | head -n1 | tr -d '\r' | tr '[:upper:]' '[:lower:]')"
+          expected="$(keytool -list -v -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -storepass "$ANDROID_APK_STORE_PASSWORD" -alias "$ANDROID_APK_KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' | head -n1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+          if [ -z "$actual" ] || [ -z "$expected" ] || [ "$actual" != "$expected" ]; then
+            echo "::error::APK certificate does not match the permanent keystore certificate."
+            exit 1
+          fi
+          echo "Verified APK signing certificate SHA256: $actual"
+          sha256sum "$APK"
+
       - name: Report APK size and native ABI footprint
         shell: bash
         run: |
