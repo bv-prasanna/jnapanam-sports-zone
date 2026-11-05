@@ -76,15 +76,18 @@ export default function OperationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
-    if (!allowed) return;
+    if (!allowed) return false;
     try {
       setError('');
       const rows = await api<Booking[]>(`/api/v1/admin/bookings?date=${selectedDate}`);
       setBookings(rows.filter((booking) => booking.date === selectedDate && !terminalStatuses.has(booking.status)));
+      return true;
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Unable to load today’s bookings.');
+      return false;
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -125,7 +128,7 @@ export default function OperationsScreen() {
   async function run(booking: Booking, action: OperationAction) {
     try {
       setBusy(booking.id + action);
-      setError('');
+      setError('');setNotice('');
       const path = action === 'check-in'
         ? `/api/v1/operations/bookings/${booking.bookingNumber}/check-in`
         : `/api/v1/operations/bookings/${booking.id}/${action}`;
@@ -135,7 +138,14 @@ export default function OperationsScreen() {
           ? { reason: action === 'no-show' ? 'Customer did not arrive within the permitted grace period' : 'Cancelled by admin' }
           : undefined;
       await api(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
-      await load();
+      const refreshed=await load();
+      const message=action==='check-in'?t('mobileOperations.checkinRecorded',{number:booking.bookingNumber}):
+        action==='check-out'?t('mobileOperations.checkoutRecorded',{number:booking.bookingNumber}):
+        action==='check-in/reverse'?t('mobileOperations.reversalRecorded',{number:booking.bookingNumber}):
+        action==='no-show'?t('mobileOperations.noShowRecorded',{number:booking.bookingNumber}):
+        action==='cancel-and-refund'?t('mobileOperations.refundSubmitted',{number:booking.bookingNumber}):
+        t('mobileOperations.cancelRecorded',{number:booking.bookingNumber});
+      setNotice(message+(refreshed?'':' '+t('mobileOperations.refreshWarning')));
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : `Unable to ${action.replaceAll('-', ' ')} booking.`);
     } finally { setBusy(''); }
@@ -144,12 +154,14 @@ export default function OperationsScreen() {
   async function collectPayment(booking: Booking, paymentMethod: 'CASH' | 'UPI' | 'CARD') {
     try {
       setBusy(booking.id + 'payment');
-      setError('');
+      setError('');setNotice('');
       await api(`/api/v1/operations/bookings/${booking.id}/collect-payment`, {
         method: 'POST',
         body: JSON.stringify({ paymentMethod, reference: `${paymentMethod} collected by operations mobile` }),
       });
-      await load();
+      const refreshed=await load();
+      const message=t('mobileOperations.paymentRecorded',{number:booking.bookingNumber,method:paymentMethod});
+      setNotice(message+(refreshed?'':' '+t('mobileOperations.refreshWarning')));
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Unable to collect onsite payment.');
     } finally { setBusy(''); }
@@ -231,7 +243,8 @@ export default function OperationsScreen() {
     </View>
     <View style={styles.search}><MaterialCommunityIcons name="magnify" size={22} color={BrandColors.textSecondary} />
       <TextInput value={query} onChangeText={setQuery} placeholder={t("mobileOperations.search")} style={styles.searchInput} /></View>
-    {!!error && <Text style={styles.error}>{error}</Text>}
+    {!!error && <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>}
+    {!!notice && <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text>}
     <Text style={styles.count}>{t("mobileOperations.bookingCount",{count:visible.length})}</Text>
     {loading ? <ActivityIndicator color={BrandColors.accent} /> : visible.length === 0 ? <Text style={styles.empty}>{query ? t("mobileOperations.noMatching") : t("mobileOperations.noActive")}</Text> : visible.map((booking) => {
       const state = queueState(booking);
@@ -307,6 +320,6 @@ center:{flex:1,padding:28,alignItems:'center',justifyContent:'center',background
   heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},eyebrow:{color:BrandColors.accent,fontSize:12,fontWeight:'900',letterSpacing:1.3},title:{color:BrandColors.textPrimary,fontSize:30,fontWeight:'900',marginTop:4},muted:{color:BrandColors.textSecondary,fontSize:15,lineHeight:22},
   filterTitle:{color:BrandColors.textPrimary,fontSize:12,fontWeight:'900',marginBottom:-7},filters:{gap:8,paddingRight:10},filterChip:{borderWidth:1,borderColor:BrandColors.border,backgroundColor:BrandColors.surface,borderRadius:18,paddingHorizontal:13,paddingVertical:8},filterChipSelected:{borderColor:BrandColors.primary,backgroundColor:BrandColors.primary},filterChipText:{fontSize:12,fontWeight:'800',color:BrandColors.textSecondary},filterChipTextSelected:{color:BrandColors.white},
   refresh:{width:44,height:44,borderRadius:22,backgroundColor:BrandColors.surface,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:BrandColors.border},summaryRow:{flexDirection:'row',gap:8},summary:{flex:1,backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:14,padding:12},summaryValue:{fontSize:22,fontWeight:'900',color:BrandColors.primary},summaryLabel:{fontSize:11,fontWeight:'800',color:BrandColors.textSecondary,marginTop:2},
-  search:{flexDirection:'row',alignItems:'center',backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:16,paddingHorizontal:14},searchInput:{flex:1,minHeight:52,marginLeft:8,color:BrandColors.textPrimary},error:{color:'#A32613',backgroundColor:'#FFF0ED',borderRadius:12,padding:12},count:{color:BrandColors.textSecondary,fontWeight:'800'},
+  search:{flexDirection:'row',alignItems:'center',backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:16,paddingHorizontal:14},searchInput:{flex:1,minHeight:52,marginLeft:8,color:BrandColors.textPrimary},notice:{backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,padding:12,borderRadius:12,color:BrandColors.textPrimary,fontWeight:"700"},error:{color:'#A32613',backgroundColor:'#FFF0ED',borderRadius:12,padding:12},count:{color:BrandColors.textSecondary,fontWeight:'800'},
   card:{backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:18,padding:16,gap:7},cardTop:{flexDirection:'row',justifyContent:'space-between',gap:10},number:{color:BrandColors.accent,fontWeight:'900'},status:{color:BrandColors.primary,fontSize:11,fontWeight:'900',backgroundColor:'#E9F3E6',paddingHorizontal:9,paddingVertical:4,borderRadius:12},paymentBadge:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:6,borderRadius:10,paddingHorizontal:10,paddingVertical:7,borderWidth:1},paymentPaid:{backgroundColor:'#ECFDF3',borderColor:'#86D3A7'},paymentDue:{backgroundColor:'#FFF4E8',borderColor:'#F2B585'},paymentText:{fontSize:12,fontWeight:'900'},paymentPaidText:{color:'#146C43'},paymentDueText:{color:'#9A3412'},facility:{color:BrandColors.textPrimary,fontSize:19,fontWeight:'900'},customer:{color:BrandColors.textPrimary,fontWeight:'700',marginTop:3},detail:{color:BrandColors.textSecondary,lineHeight:20},actions:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:8},action:{flexDirection:'row',alignItems:'center',gap:6,borderWidth:1,borderColor:BrandColors.primary,borderRadius:12,paddingHorizontal:11,paddingVertical:9},dangerAction:{borderColor:'#D86955',backgroundColor:'#FFF8F6'},actionText:{color:BrandColors.primary,fontSize:12,fontWeight:'900'},dangerText:{color:'#A32613'},empty:{textAlign:'center',color:BrandColors.textSecondary,padding:30}
 });

@@ -34,10 +34,12 @@ export const adminModules:AdminModule[]=[
  {id:"readiness",label:"Release Readiness",href:"/admin/release-readiness",area:"Operations & people",description:"Inspect operational exceptions and release checks."},
  {id:"operations",label:"Operations",href:"/operations",area:"Operations & people",description:"Run day-to-day venue operations."},
  {id:"counter",label:"Shop Counter",href:"/shop-counter",area:"Operations & people",description:"Manage over-the-counter sales and fulfillment."},
+ {id:"app-management",label:"App Management",href:"/admin/app-management",area:"System",description:"Manage Android APK link, mandatory and optional updates, app versions and permanent download QR."},
  {id:"features",label:"Feature Visibility",href:"/admin/features",area:"System",description:"Enable customer features and choose permitted user roles."},
  {id:"notifications",label:"Notifications",href:"/admin?view=notifications",area:"System",description:"Manage communication templates."},
  {id:"providers",label:"Notification Providers",href:"/admin/notification-providers",area:"System",description:"Configure email and messaging channels."},
  {id:"content",label:"Content & Events",href:"/admin?view=content",area:"System",description:"Manage website content and announcements."},
+ {id:"errors",label:"Error Logs",href:"/admin/errors",area:"System",description:"Review API failures with status, timestamp and reference ID."},
  {id:"audit",label:"Audit Log",href:"/admin?view=audit",area:"System",description:"Review significant administrative activity."},
 ];
 export const visibleAdminModules=(superAdmin:boolean)=>adminModules.filter(module=>!module.superAdmin||superAdmin);

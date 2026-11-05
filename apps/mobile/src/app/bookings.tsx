@@ -254,13 +254,12 @@ export default function BookingsScreen() {
         body: JSON.stringify({ holdId: hold.id, paymentOption, expectedTotalPaise: Math.round(quotes[slotId].total * 100), acceptedTerms: termsAccepted }),
       });
 
-      if (paymentOption === 'PAY_NOW') {
-        await completePayment('BOOKING', booking.id);
-        setMessage(t('bookings.paidSuccess', { number: booking.bookingNumber }));
-      } else {
-        setMessage(t('bookings.venueSuccess', { number: booking.bookingNumber }));
-      }
-      await Promise.all([load(), findSlots()]);
+      if (paymentOption === 'PAY_NOW') await completePayment('BOOKING', booking.id);
+      const confirmation=paymentOption==='PAY_NOW'
+        ? t('bookings.paidSuccess',{number:booking.bookingNumber})
+        : t('bookings.venueSuccess',{number:booking.bookingNumber});
+      await Promise.all([load(),findSlots()]);
+      setMessage(confirmation);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('bookings.bookError'));
     } finally {
