@@ -225,10 +225,22 @@ jobs:
           test -n "$APKSIGNER" && test -x "$APKSIGNER"
           REPORT="$RUNNER_TEMP/jnapanam-apk-signature.txt"
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$REPORT"
-          actual="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$REPORT" | head -n1 | tr -d '\r' | tr '[:upper:]' '[:lower:]')"
+          # Android build-tools may label the signer "V2 Signer:", "V3 Signer:",
+          # or "Signer #1". Match the certificate digest, not the signer prefix.
+          actual="$(awk -F 'certificate SHA-256 digest: ' 'NF>1 {print $2; exit}' "$REPORT" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
           expected="$(keytool -list -v -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -storepass "$ANDROID_APK_STORE_PASSWORD" -alias "$ANDROID_APK_KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' | head -n1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
-          if [ -z "$actual" ] || [ -z "$expected" ] || [ "$actual" != "$expected" ]; then
-            echo "::error::APK certificate does not match the permanent keystore certificate."
+          if ! [[ "$actual" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Unable to parse APK signer certificate SHA256 from apksigner output."
+            exit 1
+          fi
+          if ! [[ "$expected" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Unable to parse keystore certificate SHA256 from keytool output."
+            exit 1
+          fi
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::APK signing certificate differs from permanent keystore certificate."
+            echo "APK signer SHA256: $actual"
+            echo "Keystore SHA256: $expected"
             exit 1
           fi
           echo "Verified APK signing certificate SHA256: $actual"
