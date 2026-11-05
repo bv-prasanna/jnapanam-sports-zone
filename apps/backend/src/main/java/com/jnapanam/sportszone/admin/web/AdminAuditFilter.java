@@ -43,8 +43,11 @@ public class AdminAuditFilter extends OncePerRequestFilter {
                 int status = response.getStatus();
                 if (status >= 400 || MUTATING.contains(request.getMethod())) {
                 Resource resource = resource(request.getRequestURI());
+                Object rawCode=request.getAttribute("jnapanam.errorCode");
+                String safeCode=rawCode instanceof String value && value.matches("[A-Z0-9_]{3,65}")?value:"HTTP_"+status;
+                String action=status>=400?"ERROR_"+safeCode:request.getMethod()+"_"+resource.type();
                 AuditLog event = new AuditLog(actor, request.getMethod(), safePath(request.getRequestURI()), status,
-                        clientAddress(request), request.getMethod() + "_" + resource.type(), resource.type(),
+                        clientAddress(request), action, resource.type(),
                         resource.id(), null, correlationId,
                         limited(request.getHeader("User-Agent"), 300),
                         (System.nanoTime() - started) / 1_000_000);

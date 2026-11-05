@@ -23,4 +23,18 @@ class GlobalExceptionHandlerSafeMessagesTest {
         assertEquals(400,result.getStatusCode().value());
         assertFalse(result.getBody().getDetail().contains("password"));
     }
+    @Test void referenceAndSafeErrorCategoryAreAssociatedWithRequest(){
+        var request=new org.springframework.mock.web.MockHttpServletRequest("GET","/api/v1/bookings");
+        request.setAttribute("jnapanam.correlationId","support-ref-1234");
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                new org.springframework.web.context.request.ServletRequestAttributes(request));
+        try{
+            var result=advice.unexpected(new IllegalStateException("password=SECRET"));
+            assertEquals("support-ref-1234",result.getBody().getProperties().get("requestId"));
+            assertEquals("UNHANDLED_ILLEGALSTATEEXCEPTION",request.getAttribute("jnapanam.errorCode"));
+            assertFalse(result.getBody().getDetail().contains("SECRET"));
+        }finally{
+            org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+        }
+    }
 }

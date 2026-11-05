@@ -58,7 +58,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     ResponseEntity<ProblemDetail> unexpected(Exception ex){
         // Exception messages may contain credential/payment data: do not write them to logs.
-        LOG.error("Unhandled API exception class={}",ex.getClass().getSimpleName());
+        var context=RequestContextHolder.getRequestAttributes();
+        String reference="unknown";
+        if(context instanceof ServletRequestAttributes servlet){
+            HttpServletRequest request=servlet.getRequest();
+            Object id=request.getAttribute("jnapanam.correlationId");
+            if(id instanceof String safeId)reference=safeId;
+            request.setAttribute("jnapanam.errorCode",
+                    "UNHANDLED_"+ex.getClass().getSimpleName().replaceAll("[^A-Za-z0-9]","").toUpperCase(java.util.Locale.ROOT));
+        }
+        LOG.error("Unhandled API exception class={} correlationId={}",ex.getClass().getSimpleName(),reference);
         return problem(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Something went wrong. Please try again or contact support.");
     }
@@ -66,10 +75,13 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String message) {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(status, message);
         detail.setType(URI.create("https://jnapanamsportszone.in/problems/" + status.value()));
-        detail.setProperty("code",status.value()>=500?"SERVER_ERROR":status==HttpStatus.UNAUTHORIZED?"UNAUTHORIZED":"REQUEST_ERROR");
+        String code=status.value()>=500?"SERVER_ERROR":status==HttpStatus.UNAUTHORIZED?"UNAUTHORIZED":status==HttpStatus.FORBIDDEN?"FORBIDDEN":"REQUEST_ERROR";
+        if(status==HttpStatus.UNAUTHORIZED && message.contains("MFA code sent"))code="MFA_REQUIRED";
+        detail.setProperty("code",code);
         var attrs=RequestContextHolder.getRequestAttributes();
         if(attrs instanceof ServletRequestAttributes servlet){
             HttpServletRequest request=servlet.getRequest();
+            if(request.getAttribute("jnapanam.errorCode")==null)request.setAttribute("jnapanam.errorCode",code);
             Object id=request.getAttribute("jnapanam.correlationId");
             if(id instanceof String reference)detail.setProperty("requestId",reference);
         }

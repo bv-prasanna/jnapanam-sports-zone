@@ -49,11 +49,12 @@ export default function ErrorLogs(){
    {error&&<p className={styles.error} role="alert">{error}</p>}
    <p className={styles.count} role="status">Showing {rows.length} recent matching errors (maximum 100 per view).</p>
    <div className={styles.tableWrap}><table><thead><tr>
-     <th>When</th><th>Status</th><th>API operation</th><th>Reference ID</th><th>Elapsed</th>
+     <th>When</th><th>Status</th><th>API operation</th><th>Error code</th><th>Reference ID</th><th>Elapsed</th>
    </tr></thead><tbody>{rows.map(r=><tr key={r.id}>
      <td>{new Date(r.occurredAt).toLocaleString()}</td>
      <td><strong className={r.status>=500?styles.critical:styles.warning}>{r.status}</strong><small>{statusName(r.status)}</small></td>
      <td><span className={styles.method}>{r.method}</span><code>{r.path}</code></td>
+     <td><code>{r.action}</code></td>
      <td>{r.correlationId?<button className={styles.copy} title="Copy support reference" type="button" onClick={()=>{void navigator.clipboard?.writeText(r.correlationId!);}}>{r.correlationId}</button>:"Unavailable"}</td>
      <td>{r.durationMs} ms</td>
    </tr>)}</tbody></table>
