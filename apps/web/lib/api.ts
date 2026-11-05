@@ -20,6 +20,42 @@ export class ApiError extends Error {
   constructor(public status: number, message: string, public details?: unknown) { super(message); }
 }
 
+/** Consistent, safe messages for users on every API-backed web page. */
+async function fetchSafe(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try { return await fetch(input, init); }
+  catch { throw new ApiError(0, "Cannot connect right now. Check your internet connection and try again."); }
+}
+function supportReference(response: Response) {
+  const id=response.headers.get("X-Correlation-ID");
+  return id && /^[A-Za-z0-9_-]{8,80}$/.test(id) ? " Reference: "+id : "";
+}
+function safeDetail(body: Record<string, unknown> | null): string | null {
+  const value=body?.detail || body?.message;
+  if(typeof value!=="string" || value.length>180 ||
+      /(?:<|>|exception|stacktrace|java[.]|org[.]|sql|jdbc|password[=:]|token[=:]|traceback)/i.test(value)) return null;
+  return value;
+}
+async function apiResponseError(response: Response,path:string):Promise<ApiError> {
+  const status=response.status;
+  const body=await response.json().catch(()=>null) as Record<string,unknown>|null;
+  const detail=safeDetail(body);
+  if(status===401 && path==="/api/v1/auth/login") {
+    if(detail?.includes("MFA code sent"))
+      return new ApiError(status,"MFA code sent to your registered email. Enter the 6-digit verification code.");
+    return new ApiError(status,"Invalid login details or verification code. Please try again.");
+  }
+  if(status===401)return new ApiError(status,"Your session has expired. Please sign in again.");
+  if(status===403)return new ApiError(status,"You do not have permission to perform this action.");
+  if(status===404)return new ApiError(status,"The requested information could not be found. Please refresh and try again.");
+  if(status===408||status===504)return new ApiError(status,"The request took too long. Please try again.");
+  if(status===400||status===409||status===422)
+    return new ApiError(status,detail||"Please check your details and try again.",body);
+  if(status===429)return new ApiError(status,"Too many attempts. Please wait a moment and try again.");
+  if(status===426)return new ApiError(status,"An app update is required to continue.");
+  if(status>=500)return new ApiError(status,"The service is temporarily unavailable. Please try again."+supportReference(response));
+  return new ApiError(status,detail||"Unable to complete this request. Please try again.");
+}
+
 function saveTokens(tokens: TokenResponse) {
   accessToken = tokens.accessToken;
   sessionExpiryPublished = false;
@@ -35,7 +71,7 @@ async function refreshAccess(): Promise<string | null> {
   if (typeof window === "undefined") return null;
   const refreshToken = localStorage.getItem(REFRESH_KEY);
   if (!refreshToken) return null;
-  if (!refreshPromise) refreshPromise = fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+  if (!refreshPromise) refreshPromise = fetchSafe(`${API_BASE_URL}/api/v1/auth/refresh`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refreshToken }),
   }).then(async response => {
     if (response.status === 401 || response.status === 403) { expireSession(); return null; }
@@ -78,12 +114,12 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
   await attachEventLocation(headers, init.method || "GET");
-  let response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  let response = await fetchSafe(`${API_BASE_URL}${path}`, { ...init, headers });
   if (response.status === 401 && retry && !publicAuthPath) {
     const renewed = await refreshAccess();
     if (renewed) {
       headers.set("Authorization", `Bearer ${renewed}`);
-      response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+      response = await fetchSafe(`${API_BASE_URL}${path}`, { ...init, headers });
     }
   }
   // A 403 is a permissions issue; only a 401 after attempted refresh expires login.
@@ -91,26 +127,23 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
     expireSession();
     throw new ApiError(401, "Session expired. Please sign in again.");
   }
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    const fieldErrors=body?.errors&&typeof body.errors==="object"?Object.entries(body.errors).map(([field,value])=>`${field.replace(/([A-Z])/g," $1").replace(/^./,letter=>letter.toUpperCase())}: ${String(value)}`).join(" · "):"";
-    throw new ApiError(response.status, fieldErrors || body?.detail || body?.message || body?.error || `Request failed (${response.status})`, body);
-  }
+  if (!response.ok) throw await apiResponseError(response,path);
   // OTP request endpoints reply 202 Accepted with an empty body. Do not parse it as JSON.
   if (response.status === 204 || response.headers.get("Content-Length") === "0") return undefined as T;
   const raw = await response.text();
   if (!raw.trim()) return undefined as T;
-  return JSON.parse(raw) as T;
+  try { return JSON.parse(raw) as T; }
+  catch { throw new ApiError(502,"The server returned an unexpected response."+supportReference(response)); }
 }
 
 /** Download authenticated binary files; standard api() expects JSON. */
 export async function apiBlob(path:string):Promise<Blob>{
   let jwt=accessToken || await refreshAccess();
-  const request=()=>fetch(`${API_BASE_URL}${path}`,{headers:jwt?{Authorization:`Bearer ${jwt}`}:{}});
+  const request=()=>fetchSafe(`${API_BASE_URL}${path}`,{headers:jwt?{Authorization:`Bearer ${jwt}`}:{}});
   let response=await request();
   if(response.status===401){jwt=await refreshAccess();if(jwt)response=await request();}
   if(response.status===401){expireSession();throw new ApiError(401,"Session expired. Please sign in again.");}
-  if(!response.ok)throw new ApiError(response.status,`Unable to download document (${response.status})`);
+  if(!response.ok)throw await apiResponseError(response,path);
   return response.blob();
 }
 
@@ -139,10 +172,10 @@ export async function logout() {
 
 
 export async function apiDocument(path:string):Promise<Blob>{
-  const request=async(token:string|null)=>fetch(`${API_BASE_URL}${path}`,{headers:token?{Authorization:`Bearer ${token}`}:{}});
+  const request=async(token:string|null)=>fetchSafe(`${API_BASE_URL}${path}`,{headers:token?{Authorization:`Bearer ${token}`}:{}});
   let response=await request(accessToken);
   if(response.status===401){const token=await refreshAccess();if(token)response=await request(token);}
   if(response.status===401){expireSession();throw new ApiError(401,"Session expired. Please sign in again.");}
-  if(!response.ok)throw new ApiError(response.status,"Unable to retrieve verification document");
+  if(!response.ok)throw await apiResponseError(response,path);
   return response.blob();
 }
