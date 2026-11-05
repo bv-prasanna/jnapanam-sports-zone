@@ -23,3 +23,12 @@ test('backend payment notification is emitted after verification has marked paym
  assert.ok(service.indexOf('order.paid(request.providerPaymentId());')<service.indexOf('notificationService.payment(userId, order.getReceiptNumber()'));
  assert.match(service,/payment\.failed \/ payment\.authorized \/ order\.paid/);
 });
+
+test('cart mutations distinguish successful write from failed totals refresh',async()=>{
+ const shop=await source('app/shop/page.tsx');
+ const css=await source('app/shop/shop.module.css');
+ assert.match(shop,/Item added, but cart totals could not refresh/);
+ assert.match(shop,/Item removed, but cart totals could not refresh/);
+ assert.match(shop,/messageKind==="error"\?"alert":"status"/);
+ for(const cls of ['messageSuccess','messageWarning','messageError'])assert.ok(css.includes('.'+cls));
+});
