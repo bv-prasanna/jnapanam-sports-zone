@@ -64,14 +64,26 @@ const kn = {
     posDescription:'ಉತ್ಪನ್ನಗಳು ಹಾಗೂ ಪಾವತಿ ವಿಧಾನ ಆಯ್ಕೆಮಾಡಿ ಮಾರಾಟ ಪೂರ್ಣಗೊಳಿಸಿ.',
     stock:'ಸ್ಟಾಕ್ {{count}}',currentSale:'ಪ್ರಸ್ತುತ ಮಾರಾಟ',customerName:'ಗ್ರಾಹಕರ ಹೆಸರು (ಐಚ್ಛಿಕ)',
     mobile:'ಮೊಬೈಲ್ (ಐಚ್ಛಿಕ)',reference:'ಪಾವತಿ ಉಲ್ಲೇಖ ಸಂಖ್ಯೆ (ಐಚ್ಛಿಕ)',
-    processing:'ನಡೆಯುತ್ತಿದೆ…',complete:'ಮಾರಾಟ ಪೂರ್ಣಗೊಳಿಸಿ',noProducts:'ಸಕ್ರಿಯ ಉತ್ಪನ್ನಗಳಿಲ್ಲ.'
+    processing:'ನಡೆಯುತ್ತಿದೆ…',complete:'ಮಾರಾಟ ಪೂರ್ಣಗೊಳಿಸಿ',noProducts:'ಸಕ್ರಿಯ ಉತ್ಪನ್ನಗಳಿಲ್ಲ.',
+    saleRecordedTitle:'ಮಾರಾಟ ದಾಖಲಾಗಿದೆ',
+    saleRecorded:'ಪಾವತಿ ಮತ್ತು ಸ್ಟಾಕ್ ಬದಲಾವಣೆ ದಾಖಲಾಗಿದೆ.',
+    saleRefreshWarning:'ಮಾರಾಟ ದಾಖಲಾಗಿದೆ, ಆದರೆ ಪಟ್ಟಿ ನವೀಕರಿಸಲಿಲ್ಲ. ಮತ್ತೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸುವ ಮುನ್ನ ರಸೀದಿ ಪರಿಶೀಲಿಸಿ.',
+    orderStatusTitle:'ಆರ್ಡರ್ ಸ್ಥಿತಿ ನವೀಕರಿಸಲಾಗಿದೆ',
+    orderStatusRecorded:'{{number}} ಆರ್ಡರ್ {{status}} ಸ್ಥಿತಿಗೆ ಬದಲಾಗಿದೆ.',
+    orderStatusRefreshWarning:'{{number}} ಆರ್ಡರ್ ನವೀಕರಿಸಲಾಗಿದೆ, ಆದರೆ ಪಟ್ಟಿ ನವೀಕರಿಸಲಿಲ್ಲ. ಮರುಪ್ರಯತ್ನಕ್ಕೂ ಮುನ್ನ ಸ್ಥಿತಿ ಪರಿಶೀಲಿಸಿ.'
   },
   mobileShop:{
     unavailable:'ಅಂಗಡಿ ಲಭ್ಯವಿಲ್ಲ',disabled:'ಅಂಗಡಿ ತಾತ್ಕಾಲಿಕವಾಗಿ ಲಭ್ಯವಿಲ್ಲ.',shop:'ಅಂಗಡಿ',
     cart:'ಕಾರ್ಟ್',orders:'ನನ್ನ ಆರ್ಡರ್‌ಗಳು',inStock:'{{count}} ಸ್ಟಾಕ್‌ನಲ್ಲಿವೆ',outOfStock:'ಸ್ಟಾಕ್ ಇಲ್ಲ',
     add:'ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಿ',empty:'ಇನ್ನೂ ಉತ್ಪನ್ನಗಳಿಲ್ಲ.',emptyCart:'ನಿಮ್ಮ ಕಾರ್ಟ್ ಖಾಲಿಯಾಗಿದೆ.',
     subtotal:'ಉಪಮೊತ್ತ',loyalty:'ಲಾಯಲ್ಟಿ ಪಾಯಿಂಟ್ ಬಳಸಿ',placeOrder:'ಆರ್ಡರ್ ಮಾಡಿ · ಸ್ಥಳದಲ್ಲಿ ಪಾವತಿ',
-    paymentUnavailable:'ಸ್ಥಳದಲ್ಲಿ ಪಾವತಿ ಲಭ್ಯವಿಲ್ಲ',noOrders:'ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ.'
+    paymentUnavailable:'ಸ್ಥಳದಲ್ಲಿ ಪಾವತಿ ಲಭ್ಯವಿಲ್ಲ',noOrders:'ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ.',
+    orderSubmittedTitle:'ಆರ್ಡರ್ ಸಲ್ಲಿಸಲಾಗಿದೆ',
+    orderSubmitted:'{{number}} ಆರ್ಡರ್ ದಾಖಲಾಗಿದೆ. ವಸ್ತುಗಳನ್ನು ಪಡೆಯುವಾಗ ಪಾವತಿ ಮಾಡಿ.',
+    orderRefreshWarning:'{{number}} ಆರ್ಡರ್ ದಾಖಲಾಗಿದೆ, ಆದರೆ ಪಟ್ಟಿ ನವೀಕರಿಸಲಿಲ್ಲ. ಮತ್ತೊಮ್ಮೆ ಆರ್ಡರ್ ಮಾಡುವ ಮುನ್ನ ನಿಮ್ಮ ಆರ್ಡರ್‌ಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.',
+    addedTitle:'ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ',
+    addedBody:'ವಸ್ತು ನಿಮ್ಮ ಕಾರ್ಟ್‌ನಲ್ಲಿದೆ.',
+    cartTotalsWarning:'ವಸ್ತು ಸೇರಿಸಲಾಗಿದೆ, ಆದರೆ ಕಾರ್ಟ್ ಮೊತ್ತ ನವೀಕರಿಸಲಿಲ್ಲ. ಒಟ್ಟು ಮೊತ್ತವನ್ನು ಪರಿಶೀಲಿಸಿ.'
   },
   sports:{cricket:'ಕ್ರಿಕೆಟ್',badminton:'ಬ್ಯಾಡ್ಮಿಂಟನ್',swimming:'ಈಜು',football:'ಫುಟ್‌ಬಾಲ್',chess:'ಚೆಸ್',carrom:'ಕ್ಯಾರಂ',gym:'ಜಿಮ್',aerobics:'ಏರೋಬಿಕ್ಸ್',table_tennis:'ಟೇಬಲ್ ಟೆನ್ನಿಸ್'},
   mobileMenu:{

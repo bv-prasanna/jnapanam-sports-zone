@@ -32,3 +32,17 @@ test('operator action confirmations keep pending refund distinct and translate t
    assert.ok(kn.includes(key),'Kannada '+key);
  }
 });
+
+test('shop pickup order remains unpaid and counter actions acknowledge only persisted state',async()=>{
+ const shop=await source('src/app/shop.tsx');
+ const counter=await source('src/app/shop-counter.tsx');
+ const en=await source('src/i18n/locales/en.ts');
+ const kn=await source('src/i18n/locales/kn.ts');
+ assert.match(shop,/const placed=await api<Order>/);
+ assert.match(shop,/orderRefreshWarning/);
+ assert.match(shop,/cartTotalsWarning/);
+ assert.match(counter,/saleRefreshWarning/);
+ assert.match(counter,/orderStatusRecorded/);
+ for(const key of ['orderSubmitted:','orderRefreshWarning:','saleRecorded:','orderStatusRecorded:'])
+   assert.ok(en.includes(key)&&kn.includes(key),'Translated status '+key);
+});

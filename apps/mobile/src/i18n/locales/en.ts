@@ -64,14 +64,26 @@ const en = {
     posDescription:'Choose products, payment method and complete the sale.',
     stock:'Stock {{count}}',currentSale:'Current sale',customerName:'Customer name (optional)',
     mobile:'Mobile (optional)',reference:'Payment reference (optional for cash)',
-    processing:'Processing…',complete:'Complete sale',noProducts:'No active products.'
+    processing:'Processing…',complete:'Complete sale',noProducts:'No active products.',
+    saleRecordedTitle:'Sale recorded',
+    saleRecorded:'Payment and stock movement have been recorded.',
+    saleRefreshWarning:'Sale recorded, but the list could not refresh. Verify the receipt before retrying.',
+    orderStatusTitle:'Order status updated',
+    orderStatusRecorded:'Order {{number}} moved to {{status}}.',
+    orderStatusRefreshWarning:'Order {{number}} was updated, but the list could not refresh. Check order status before repeating.'
   },
   mobileShop:{
     unavailable:'Shop unavailable',disabled:'The shop is currently unavailable.',shop:'Shop',
     cart:'Cart',orders:'My orders',inStock:'{{count}} in stock',outOfStock:'Out of stock',
     add:'Add to cart',empty:'No merchandise is available yet.',emptyCart:'Your cart is empty.',
     subtotal:'Subtotal',loyalty:'Use loyalty points',placeOrder:'Place order · Pay at facility',
-    paymentUnavailable:'Pay at facility unavailable',noOrders:'No orders yet.'
+    paymentUnavailable:'Pay at facility unavailable',noOrders:'No orders yet.',
+    orderSubmittedTitle:'Order placed',
+    orderSubmitted:'Order {{number}} placed. Payment is due when collecting your items.',
+    orderRefreshWarning:'Order {{number}} recorded, but the list could not refresh. Check My Orders before trying again.',
+    addedTitle:'Added to cart',
+    addedBody:'The item is in your cart.',
+    cartTotalsWarning:'Item added, but cart totals could not refresh. Open the cart to verify totals.'
   },
   sports:{cricket:'Cricket',badminton:'Badminton',swimming:'Swimming',football:'Football',chess:'Chess',carrom:'Carrom',gym:'Gym',aerobics:'Aerobics',table_tennis:'Table Tennis'},
   mobileMenu:{

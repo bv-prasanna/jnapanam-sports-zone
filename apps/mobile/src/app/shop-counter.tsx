@@ -26,9 +26,9 @@ export default function ShopCounterScreen(){
   const [query,setQuery]=useState(''); const [busy,setBusy]=useState(''); const [loading,setLoading]=useState(true); const [refreshing,setRefreshing]=useState(false); const [error,setError]=useState('');
 
   const load=useCallback(async()=>{
-    if(!allowed)return;
-    try{setError('');const [o,p]=await Promise.all([api<Order[]>('/api/v1/admin/commerce/orders'),api<Product[]>('/api/v1/admin/commerce/products')]);setOrders(o);setProducts(p.filter(x=>x.status==='ACTIVE'));}
-    catch(e){setError(e instanceof ApiError?e.message:'Unable to load shop counter.');}
+    if(!allowed)return false;
+    try{setError('');const [o,p]=await Promise.all([api<Order[]>('/api/v1/admin/commerce/orders'),api<Product[]>('/api/v1/admin/commerce/products')]);setOrders(o);setProducts(p.filter(x=>x.status==='ACTIVE'));return true;}
+    catch(e){setError(e instanceof ApiError?e.message:'Unable to load shop counter.');return false;}
     finally{setLoading(false);setRefreshing(false)}
   },[allowed]);
   useEffect(()=>{void load()},[load]);
@@ -36,11 +36,11 @@ export default function ShopCounterScreen(){
   const variants=useMemo(()=>products.flatMap(product=>product.variants.filter(v=>v.status==='ACTIVE').map(v=>({...v,productName:product.name}))),[products]);
   const cartItems=variants.filter(v=>cart[v.id]).map(v=>({...v,quantity:cart[v.id]})); const cartTotal=cartItems.reduce((sum,v)=>sum+v.pricePaise*v.quantity,0);
   function changeQty(id:string,delta:number,stock:number){setCart(current=>{const next=Math.max(0,Math.min(stock,(current[id]||0)+delta));const copy={...current};if(next)copy[id]=next;else delete copy[id];return copy})}
-  async function completeSale(){if(!cartItems.length){setError('Add at least one product.');return}try{setBusy('sale');setError('');await api('/api/v1/shop-counter/sales',{method:'POST',body:JSON.stringify({customerUserId:null,customerName:customerName.trim()||null,mobile:mobile.trim()||null,paymentMethod,paymentReference:paymentReference.trim()||null,items:cartItems.map(i=>({variantId:i.id,quantity:i.quantity}))})});setCart({});setCustomerName('');setMobile('');setPaymentReference('');await load();Alert.alert('Sale completed','Payment, stock movement and receipt were recorded.')}catch(e){setError(e instanceof ApiError?e.message:'Unable to complete sale.')}finally{setBusy('')}}
+  async function completeSale(){if(!cartItems.length){setError('Add at least one product.');return}try{setBusy('sale');setError('');await api('/api/v1/shop-counter/sales',{method:'POST',body:JSON.stringify({customerUserId:null,customerName:customerName.trim()||null,mobile:mobile.trim()||null,paymentMethod,paymentReference:paymentReference.trim()||null,items:cartItems.map(i=>({variantId:i.id,quantity:i.quantity}))})});setCart({});setCustomerName('');setMobile('');setPaymentReference('');const refreshed=await load();Alert.alert(t('mobileCounter.saleRecordedTitle'),refreshed?t('mobileCounter.saleRecorded'):t('mobileCounter.saleRefreshWarning'))}catch(e){setError(e instanceof ApiError?e.message:'Unable to complete sale.')}finally{setBusy('')}}
 
   const visibleOrders=useMemo(()=>{const q=query.trim().toLowerCase();return orders.filter(o=>!q||[o.order_number,o.recipient_name,o.mobile,o.status,o.fulfilment_type].some(v=>v?.toLowerCase().includes(q)))},[orders,query]);
 
-  async function updateStatus(order:Order,status:string){try{setBusy(order.id+status);setError('');await api(`/api/v1/admin/commerce/orders/${order.id}/status`,{method:'PATCH',body:JSON.stringify({status})});await load()}catch(e){setError(e instanceof ApiError?e.message:'Unable to update order.')}finally{setBusy('')}}
+  async function updateStatus(order:Order,status:string){try{setBusy(order.id+status);setError('');await api(`/api/v1/admin/commerce/orders/${order.id}/status`,{method:'PATCH',body:JSON.stringify({status})});const refreshed=await load();Alert.alert(t('mobileCounter.orderStatusTitle'),refreshed?t('mobileCounter.orderStatusRecorded',{number:order.order_number,status}):t('mobileCounter.orderStatusRefreshWarning',{number:order.order_number}))}catch(e){setError(e instanceof ApiError?e.message:'Unable to update order.')}finally{setBusy('')}}
   function nextStatus(order:Order){const index=orderSteps.indexOf(order.status);return index>=0&&index<orderSteps.length-1?orderSteps[index+1]:null}
 
   if(!allowed)return <View style={styles.center}><Text style={styles.title}>{t("mobileCounter.accessRequired")}</Text><Text style={styles.muted}>{t("mobileCounter.accessDescription")}</Text></View>;
