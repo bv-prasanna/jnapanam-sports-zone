@@ -7,7 +7,7 @@ test('mobile native build number drives update requirements and cached offline p
  const policy=await source('src/lib/app-release.ts');
  const api=await source('src/lib/api.ts');
  const manifest=JSON.parse(await source('app.json'));
- assert.equal(manifest.expo.android.versionCode,2);
+ assert.equal(manifest.expo.android.versionCode,3);
  assert.match(policy,/Application\.nativeBuildVersion/);
  assert.match(policy,/getStoredValue\(CACHE_KEY\)/);
  assert.match(policy,/installed<policy\.minimumSupportedVersionCode/);
