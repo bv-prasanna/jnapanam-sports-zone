@@ -184,7 +184,13 @@ jobs:
             echo "::error::All four permanent APK signing secrets are required. Refusing to generate a disposable signing certificate."
             exit 1
           fi
-          printf '%s' "$JNAPANAM_APK_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/jnapanam-uat.p12"
+          # Base64 copied from Windows PowerShell may include CR/LF or wrapped whitespace.
+          # Normalize whitespace only; never print the sensitive keystore or Base64.
+          if ! printf '%s' "$JNAPANAM_APK_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$RUNNER_TEMP/jnapanam-uat.p12"; then
+            rm -f "$RUNNER_TEMP/jnapanam-uat.p12"
+            echo "::error::JNAPANAM_APK_KEYSTORE_BASE64 is not valid Base64. Re-encode the existing .p12 file and replace only that GitHub secret."
+            exit 1
+          fi
           chmod 600 "$RUNNER_TEMP/jnapanam-uat.p12"
           test -s "$RUNNER_TEMP/jnapanam-uat.p12"
           keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -storepass "$JNAPANAM_APK_STORE_PASSWORD" -alias "$JNAPANAM_APK_KEY_ALIAS" >/dev/null
