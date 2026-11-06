@@ -26,6 +26,8 @@ public class MfaService {
     private static final SecureRandom RANDOM = new SecureRandom();
     @Value("${app.security.privileged-mfa-required:true}")
     boolean required;
+    @Value("${app.security.customer-mfa-required:true}")
+    boolean customerRequired;
     private final JdbcTemplate jdbc;
     private final PasswordEncoder encoder;
     private final NotificationProviderRegistry providers;
@@ -52,7 +54,7 @@ public class MfaService {
 
     @Transactional(noRollbackFor = MfaChallengeRequiredException.class)
     public void verifyOrChallenge(User user, String code) {
-        if (!required || !privileged(user)) return;
+        if (privileged(user) ? !required : !customerRequired) return;
         List<Map<String, Object>> rows = jdbc.queryForList(
                 "select enabled,challenge_hash,challenge_expires_at from privileged_mfa where user_id=?",
                 user.getId());

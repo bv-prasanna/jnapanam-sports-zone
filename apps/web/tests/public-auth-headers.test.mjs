@@ -34,3 +34,9 @@ test("invalid password and deliberate logout are not interpreted as timeout",()=
  assert.match(api,/\["\/api\/v1\/auth\/login", "\/api\/v1\/auth\/register", "\/api\/v1\/auth\/logout"\]/);
  assert.match(api,/if \(response\.status === 401 && !publicAuthPath/);
 });
+
+test("customer password sign-in requires and explains email MFA",()=>{
+ const login=readFileSync(new URL("../app/login/page.tsx",import.meta.url),"utf8");
+ assert.match(login,/6-digit code sent to your registered email address/);
+ assert.match(login,/mfaRequired&&<label>Email verification code/);
+});

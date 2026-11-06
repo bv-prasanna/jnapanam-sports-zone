@@ -34,6 +34,7 @@ class MfaServiceTest {
     void setUp() {
         service = new MfaService(jdbc, encoder, registry, false, new org.springframework.mock.env.MockEnvironment());
         service.required = true;
+        service.customerRequired = false;
         Role role = mock(Role.class);
         when(role.getName()).thenReturn(RoleName.SUPER_ADMIN);
         admin = new User("Admin", "admin@example.com", null, "hash", role);
@@ -101,6 +102,21 @@ class MfaServiceTest {
                         "challenge_expires_at", Timestamp.from(Instant.now().minusSeconds(5)))));
         assertThrows(UnauthorizedException.class, () -> service.verifyOrChallenge(admin, "123456"));
         verifyNoInteractions(mail);
+    }
+
+    @Test
+    void customerLoginRequiresEmailOtpWhenCustomerMfaIsEnabled() {
+        service.customerRequired = true;
+        Role customerRole = mock(Role.class);
+        when(customerRole.getName()).thenReturn(RoleName.CUSTOMER);
+        User customer = new User("Customer", "customer@example.com", null, "hash", customerRole);
+        when(jdbc.queryForList(anyString(), eq(customer.getId()))).thenReturn(List.of());
+        assertThrows(MfaChallengeRequiredException.class,
+                () -> service.verifyOrChallenge(customer, ""));
+        verify(mail).send(argThat(n -> n.getChannel() == NotificationChannel.EMAIL
+                && n.getMessage().contains("expires in 10 minutes")));
+        verify(jdbc).update(startsWith("update privileged_mfa set challenge_hash="),
+                eq("otp-hash"), any(Timestamp.class), eq(customer.getId()));
     }
 
     @Test
