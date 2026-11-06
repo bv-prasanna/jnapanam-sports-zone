@@ -109,10 +109,10 @@ class RazorpayWebhookLifecycleTest {
 
     @Test void razorpayRefundCreationRemainsRequestedUntilWebhook() {
         PaymentOrder order=paidOrder();
-        when(orders.findById(order.getId())).thenReturn(Optional.of(order));
+        when(orders.findLockedById(order.getId())).thenReturn(Optional.of(order));
         when(refunds.findByPaymentOrderId(order.getId())).thenReturn(List.of());
         when(refunds.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(gateway.refund(eq("pay_001"),eq(10000L),anyString()))
+        when(gateway.refund(eq("pay_001"),eq(10000L),anyString(),anyString()))
             .thenReturn(new PaymentGateway.Refund("rfnd_001"));
         var result=service.refund(order.getId(),new RefundRequest(null,"Customer request"));
         assertEquals(RefundStatus.REQUESTED,result.status());

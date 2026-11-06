@@ -9,6 +9,9 @@ class RazorpayGatewayRejectionTest {
   assertTrue(RazorpayGateway.rejectionMessage(403).contains("merchant account"));
   assertTrue(RazorpayGateway.rejectionMessage(400).contains("booking number"));
   assertFalse(RazorpayGateway.rejectionMessage(500).contains("Authorization"));
+  assertTrue(RazorpayGateway.refundRejectionMessage(400, "unavailable").contains("refund"));
+  assertFalse(RazorpayGateway.refundRejectionMessage(400, "unavailable").contains("create the payment order"));
+  assertTrue(RazorpayGateway.refundRejectionMessage(403, "unavailable").contains("merchant account"));
  }
  @Test void razorpayDiagnosticTokenMustNotLogUntrustedDescriptionOrCredentials(){
   assertEquals("BAD_REQUEST_ERROR",RazorpayGateway.safeToken("BAD_REQUEST_ERROR"));

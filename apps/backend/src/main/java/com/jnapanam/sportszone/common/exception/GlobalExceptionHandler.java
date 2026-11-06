@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.*;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger LOG=LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    @ExceptionHandler(com.jnapanam.sportszone.payment.gateway.RefundGatewayUncertainException.class)
+    ResponseEntity<ProblemDetail> refundUncertain(com.jnapanam.sportszone.payment.gateway.RefundGatewayUncertainException e){
+        return problem(HttpStatus.SERVICE_UNAVAILABLE,e.getMessage());
+    }
     @ExceptionHandler(BadRequestException.class) ResponseEntity<ProblemDetail> badRequest(BadRequestException ex) { return problem(HttpStatus.BAD_REQUEST, ex.getMessage()); }
     @ExceptionHandler(ConflictException.class) ResponseEntity<ProblemDetail> conflict(ConflictException ex) { return problem(HttpStatus.CONFLICT, ex.getMessage()); }
     @ExceptionHandler(NotFoundException.class) ResponseEntity<ProblemDetail> notFound(NotFoundException ex) { return problem(HttpStatus.NOT_FOUND, ex.getMessage()); }
