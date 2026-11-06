@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {router,useFocusEffect} from 'expo-router';
 import {useTranslation} from 'react-i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BrandColors } from '@/constants/brand';
 import { useAuth } from '@/features/auth/auth-context';
@@ -33,11 +34,8 @@ type QueueState = 'PAYMENT_DUE' | 'READY' | 'CHECKED_IN';
 const staffRoles = ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS'];
 const terminalStatuses = new Set(['CANCELLED', 'COMPLETED', 'NO_SHOW']);
 
-function localDateValue(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function localDateValue(offset=0) {
+  return new Date(Date.now()+330*60_000+offset*86_400_000).toISOString().slice(0,10);
 }
 
 function queueState(booking: Booking): QueueState {
@@ -64,6 +62,12 @@ export default function OperationsScreen() {
   const allowed = !!user?.roles.some((role) => staffRoles.includes(role));
   const isAdmin = !!user?.roles.some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
   const today = useMemo(() => localDateValue(), []);
+  const [selectedDate,setSelectedDate]=useState(today);
+  const [manualBooking,setManualBooking]=useState<Booking|null>(null);
+  const [identity,setIdentity]=useState<{customerName:string;profilePhotoUrl?:string;photoAvailable:boolean;documentAvailable:boolean;documentType?:string;documentStatus?:string}|null>(null);
+  const [documentPreview,setDocumentPreview]=useState<string|null>(null);
+  const [identityBusy,setIdentityBusy]=useState(false);
+  const [manualVerified,setManualVerified]=useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [query, setQuery] = useState('');
   const [sportFilter, setSportFilter] = useState('ALL');
@@ -78,8 +82,8 @@ export default function OperationsScreen() {
     if (!allowed) return false;
     try {
       setError('');
-      const rows = await api<Booking[]>(`/api/v1/admin/bookings?date=${today}`);
-      setBookings(rows.filter((booking) => booking.date === today && !terminalStatuses.has(booking.status)));
+      const rows = await api<Booking[]>(`/api/v1/admin/bookings?date=${selectedDate}`);
+      setBookings(rows.filter((booking) => booking.date === selectedDate && !terminalStatuses.has(booking.status)));
       return true;
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Unable to load today’s bookings.');
@@ -88,9 +92,9 @@ export default function OperationsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [allowed, today]);
+  }, [allowed, selectedDate]);
 
-  useEffect(() => { void load(); }, [load]);
+  useFocusEffect(useCallback(()=>{void load();},[load]));
 
   const sports = useMemo(() => Array.from(new Set(bookings.map((booking) => booking.sportName).filter(Boolean) as string[])).sort(), [bookings]);
   const facilities = useMemo(() => Array.from(new Set(bookings
@@ -174,13 +178,29 @@ export default function OperationsScreen() {
 
   function confirm(booking: Booking, action: OperationAction) {
     const messages: Record<OperationAction, string> = {
-      'check-in': 'Confirm that payment is cleared and you verified the booked customer using an acceptable ID.',
+      'check-in': 'Confirm payment, photo and submitted document against the customer before entry.',
       'check-out': 'Confirm that the customer has completed the facility session.',
       'check-in/reverse': 'Reverse this check-in? Use this only to correct an admin mistake.',
       'no-show': 'Mark this customer as no-show after the configured grace period?',
       'cancel': 'Cancel this unpaid booking?',
       'cancel-and-refund': 'Cancel this paid booking and initiate its refund?',
     };
+    if(action==='check-in'){
+      setManualBooking(booking);setIdentity(null);setDocumentPreview(null);setManualVerified(false);setIdentityBusy(true);
+      const url='/api/v1/operations/bookings/'+encodeURIComponent(booking.bookingNumber)+'/identity';
+      void (async()=>{
+        try{
+          const info=await api<{customerName:string;profilePhotoUrl?:string;photoAvailable:boolean;documentAvailable:boolean;documentType?:string;documentStatus?:string}>(url);
+          setIdentity(info);
+          if(info.documentAvailable){
+            const preview=await api<{mediaType:string;dataBase64:string}>(url+'/document-preview');
+            setDocumentPreview('data:'+preview.mediaType+';base64,'+preview.dataBase64);
+          }
+        }catch(e){setError(e instanceof ApiError?e.message:'Unable to load identity document. Use the web check-in console.')}
+        finally{setIdentityBusy(false);}
+      })();
+      return;
+    }
     Alert.alert(action.replaceAll('-', ' ').replace('/', ' ').toUpperCase(), messages[action], [
       { text: 'Back', style: 'cancel' },
       { text: 'Confirm', style: ['cancel', 'cancel-and-refund', 'no-show'].includes(action) ? 'destructive' : 'default', onPress: () => void run(booking, action) },
@@ -194,10 +214,18 @@ export default function OperationsScreen() {
   return <ScrollView style={styles.screen} contentContainerStyle={styles.content}
     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
     <View style={styles.heading}>
-      <View><Text style={styles.eyebrow}>TODAY · {today}</Text><Text style={styles.title}>{t("mobileOperations.title")}</Text></View>
+      <View><Text style={styles.eyebrow}>OPERATIONS · {selectedDate}</Text><Text style={styles.title}>{t("mobileOperations.title")}</Text></View>
       <Pressable style={styles.refresh} onPress={() => void load()}><MaterialCommunityIcons name="refresh" size={24} color={BrandColors.primary} /></Pressable>
     </View>
     <Text style={styles.muted}>{t("mobileOperations.description")}</Text>
+    <Pressable style={styles.scanButton} onPress={()=>router.push('/scan-checkin')}>
+      <MaterialCommunityIcons name="qrcode-scan" size={22} color="#fff"/><Text style={styles.scanText}>Scan customer check-in QR</Text>
+    </Pressable>
+    <View style={styles.dateRow}>{([["Today",0],["Tomorrow",1],["Day after",2]] as const).map(([label,days])=>
+      <Pressable key={label} accessibilityRole="button" accessibilityState={{selected:selectedDate===localDateValue(days)}}
+        onPress={()=>setSelectedDate(localDateValue(days))} style={[styles.dateButton,selectedDate===localDateValue(days)&&styles.dateSelected]}>
+        <Text style={[styles.dateText,selectedDate===localDateValue(days)&&styles.dateSelectedText]}>{label}</Text>
+      </Pressable>)}</View>
 
     <Text style={styles.filterTitle}>{t("mobileOperations.sport")}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
@@ -245,6 +273,26 @@ export default function OperationsScreen() {
         </View>
       </View>;
     })}
+    <Modal animationType="slide" transparent visible={!!manualBooking} onRequestClose={()=>setManualBooking(null)}>
+      <View style={styles.manualBackdrop}><ScrollView contentContainerStyle={styles.manualCard}>
+        <Text style={styles.title}>Verify before manual check-in</Text>
+        <Text style={styles.customer}>{manualBooking?.customerName} · {manualBooking?.bookingNumber}</Text>
+        <Text style={styles.muted}>{manualBooking?.sportName} · {manualBooking?.facilityName} · {manualBooking?.startTime?.slice(0,5)}–{manualBooking?.endTime?.slice(0,5)}</Text>
+        {identityBusy&&<ActivityIndicator color={BrandColors.accent}/>}
+        {identity?.profilePhotoUrl?<Image source={{uri:identity.profilePhotoUrl}} style={styles.manualPhoto}/>:<Text style={styles.error}>No uploaded profile photo. Compare the customer's physical ID and use the web check-in console for document review.</Text>}
+        <Text style={styles.muted}>Document: {identity?.documentType||'Not uploaded'} · {identity?.documentStatus||'No status'}</Text>
+        {documentPreview&&<Image source={{uri:documentPreview}} resizeMode="contain" style={styles.documentPreview} accessibilityLabel="Private preview of uploaded identity document"/>}
+        <Text style={styles.muted}>Compare this uploaded photo and document to the customer and their original ID. If a preview is unavailable, use the secure web console.</Text>
+        <Pressable style={styles.manualCheck} onPress={()=>setManualVerified(v=>!v)}>
+          <MaterialCommunityIcons name={manualVerified?'checkbox-marked':'checkbox-blank-outline'} size={25} color={BrandColors.primary}/>
+          <Text style={styles.customer}>I verified the customer's identity and confirmed payment.</Text>
+        </Pressable>
+        <Pressable disabled={!manualVerified||identityBusy||!documentPreview||!identity?.photoAvailable||!!busy} style={[styles.scanButton,(!manualVerified||identityBusy||!documentPreview||!identity?.photoAvailable)&&styles.disabled]}
+          onPress={()=>{if(manualBooking){const booking=manualBooking;setManualBooking(null);void run(booking,'check-in');}}}>
+          <Text style={styles.scanText}>Confirm manual check-in</Text></Pressable>
+        <Pressable style={styles.dateButton} onPress={()=>setManualBooking(null)}><Text style={styles.dateText}>Close</Text></Pressable>
+      </ScrollView></View>
+    </Modal>
   </ScrollView>;
 }
 
@@ -260,7 +308,15 @@ function Action({ label, icon, danger, busy, onPress }: { label: string; icon: k
 }
 
 const styles = StyleSheet.create({
-  screen:{flex:1,backgroundColor:BrandColors.background},content:{padding:20,paddingTop:18,paddingBottom:34,gap:14},center:{flex:1,padding:28,alignItems:'center',justifyContent:'center',backgroundColor:BrandColors.background,gap:8},
+  screen:{flex:1,backgroundColor:BrandColors.background},content:{padding:20,paddingTop:18,paddingBottom:34,gap:14},
+  scanButton:{backgroundColor:BrandColors.primary,borderRadius:12,padding:13,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9},
+  scanText:{color:'#fff',fontWeight:'900',fontSize:15},dateRow:{flexDirection:'row',gap:8},
+  dateButton:{padding:12,borderWidth:1,borderColor:BrandColors.border,borderRadius:12,alignItems:'center',flex:1},
+  dateSelected:{backgroundColor:BrandColors.primary,borderColor:BrandColors.primary},dateText:{color:BrandColors.primary,fontWeight:'800'},
+  dateSelectedText:{color:'#fff'},manualBackdrop:{flex:1,backgroundColor:'#0009',justifyContent:'center',padding:15},
+  manualCard:{backgroundColor:'#fff',borderRadius:17,padding:20,gap:12},manualPhoto:{width:132,height:132,borderRadius:14},documentPreview:{width:'100%',height:250,borderRadius:12,backgroundColor:'#f5f0e7'},
+  manualCheck:{flexDirection:'row',gap:10,alignItems:'center'},disabled:{opacity:.5},
+center:{flex:1,padding:28,alignItems:'center',justifyContent:'center',backgroundColor:BrandColors.background,gap:8},
   heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},eyebrow:{color:BrandColors.accent,fontSize:12,fontWeight:'900',letterSpacing:1.3},title:{color:BrandColors.textPrimary,fontSize:30,fontWeight:'900',marginTop:4},muted:{color:BrandColors.textSecondary,fontSize:15,lineHeight:22},
   filterTitle:{color:BrandColors.textPrimary,fontSize:12,fontWeight:'900',marginBottom:-7},filters:{gap:8,paddingRight:10},filterChip:{borderWidth:1,borderColor:BrandColors.border,backgroundColor:BrandColors.surface,borderRadius:18,paddingHorizontal:13,paddingVertical:8},filterChipSelected:{borderColor:BrandColors.primary,backgroundColor:BrandColors.primary},filterChipText:{fontSize:12,fontWeight:'800',color:BrandColors.textSecondary},filterChipTextSelected:{color:BrandColors.white},
   refresh:{width:44,height:44,borderRadius:22,backgroundColor:BrandColors.surface,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:BrandColors.border},summaryRow:{flexDirection:'row',gap:8},summary:{flex:1,backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:14,padding:12},summaryValue:{fontSize:22,fontWeight:'900',color:BrandColors.primary},summaryLabel:{fontSize:11,fontWeight:'800',color:BrandColors.textSecondary,marginTop:2},

@@ -44,6 +44,22 @@
           "isAndroidBackgroundLocationEnabled": false,
           "isAndroidForegroundServiceEnabled": false
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Jnapanam staff to scan customer check-in QR codes",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Jnapanam to capture your profile photo for venue entry verification",
+          "photosPermission": "Allow Jnapanam to select your profile photo",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

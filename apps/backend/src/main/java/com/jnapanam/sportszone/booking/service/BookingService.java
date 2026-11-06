@@ -25,8 +25,14 @@ public class BookingService {
 
  @org.springframework.beans.factory.annotation.Autowired
  public void identityDocumentDb(JdbcTemplate jdbc){this.identityJdbc=jdbc;}
+ @org.springframework.beans.factory.annotation.Value("${app.booking.require-profile-photo:false}")
+ private boolean requireProfilePhoto;
  private void requireBookingAddressProof(UUID userId){
   if(identityJdbc==null)throw new IllegalStateException("Identity document store is unavailable");
+  if(requireProfilePhoto){
+   Integer count=identityJdbc.queryForObject("select count(*) from user_profile_photos where user_id=?",Integer.class,userId);
+   if(count==null||count==0)throw new ConflictException("Upload your profile photo in My Profile before creating a new booking.");
+  }
   // Check the latest document on EVERY new booking, even for returning customers.
   // Previously an earlier booking bypassed all future document rejections.
   List<String> statuses=identityJdbc.query(
