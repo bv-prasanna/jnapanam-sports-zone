@@ -3,4 +3,4 @@ import com.jnapanam.sportszone.payment.model.RefundStatus;
 import java.time.Instant;
 import java.util.UUID;
 public record RefundResponse(UUID id,long amountPaise,String reason,RefundStatus status,String providerRefundId,
-                             long deductionPaise,Instant requestedAt,Instant processedAt){}
+                             long deductionPaise,String deductionDescription,Instant requestedAt,Instant processedAt){}

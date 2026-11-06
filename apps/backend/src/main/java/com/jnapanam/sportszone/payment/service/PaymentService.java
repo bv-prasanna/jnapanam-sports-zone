@@ -243,7 +243,12 @@ public class PaymentService {
         if (deductionInput != null && amount != available - deduction)
             throw new BadRequestException("Refund plus retained charges must equal the remaining refundable balance.");
 
-        PaymentRefund refund = refunds.save(new PaymentRefund(order, amount, request.reason().trim(), deduction));
+        String deductionDescription = request.deductionDescription() == null ? null : request.deductionDescription().trim();
+        if (deduction > 0 && (deductionDescription == null || deductionDescription.length() < 3 || deductionDescription.length() > 300))
+            throw new BadRequestException("Explain the deducted charge in the deduction description (3–300 characters).");
+        if (deduction == 0) deductionDescription = null;
+
+        PaymentRefund refund = refunds.save(new PaymentRefund(order, amount, request.reason().trim(), deduction, deductionDescription));
         String providerRefundId = gateway.refund(order.getProviderPaymentId(), amount, request.reason().trim(),
                 refund.getId().toString()).id();
         if (providerRefundId == null || providerRefundId.isBlank())
@@ -487,7 +492,7 @@ public class PaymentService {
     }
 
     private RefundResponse refundResponse(PaymentRefund r) {
-        return new RefundResponse(r.getId(), r.getAmountPaise(), r.getReason(), r.getStatus(), r.getProviderRefundId(),r.getDeductionPaise(),r.getRequestedAt(),r.getProcessedAt());
+        return new RefundResponse(r.getId(), r.getAmountPaise(), r.getReason(), r.getStatus(), r.getProviderRefundId(),r.getDeductionPaise(),r.getDeductionDescription(),r.getRequestedAt(),r.getProcessedAt());
     }
 
     private static String sha256(String value) {

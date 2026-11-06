@@ -62,9 +62,10 @@ class AdminRefundDeductionTest {
  }
 
  @Test void cancelledBookingCanRefundNetAfterRetainingPlatformCharge() {
-    var result=service.refund(order.getId(),new RefundRequest(13000L,"Customer cancellation and venue fee",2000L));
+    var result=service.refund(order.getId(),new RefundRequest(13000L,"Customer cancellation and venue fee",2000L,"Platform processing charge"));
     assertEquals(13000L,result.amountPaise());
     assertEquals(2000L,result.deductionPaise());
+    assertEquals("Platform processing charge",result.deductionDescription());
     assertEquals(RefundStatus.REQUESTED,result.status());
     assertNotNull(result.requestedAt());
     var key=ArgumentCaptor.forClass(String.class);
@@ -77,7 +78,7 @@ class AdminRefundDeductionTest {
     assertThrows(BadRequestException.class,
       ()->service.refund(order.getId(),new RefundRequest(14000L,"no",1000L)));
     var result=service.refund(order.getId(),new RefundRequest(14000L,
-      "Hospital emergency: approved partial no-show refund",1000L));
+      "Hospital emergency: approved partial no-show refund",1000L,"Venue cancellation fee"));
     assertEquals(14000L,result.amountPaise());
     verify(gateway).refund(eq("pay_1234"),eq(14000L),anyString(),anyString());
  }
@@ -97,6 +98,23 @@ class AdminRefundDeductionTest {
     assertThrows(BadRequestException.class,
       ()->service.refund(order.getId(),new RefundRequest(99L,"Customer cancellation",14901L)));
     verify(gateway,never()).refund(anyString(),anyLong(),anyString(),anyString());
+ }
+
+ @Test void deductionRequiresSeparateDescription() {
+    assertThrows(BadRequestException.class,
+      ()->service.refund(order.getId(),new RefundRequest(13000L,"Customer cancellation",2000L)));
+    assertThrows(BadRequestException.class,
+      ()->service.refund(order.getId(),new RefundRequest(13000L,"Customer cancellation",2000L,"  ")));
+    assertThrows(BadRequestException.class,
+      ()->service.refund(order.getId(),new RefundRequest(13000L,"Customer cancellation",2000L,"X")));
+    verify(gateway,never()).refund(anyString(),anyLong(),anyString(),anyString());
+ }
+
+ @Test void refundWithoutDeductionNeedsNoDeductionDescription() {
+    var result=service.refund(order.getId(),new RefundRequest(15000L,"Venue-approved full refund",0L));
+    assertEquals(15000L,result.amountPaise());
+    assertEquals(0L,result.deductionPaise());
+    assertNull(result.deductionDescription());
  }
 
  @Test void pendingRefundBlocksSecondSubmission() {
@@ -120,7 +138,7 @@ class AdminRefundDeductionTest {
     when(gateway.refund(eq("pay_1234"),anyLong(),anyString(),anyString()))
       .thenThrow(new RefundGatewayUncertainException());
     assertThrows(RefundGatewayUncertainException.class,
-      ()->service.refund(order.getId(),new RefundRequest(13000L,"Venue refund",2000L)));
+      ()->service.refund(order.getId(),new RefundRequest(13000L,"Venue refund",2000L,"Administration fee")));
     var saved=ArgumentCaptor.forClass(PaymentRefund.class);
     verify(refunds).save(saved.capture());
     assertEquals(RefundStatus.REQUESTED,saved.getValue().getStatus());
