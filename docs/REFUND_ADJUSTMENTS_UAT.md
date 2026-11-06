@@ -11,6 +11,20 @@ The server validates the same equation in paise. A Razorpay refund must be at le
 
 Example: ₹150 captured, ₹20 retained, ₹130 refund submitted. The retained charge is recorded with the refund request and remains with the merchant; no extra collection occurs. Refund reason and timestamp are persisted, and Admin Payments shows refund history.
 
+## Investigating Razorpay refund rejections
+
+If a refund is rejected, the backend now classifies Razorpay's `error.description`
+into fixed, administrator-friendly messages (insufficient merchant balance, not captured,
+refund permissions disabled, unsupported partial refunds, prior refund, or invalid request).
+The log records HTTP status, Razorpay error code, safe field and a **category only**;
+raw provider descriptions, credentials and payment IDs are never logged or echoed.
+Generic Razorpay 400/422 still requires merchant-side diagnosis if no known category matches.
+
+In the Razorpay Dashboard, confirm the correct Live/Test mode, original payment status
+(`captured`), any existing refunds and available merchant refund balance. If both
+partial and full refunds fail, check account-level permissions/balance before changing
+the deduction. Do not repeatedly issue refunds until prior attempts are reconciled.
+
 ## Reconciliation and safety
 
 - Only ADMIN/SUPER_ADMIN may submit a refund through this endpoint.
