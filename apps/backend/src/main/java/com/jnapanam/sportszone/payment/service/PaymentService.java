@@ -11,6 +11,7 @@ import com.jnapanam.sportszone.membership.repository.CustomerMembershipRepositor
 import com.jnapanam.sportszone.payment.config.PaymentProperties;
 import com.jnapanam.sportszone.payment.dto.*;
 import com.jnapanam.sportszone.payment.gateway.PaymentGateway;
+import com.jnapanam.sportszone.payment.gateway.RefundGatewayUncertainException;
 import com.jnapanam.sportszone.payment.model.*;
 import com.jnapanam.sportszone.payment.repository.*;
 import com.jnapanam.sportszone.training.model.*;
@@ -196,26 +197,60 @@ public class PaymentService {
         return response(order);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
+    public List<RefundResponse> refunds(UUID paymentId) {
+        if (!orders.existsById(paymentId)) throw new NotFoundException("Payment not found");
+        return refunds.findByPaymentOrderId(paymentId).stream()
+                .sorted(Comparator.comparing(PaymentRefund::getRequestedAt).reversed())
+                .map(this::refundResponse).toList();
+    }
+
+    // A refund whose gateway response was lost must remain REQUESTED rather than being
+    // rolled back: retrying with a new ID could refund the customer a second time.
+    @Transactional(noRollbackFor = RefundGatewayUncertainException.class)
     public RefundResponse refund(UUID id, RefundRequest request) {
-        PaymentOrder order = orders.findById(id).orElseThrow(() -> new NotFoundException("Payment not found"));
+        PaymentOrder order = orders.findLockedById(id)
+                .orElseThrow(() -> new NotFoundException("Payment not found"));
         if (order.getStatus() != PaymentStatus.PAID && order.getStatus() != PaymentStatus.PARTIALLY_REFUNDED)
-            throw new ConflictException("Only paid payments can be refunded");
+            throw new ConflictException("Only captured payments can be refunded");
+        if (!"RAZORPAY".equals(order.getProvider()) && !"MOCK".equals(order.getProvider()))
+            throw new ConflictException("This payment was collected onsite. A Razorpay refund cannot be issued; arrange and record a manual refund.");
+        if (order.getProviderPaymentId() == null || order.getProviderPaymentId().isBlank())
+            throw new ConflictException("No captured gateway payment ID is recorded. Reconcile the payment before refunding.");
+
+        if (order.getPurpose() == PaymentPurpose.BOOKING) {
+            Booking booking = bookings.findById(order.getReferenceId())
+                    .orElseThrow(() -> new NotFoundException("Booking not found"));
+            if (booking.getStatus() != BookingStatus.CANCELLED && booking.getStatus() != BookingStatus.NO_SHOW)
+                throw new ConflictException("Cancel the booking or mark the past booking NO_SHOW before issuing a refund.");
+            if (booking.getStatus() == BookingStatus.NO_SHOW && request.reason().trim().length() < 10)
+                throw new BadRequestException("Explain the genuine no-show refund exception in at least 10 characters.");
+        }
+
         List<PaymentRefund> existing = refunds.findByPaymentOrderId(id);
         if (existing.stream().anyMatch(r -> r.getStatus() == RefundStatus.REQUESTED))
-            throw new ConflictException("A refund is still processing. Check its status before another request.");
+            throw new ConflictException("A refund is pending or needs reconciliation. Check Razorpay before requesting another refund.");
         long already = existing.stream().filter(r -> r.getStatus() == RefundStatus.PROCESSED)
                 .mapToLong(PaymentRefund::getAmountPaise).sum();
-        long amount = request.amountPaise() == null ? order.getAmountPaise() - already : request.amountPaise();
-        if (amount <= 0 || already + amount > order.getAmountPaise())
-            throw new BadRequestException("Refund exceeds refundable amount");
+        long available = order.getAmountPaise() - already;
+        Long deductionInput = request.deductionPaise();
+        long deduction = deductionInput == null ? 0 : deductionInput;
+        if (available <= 0 || deduction < 0 || deduction >= available)
+            throw new BadRequestException("Deduction must be less than the remaining refundable balance.");
+        long amount = request.amountPaise() == null ? available - deduction : request.amountPaise();
+        if (amount < 100 || amount > available)
+            throw new BadRequestException("Razorpay refund must be at least ₹1 and cannot exceed the remaining captured balance.");
+        if (deductionInput != null && amount != available - deduction)
+            throw new BadRequestException("Refund plus retained charges must equal the remaining refundable balance.");
 
-        PaymentRefund refund = refunds.save(new PaymentRefund(order, amount, request.reason().trim()));
-        String providerRefundId = gateway.refund(order.getProviderPaymentId(), amount, request.reason()).id();
+        PaymentRefund refund = refunds.save(new PaymentRefund(order, amount, request.reason().trim(), deduction));
+        String providerRefundId = gateway.refund(order.getProviderPaymentId(), amount, request.reason().trim(),
+                refund.getId().toString()).id();
+        if (providerRefundId == null || providerRefundId.isBlank())
+            throw new RefundGatewayUncertainException();
         refund.submitted(providerRefundId);
 
-        // Mock refunds are synchronous. Razorpay returns a refund request identifier;
-        // mark it processed only after the refund.processed webhook is verified.
+        // A Razorpay request is not a completed bank refund; wait for the signed webhook.
         if ("MOCK".equals(gateway.provider())) completeRefund(refund, providerRefundId);
         return refundResponse(refund);
     }
@@ -452,7 +487,7 @@ public class PaymentService {
     }
 
     private RefundResponse refundResponse(PaymentRefund r) {
-        return new RefundResponse(r.getId(), r.getAmountPaise(), r.getReason(), r.getStatus(), r.getProviderRefundId());
+        return new RefundResponse(r.getId(), r.getAmountPaise(), r.getReason(), r.getStatus(), r.getProviderRefundId(),r.getDeductionPaise(),r.getRequestedAt(),r.getProcessedAt());
     }
 
     private static String sha256(String value) {
