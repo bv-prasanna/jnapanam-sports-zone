@@ -115,7 +115,7 @@ public class RazorpayGateway implements PaymentGateway{
  static String refundErrorCategory(String reason,String description){
   String d=((reason==null?"":reason)+" "+(description==null?"":description))
     .toLowerCase(java.util.Locale.ROOT);
-  if(d.contains("not enough balance")||d.contains("insufficient balance")||d.contains("balance is insufficient")||d.contains("balance is lower than"))return "INSUFFICIENT_BALANCE";
+  if(d.contains("not enough balance")||d.contains("not have enough balance")||d.contains("insufficient balance")||d.contains("balance is insufficient")||d.contains("balance is lower than"))return "INSUFFICIENT_BALANCE";
   if(d.contains("refunds cannot be created")||d.contains("refunds are disabled")||d.contains("refund is disabled"))return "REFUNDS_DISABLED";
   if(d.contains("partial refund")&&(d.contains("not supported")||d.contains("only full")))return "PARTIAL_UNSUPPORTED";
   if(d.contains("refund")&&d.contains("not supported")&&d.contains("payment method"))return "METHOD_UNSUPPORTED";
