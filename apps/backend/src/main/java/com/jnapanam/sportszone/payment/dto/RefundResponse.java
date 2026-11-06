@@ -1,1 +1,6 @@
-package com.jnapanam.sportszone.payment.dto;import com.jnapanam.sportszone.payment.model.RefundStatus;import java.util.UUID;public record RefundResponse(UUID id,long amountPaise,String reason,RefundStatus status,String providerRefundId){}
+package com.jnapanam.sportszone.payment.dto;
+import com.jnapanam.sportszone.payment.model.RefundStatus;
+import java.time.Instant;
+import java.util.UUID;
+public record RefundResponse(UUID id,long amountPaise,String reason,RefundStatus status,String providerRefundId,
+                             long deductionPaise,Instant requestedAt,Instant processedAt){}

@@ -16,8 +16,11 @@ public class AdminPaymentController {
     @GetMapping
     public List<PaymentResponse> all() { return service.all(); }
 
+    @GetMapping("/{id}/refunds")
+    public List<RefundResponse> refunds(@PathVariable UUID id){return service.refunds(id);}
+
     @PostMapping("/{id}/refunds")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
     public RefundResponse refund(@PathVariable UUID id, @Valid @RequestBody RefundRequest request) {
         return service.refund(id, request);
     }

@@ -12,5 +12,6 @@ public interface PaymentGateway{
  boolean verifyWebhook(String body,String signature);
  CapturedPayment fetchPayment(String paymentId);
  Refund refund(String paymentId,long amountPaise,String reason);
+ default Refund refund(String paymentId,long amountPaise,String reason,String requestId){return refund(paymentId,amountPaise,reason);}
  String provider(); String publicKey();
 }
