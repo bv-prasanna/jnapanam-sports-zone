@@ -391,3 +391,42 @@
 .weekly-day-card .copy-week-btn{margin-left:auto;padding:9px 12px;font-size:12px}
 .weekly-day-card .remove-week-period{padding:10px 14px}
 @media(max-width:640px){.weekly-period-row{grid-template-columns:1fr 1fr}.weekly-period-row .period-name,.weekly-period-row .remove-week-period{grid-column:1/-1}.weekly-day-header .copy-week-btn{margin-left:0}.weekly-day-card{padding:12px}}
+
+
+/* Public Android app CTA beside Register; use the permanent /app landing page.
+   Collapse to the existing navigation drawer on narrower laptop and tablet widths
+   before the extra link can crowd or overlap other header actions. */
+.site-header .app-download-link{
+  background:#fff9ef;
+  border:1px solid var(--saffron);
+  color:var(--saffron);
+  padding:10px 13px;
+  font-size:13px;
+  line-height:1.2;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.site-header .app-download-link:hover,
+.site-header .app-download-link:focus-visible{
+  background:var(--saffron);
+  color:white;
+}
+.site-header .app-download-link:focus-visible{
+  outline:2px solid var(--olive);
+  outline-offset:2px;
+}
+@media(max-width:1320px){
+  .site-header .nav-actions{display:none}
+  .site-header .menu-button{display:grid;margin-left:auto;background:none;border:0;cursor:pointer}
+  .site-header .main-nav{
+    display:none;position:absolute;left:0;right:0;top:80px;
+    margin-left:0;padding:22px 28px;background:#fffdf8;
+    flex-direction:column;align-items:flex-start;gap:16px;
+    box-shadow:0 15px 30px #0002;max-height:calc(100dvh - 80px);overflow-y:auto
+  }
+  .site-header .main-nav.open{display:flex}
+  .site-header .mobile-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+}
+@media(max-width:780px){
+  .site-header .main-nav{top:70px;max-height:calc(100dvh - 70px)}
+}
