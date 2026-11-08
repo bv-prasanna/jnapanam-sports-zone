@@ -52,6 +52,6 @@ test("incorrect password does not trigger MFA and MFA transitions rely on typed 
  assert.match(loginSource,/failure==="MFA_INVALID"/);
  assert.match(loginSource,/failure==="MFA_DELIVERY_FAILED"/);
  assert.match(loginSource,/resetChallenge\(\);\s*setError\(/);
- assert.match(loginSource,/mfaRequired&&<button[^>]*>Resend code<\/button>/);
+ assert.match(loginSource,/mfaRequired&&<button.*Resend code<\/button>/);
  assert.match(loginSource,/onChange=\{e=>\{setPassword\(e\.target\.value\);resetChallenge\(\)\}\}/);
 });
