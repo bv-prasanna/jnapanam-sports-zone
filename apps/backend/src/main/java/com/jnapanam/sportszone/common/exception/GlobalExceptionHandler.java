@@ -21,6 +21,20 @@ import org.springframework.web.bind.annotation.*;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger LOG=LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    @ExceptionHandler(MfaEmailDeliveryException.class)
+    ResponseEntity<ProblemDetail> mfaEmailDelivery(MfaEmailDeliveryException e){
+        ResponseEntity<ProblemDetail> result=problem(HttpStatus.SERVICE_UNAVAILABLE,
+                "Unable to send the sign-in verification email. Please retry or contact support.");
+        result.getBody().setProperty("code","MFA_DELIVERY_FAILED");
+        return result;
+    }
+    @ExceptionHandler(InvalidMfaCodeException.class)
+    ResponseEntity<ProblemDetail> invalidMfaCode(InvalidMfaCodeException e){
+        ResponseEntity<ProblemDetail> result=problem(HttpStatus.UNAUTHORIZED,
+                "Verification code invalid or expired. Request a new code if necessary.");
+        result.getBody().setProperty("code","MFA_INVALID");
+        return result;
+    }
     @ExceptionHandler(com.jnapanam.sportszone.payment.gateway.RefundGatewayUncertainException.class)
     ResponseEntity<ProblemDetail> refundUncertain(com.jnapanam.sportszone.payment.gateway.RefundGatewayUncertainException e){
         return problem(HttpStatus.SERVICE_UNAVAILABLE,e.getMessage());

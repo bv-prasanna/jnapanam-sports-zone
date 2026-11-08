@@ -1,7 +1,8 @@
 package com.jnapanam.sportszone.identity.service;
 
 import com.jnapanam.sportszone.common.exception.MfaChallengeRequiredException;
-import com.jnapanam.sportszone.common.exception.UnauthorizedException;
+import com.jnapanam.sportszone.common.exception.InvalidMfaCodeException;
+import com.jnapanam.sportszone.common.exception.MfaEmailDeliveryException;
 import com.jnapanam.sportszone.identity.model.RoleName;
 import com.jnapanam.sportszone.identity.model.User;
 import com.jnapanam.sportszone.notification.model.Notification;
@@ -19,11 +20,14 @@ import org.springframework.core.env.Profiles;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MfaService {
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final Logger LOG = LoggerFactory.getLogger(MfaService.class);
     @Value("${app.security.privileged-mfa-required:true}")
     boolean required;
     @Value("${app.security.customer-mfa-required:true}")
@@ -77,9 +81,9 @@ public class MfaService {
             throw new MfaChallengeRequiredException();
         }
         if (hash == null || expiresAt == null || Instant.now().isAfter(expiresAt))
-            throw new UnauthorizedException("Invalid or expired MFA code");
+            throw new InvalidMfaCodeException();
         if (!code.matches("[0-9]{6}") || !encoder.matches(code, hash))
-            throw new UnauthorizedException("Invalid MFA code");
+            throw new InvalidMfaCodeException();
         jdbc.update("update privileged_mfa set challenge_hash=null,challenge_expires_at=null,updated_at=now() where user_id=?",
                 user.getId());
     }
@@ -93,7 +97,19 @@ public class MfaService {
         Notification email = new Notification(user, NotificationChannel.EMAIL, "SECURITY",
                 "Jnapanam sign-in verification code",
                 "Your verification code is " + code + ". It expires in 10 minutes.");
-        if (!localConsoleMfa) providers.provider(NotificationChannel.EMAIL).send(email);
+        if (!localConsoleMfa) {
+            try {
+                if (user.getEmail() == null || user.getEmail().isBlank())
+                    throw new IllegalStateException("No verified email destination");
+                String providerReference = providers.provider(NotificationChannel.EMAIL).send(email);
+                if (providerReference == null || providerReference.isBlank())
+                    throw new IllegalStateException("No email provider confirmation");
+            } catch (RuntimeException ex) {
+                // Log only a safe class name, never the OTP, mailbox or provider details.
+                LOG.warn("MFA email provider failed: exceptionClass={}", ex.getClass().getSimpleName());
+                throw new MfaEmailDeliveryException();
+            }
+        }
         jdbc.update("update privileged_mfa set challenge_hash=?,challenge_expires_at=?,updated_at=now() where user_id=?",
                 hash, Timestamp.from(Instant.now().plusSeconds(600)), user.getId());
         if (localConsoleMfa) System.out.println("[LOCAL TEST ONLY] MFA code for " + user.getEmail() + ": " + code);

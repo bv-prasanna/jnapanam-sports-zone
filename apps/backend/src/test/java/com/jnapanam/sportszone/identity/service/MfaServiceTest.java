@@ -39,6 +39,7 @@ class MfaServiceTest {
         when(role.getName()).thenReturn(RoleName.SUPER_ADMIN);
         admin = new User("Admin", "admin@example.com", null, "hash", role);
         when(registry.provider(NotificationChannel.EMAIL)).thenReturn(mail);
+        when(mail.send(any(Notification.class))).thenReturn("smtp-mock-accepted");
         when(encoder.encode(anyString())).thenReturn("otp-hash");
         when(jdbc.update(anyString(), any(), any(), any())).thenReturn(1);
     }
@@ -69,7 +70,17 @@ class MfaServiceTest {
                 Map.of("enabled", true, "challenge_hash", "oldhash",
                         "challenge_expires_at", Timestamp.from(Instant.now().plusSeconds(300)))));
         when(mail.send(any(Notification.class))).thenThrow(new IllegalStateException("SMTP unavailable"));
-        assertThrows(IllegalStateException.class, () -> service.verifyOrChallenge(admin, ""));
+        assertThrows(com.jnapanam.sportszone.common.exception.MfaEmailDeliveryException.class, () -> service.verifyOrChallenge(admin, ""));
+        verify(jdbc, never()).update(startsWith("update privileged_mfa set challenge_hash="),
+                any(), any(), any());
+    }
+
+    @Test
+    void missingProviderConfirmationRejectsMfaWithoutPersistingCode() {
+        when(jdbc.queryForList(anyString(), eq(admin.getId()))).thenReturn(List.of());
+        when(mail.send(any(Notification.class))).thenReturn("");
+        assertThrows(com.jnapanam.sportszone.common.exception.MfaEmailDeliveryException.class,
+                () -> service.verifyOrChallenge(admin, ""));
         verify(jdbc, never()).update(startsWith("update privileged_mfa set challenge_hash="),
                 any(), any(), any());
     }
@@ -90,7 +101,7 @@ class MfaServiceTest {
         when(jdbc.queryForList(anyString(), eq(admin.getId()))).thenReturn(List.of(
                 Map.of("enabled", true, "challenge_hash", "otp-hash",
                         "challenge_expires_at", Timestamp.from(Instant.now().plusSeconds(300)))));
-        assertThrows(UnauthorizedException.class, () -> service.verifyOrChallenge(admin, "000000"));
+        assertThrows(com.jnapanam.sportszone.common.exception.InvalidMfaCodeException.class, () -> service.verifyOrChallenge(admin, "000000"));
         verifyNoInteractions(mail);
         verify(jdbc, never()).update(startsWith("update privileged_mfa set challenge_hash=null"), eq(admin.getId()));
     }
@@ -100,7 +111,7 @@ class MfaServiceTest {
         when(jdbc.queryForList(anyString(), eq(admin.getId()))).thenReturn(List.of(
                 Map.of("enabled", true, "challenge_hash", "otp-hash",
                         "challenge_expires_at", Timestamp.from(Instant.now().minusSeconds(5)))));
-        assertThrows(UnauthorizedException.class, () -> service.verifyOrChallenge(admin, "123456"));
+        assertThrows(com.jnapanam.sportszone.common.exception.InvalidMfaCodeException.class, () -> service.verifyOrChallenge(admin, "123456"));
         verifyNoInteractions(mail);
     }
 
