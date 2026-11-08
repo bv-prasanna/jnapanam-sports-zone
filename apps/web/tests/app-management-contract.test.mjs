@@ -41,13 +41,19 @@ test('top navigation shows a bilingual download link after registration in deskt
  assert.match(styles,/@media\(max-width:1320px\)/);
 });
 
-test('footer includes existing app QR beside venue contact details and links to stable /app',async()=>{
+test('footer places permanent APK QR beside the official logo at desktop and mobile widths',async()=>{
  const footer=await source('components/site-footer.tsx');
  const styles=await source('app/globals.css');
- const visit=footer.indexOf('<h3>Visit Us</h3>');
+ const brand=footer.indexOf('className="footer-brand-qr-row"');
+ const logo=footer.indexOf('src="/images/jnapanam-logo.png"');
  const qr=footer.indexOf('src="/app-download-qr.svg"');
- assert.ok(visit>=0 && qr>visit,'QR is inside visit/contact column');
+ const visit=footer.indexOf('<h3>Visit Us</h3>');
+ assert.ok(brand>=0 && brand<logo && logo<qr && qr<visit,
+   'logo and QR must share the brand row, ahead of the contact details');
+ assert.equal((footer.match(/src="\/app-download-qr.svg"/g)||[]).length,1);
  assert.match(footer,/href="\/app" className="footer-app-qr"/);
- assert.match(footer,/Scan to download the latest APK/);
- assert.match(styles,/\.site-footer \.footer-app-qr/);
+ assert.match(footer,/Download App/);
+ assert.match(styles,/\.site-footer \.footer-brand-qr-row\s*\{/);
+ assert.match(styles,/grid-template-columns:minmax\(0,1fr\) 126px/);
+ assert.match(styles,/@media\(max-width:520px\)[\s\S]*?\.site-footer \.footer-brand-qr-row/);
 });
