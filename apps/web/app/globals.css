@@ -430,3 +430,22 @@
 @media(max-width:780px){
   .site-header .main-nav{top:70px;max-height:calc(100dvh - 70px)}
 }
+
+
+/* Stable public /app QR alongside venue contact details in the footer. */
+.site-footer .footer-app-qr{
+  display:flex;align-items:center;gap:12px;width:100%;max-width:300px;
+  padding:11px;border:1px solid #b6a782;background:#fff9ef;border-radius:12px;
+  margin-top:14px;min-width:0;line-height:1.35;
+}
+.site-footer .footer-app-qr img{
+  width:112px;height:112px;max-width:45%;flex:none;background:#fff;object-fit:contain;
+  padding:4px;border-radius:6px;
+}
+.site-footer .footer-app-qr span{display:flex;flex-direction:column;gap:6px;min-width:0}
+.site-footer .footer-app-qr strong,.site-footer .footer-app-qr small{color:#263712}
+.site-footer .footer-app-qr strong{font-size:13px}
+.site-footer .footer-app-qr small{font-size:11px;line-height:1.4}
+.site-footer .footer-app-qr:hover{border-color:var(--gold);box-shadow:0 0 0 2px #d99a3266}
+.site-footer .footer-app-qr:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+@media(max-width:520px){.site-footer .footer-app-qr{max-width:320px}}

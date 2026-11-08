@@ -40,3 +40,18 @@ test("customer password sign-in requires and explains email MFA",()=>{
  assert.match(login,/6-digit code sent to your registered email address/);
  assert.match(login,/mfaRequired&&<label>Email verification code/);
 });
+
+test("incorrect password does not trigger MFA and MFA transitions rely on typed response codes",()=>{
+ const loginSource=readFileSync(new URL("../app/login/page.tsx",import.meta.url),"utf8");
+ assert.match(api,/body\?\.code==="MFA_REQUIRED"/);
+ assert.match(api,/body\?\.code==="MFA_INVALID"/);
+ assert.match(api,/body\?\.code==="MFA_DELIVERY_FAILED"/);
+ assert.match(api,/code:"INVALID_CREDENTIALS"/);
+ assert.doesNotMatch(loginSource,/msg\.toLowerCase\(\)\.includes\("verification code"\)/);
+ assert.match(loginSource,/failure==="MFA_REQUIRED"/);
+ assert.match(loginSource,/failure==="MFA_INVALID"/);
+ assert.match(loginSource,/failure==="MFA_DELIVERY_FAILED"/);
+ assert.match(loginSource,/resetChallenge\(\);\s*setError\(/);
+ assert.match(loginSource,/mfaRequired&&<button[^>]*>Resend code<\/button>/);
+ assert.match(loginSource,/onChange=\{e=>\{setPassword\(e\.target\.value\);resetChallenge\(\)\}\}/);
+});

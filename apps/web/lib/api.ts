@@ -39,10 +39,15 @@ async function apiResponseError(response: Response,path:string):Promise<ApiError
   const status=response.status;
   const body=await response.json().catch(()=>null) as Record<string,unknown>|null;
   const detail=safeDetail(body);
-  if(status===401 && path==="/api/v1/auth/login") {
-    if(detail?.includes("MFA code sent"))
-      return new ApiError(status,"MFA code sent to your registered email. Enter the 6-digit verification code.");
-    return new ApiError(status,"Invalid login details or verification code. Please try again.");
+  if(path==="/api/v1/auth/login") {
+    if(status===401 && (body?.code==="MFA_REQUIRED" || detail?.startsWith("MFA code sent.")))
+      return new ApiError(status,"A verification code was requested for your registered email. Check your inbox and spam folder.",{code:"MFA_REQUIRED"});
+    if(status===401 && body?.code==="MFA_INVALID")
+      return new ApiError(status,"Invalid or expired verification code. Try again or request a new code.",{code:"MFA_INVALID"});
+    if(status===503 && body?.code==="MFA_DELIVERY_FAILED")
+      return new ApiError(status,"We could not send the verification email. Check the email configuration or contact support.",{code:"MFA_DELIVERY_FAILED"});
+    if(status===401)
+      return new ApiError(status,"Invalid email/mobile or password. Please try again.",{code:"INVALID_CREDENTIALS"});
   }
   if(status===401)return new ApiError(status,"Your session has expired. Please sign in again.");
   if(status===403)return new ApiError(status,"You do not have permission to perform this action.");
