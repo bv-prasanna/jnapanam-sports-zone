@@ -25,7 +25,7 @@ let sessionExpiredHandler:(()=>void)|null=null;
 export function setAccessToken(token:string|null){accessToken=token;}
 export function onSessionExpired(handler:(()=>void)|null){sessionExpiredHandler=handler;}
 export class ApiError extends Error {
-  constructor(message:string,public status:number){super(message);this.name='ApiError';}
+  constructor(message:string,public status:number,public code?:string){super(message);this.name='ApiError';}
 }
 const friendly=(key:'network'|'timeout'|'server'|'session'|'generic')=>i18n.t('errors.'+key);
 const technical=/socketexception|fetch failed|network request failed|software caused connection abort|stacktrace|java\.|exception:|connection refused|read timed out|unexpected token/i;
@@ -113,14 +113,21 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
     const ref=response.headers.get('X-Correlation-ID');
     const supportRef=ref && /^[A-Za-z0-9_-]{8,80}$/.test(ref)?' Reference: '+ref:'';
     if(status===426){announceServerRequiredUpdate();throw new ApiError('An app update is required to continue. Open the update screen.',426);}
+    // Use the backend's stable ProblemDetail.code, never translated text guessing.
+    if(path==='/api/v1/auth/login' && (status===401||status===503)){
+      const problem=await response.json().catch(()=>null);
+      const code=problem?.code;
+      if(status===401&&code==='MFA_REQUIRED')
+        throw new ApiError('A verification code was requested for your registered email.',401,'MFA_REQUIRED');
+      if(status===401&&code==='MFA_INVALID')
+        throw new ApiError('Invalid or expired verification code.',401,'MFA_INVALID');
+      if(status===503&&code==='MFA_DELIVERY_FAILED')
+        throw new ApiError('Unable to send verification email. Please retry.',503,'MFA_DELIVERY_FAILED');
+      if(status===401)
+        throw new ApiError('Invalid email/mobile or password. Please try again.',401,'INVALID_CREDENTIALS');
+      throw new ApiError(friendly('server')+supportRef,status);
+    }
     if(status===401){
-      if(publicAuth&&path==='/api/v1/auth/login'){
-        const detail=await response.json().catch(()=>null);
-        const message=detail?.detail||detail?.message;
-        if(typeof message==='string'&&message.includes('MFA code sent'))
-          throw new ApiError('MFA code sent to your registered email. Enter the 6-digit verification code.',401);
-        throw new ApiError('Invalid login details or verification code. Please try again.',401);
-      }
       if(publicAuth)throw new ApiError('We could not verify these details. Please try again.',401);
       throw new ApiError(friendly('session'),401);
     }

@@ -28,8 +28,13 @@ test('temporary offline startup never destroys encrypted refresh token and resto
 test('password sign-in still surfaces MFA challenge to mobile and keeps mobile login code input',async()=>{
  const api=await source('src/lib/api.ts');
  const login=await source('src/app/login.tsx');
- assert.match(api,/message\.includes\('MFA code sent'\)/);
- assert.match(login,/if\(message\.toLowerCase\(\)\.includes\('mfa code'\)\)setMfaRequired\(true\)/);
+ assert.match(api,/code==='MFA_REQUIRED'/);
+ assert.match(api,/code==='MFA_INVALID'/);
+ assert.match(api,/code==='MFA_DELIVERY_FAILED'/);
+ assert.match(login,/code==='MFA_REQUIRED'/);
+ assert.doesNotMatch(login,/message\.toLowerCase\(\)\.includes\('mfa code'\)/);
+ assert.match(login,/onPress=\{\(\)=>void submit\(true\)\}/);
+ assert.match(login,/setMfaRequired\(false\);setMfaCode\(''\)/);
 });
 
 test('auth repair preserves Android version policy enforcement and does not mask MFA as expired session',async()=>{
@@ -40,7 +45,7 @@ test('auth repair preserves Android version policy enforcement and does not mask
  assert.match(api,/announceServerRequiredUpdate\(\)/);
  assert.match(api,/if\(status===426\)/);
  assert.match(api,/if\(publicAuth&&path==='\/api\/v1\/auth\/login'\)/);
- assert.match(api,/MFA code sent/);
+ assert.match(api,/MFA_REQUIRED/);
  assert.match(login,/setMfaRequired\(true\)/);
 });
 
@@ -49,6 +54,6 @@ test('Android classifies permissions, limits and server references without techn
  for(const status of [403,404,429,426])assert.match(api,new RegExp('status==='+status));
  assert.match(api,/status>=500/);
  assert.match(api,/supportRef/);
- assert.match(api,/Invalid login details or verification code/);
- assert.match(api,/MFA code sent/);
+ assert.match(api,/Invalid email\/mobile or password/);
+ assert.match(api,/MFA_REQUIRED/);
 });
