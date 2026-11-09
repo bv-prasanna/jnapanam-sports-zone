@@ -48,8 +48,12 @@ class BookingCheckInQrServiceTest {
         LocalDate date=LocalDate.now(ZoneId.of("Asia/Kolkata"));
         when(slot.getDate()).thenReturn(date);
         LocalTime time=LocalTime.now(ZoneId.of("Asia/Kolkata"));
-        when(slot.getStartTime()).thenReturn(time.minusMinutes(10));
-        when(slot.getEndTime()).thenReturn(time.plusMinutes(50));
+        // A booking slot cannot span midnight because its end date is the same slot date.
+        // Keep this fixture within the venue day, even when CI runs around midnight.
+        LocalTime start=time.isBefore(LocalTime.of(0,10))?LocalTime.MIDNIGHT:time.minusMinutes(10);
+        LocalTime end=time.isAfter(LocalTime.of(23,9))?LocalTime.MAX:time.plusMinutes(50);
+        when(slot.getStartTime()).thenReturn(start);
+        when(slot.getEndTime()).thenReturn(end);
         when(booking.getStatus()).thenReturn(BookingStatus.CONFIRMED);
         when(booking.getPaymentStatus()).thenReturn(BookingPaymentStatus.PAID);
         when(bookings.findById(bookingId)).thenReturn(Optional.of(booking));
