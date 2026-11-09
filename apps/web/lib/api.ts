@@ -49,6 +49,8 @@ async function apiResponseError(response: Response,path:string):Promise<ApiError
     if(status===401)
       return new ApiError(status,"Invalid email/mobile or password. Please try again.",{code:"INVALID_CREDENTIALS"});
   }
+  if(status===503 && body?.code==="REFUND_STATUS_UNCERTAIN")
+    return new ApiError(status,"Refund status could not be confirmed. Check Razorpay and reconcile the payment before trying again."+supportReference(response),body);
   if(status===401)return new ApiError(status,"Your session has expired. Please sign in again.");
   if(status===403)return new ApiError(status,"You do not have permission to perform this action.");
   if(status===404)return new ApiError(status,"The requested information could not be found. Please refresh and try again.");

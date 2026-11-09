@@ -124,6 +124,14 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
       if(publicAuth)throw new ApiError('We could not verify these details. Please try again.',401);
       throw new ApiError(friendly('session'),401);
     }
+    if(status===503){
+      const problem=await response.json().catch(()=>null);
+      if(problem?.code==='REFUND_STATUS_UNCERTAIN')
+        throw new ApiError('Refund status could not be confirmed. Check Razorpay and reconcile the payment before trying again.'+supportRef,503);
+      if(publicAuth&&path==='/api/v1/auth/login'&&problem?.code==='MFA_DELIVERY_FAILED')
+        throw new ApiError('We could not send the verification email. Please contact support or try signing in later.'+supportRef,503);
+      throw new ApiError(friendly('server')+supportRef,503);
+    }
     if(status===403)throw new ApiError('You do not have permission to perform this action.',403);
     if(status===404)throw new ApiError('The requested information could not be found. Please refresh and try again.',404);
     if(status===408||status===504)throw new ApiError('The request took too long. Please try again.',status);

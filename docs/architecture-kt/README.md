@@ -8,6 +8,8 @@
 - [Physical DB schema audit, migration plan and read-only SQL](DB_SCHEMA_AND_MIGRATION.md)
 - [Status code, audit security and web/mobile UAT checklist](HTTP_AUDIT_UI_CHECKLIST.md)
 - [KT demonstration and release sign-off](KT_DEMO.md)
+- [All web and Expo screens — evidence-driven UAT matrix](SCREEN_BY_SCREEN_UAT_MATRIX.md)
+- [App-skeleton reuse rules, commands and KT evidence](APP_SKELETON_REUSE_AND_KT.md)
 - [Read-only migration source verification script](../../scripts/verify-flyway-source.sh)
 
 > These additional documents do not assert live production verification; source-only review is not customer UAT or a verified database restore.
