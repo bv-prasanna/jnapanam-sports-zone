@@ -449,3 +449,27 @@
 .site-footer .footer-app-qr:hover{border-color:var(--gold);box-shadow:0 0 0 2px #d99a3266}
 .site-footer .footer-app-qr:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 @media(max-width:520px){.site-footer .footer-app-qr{max-width:320px}}
+
+/* The permanent Android download QR sits BESIDE the official footer logo,
+   not below the venue contact details. Keep them together at all widths. */
+.site-footer .footer-brand-block{min-width:0}
+.site-footer .footer-brand-qr-row{
+  display:grid;grid-template-columns:minmax(0,1fr) 126px;align-items:center;
+  gap:12px;max-width:380px;min-width:0;
+}
+.site-footer .footer-brand-qr-row .footer-logo{
+  display:block;width:100%;max-width:155px;height:auto;max-height:155px;object-fit:contain
+}
+.site-footer .footer-brand-qr-row .footer-app-qr{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;max-width:none;width:100%;min-width:0;margin:0;padding:7px 5px;
+}
+.site-footer .footer-brand-qr-row .footer-app-qr img{
+  width:104px;height:104px;max-width:100%;padding:4px;object-fit:contain;
+}
+.site-footer .footer-brand-qr-row .footer-app-qr span{text-align:center;gap:2px}
+.site-footer .footer-brand-qr-row .footer-app-qr strong{font-size:12px;white-space:nowrap}
+.site-footer .footer-brand-qr-row .footer-app-qr small{font-size:11px;white-space:nowrap}
+@media(max-width:520px){
+ .site-footer .footer-brand-qr-row{grid-template-columns:minmax(0,1fr) 120px;max-width:350px;gap:10px}
+}
