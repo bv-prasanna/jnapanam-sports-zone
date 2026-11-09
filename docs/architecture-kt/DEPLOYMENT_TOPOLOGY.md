@@ -52,3 +52,8 @@ Protect PROD with distinct credentials, isolated database, independent webhook s
 ## Failure / rollback
 
 Roll back application code to the previously approved image; Flyway is **forward-only by default**. For schema failure, coordinate a forward fix or restore from a verified pre-change backup according to the DBA-approved runbook. A successful GitHub job does not prove the live environment is healthy.
+
+
+## Authentication-key launch gate (2026-11-10)
+
+The backend refuses startup under `prod`/`production` profile if the configured `JWT_SECRET` is the source-controlled development default. Generate a unique, securely managed Base64-encoded key (at least 32 decoded bytes), set it privately in Northflank and verify it **before** deployment. The default `JWT_ACCESS_MINUTES` is now 60; session continuity uses rotating refresh tokens. Changing the signing key invalidates existing JWTs and may require customer re-login. This does **not** establish that current production secrets are safe: confirm Northflank settings with the authorized operator; never paste secrets into GitHub or UAT reports.
