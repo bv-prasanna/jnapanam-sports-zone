@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 const read = (path) => readFile(new URL('../'+path, import.meta.url), 'utf8');
 
 test('OpenAPI and Swagger are not publicly accessible', async () => {
-  const security = await read('../../backend/src/main/java/com/jnapanam/sportszone/security/SecurityConfig.java');
+  const security = await read('../backend/src/main/java/com/jnapanam/sportszone/security/SecurityConfig.java');
   assert.match(security, /requestMatchers\("\/v3\/api-docs\/\*\*", "\/swagger-ui\/\*\*", "\/swagger-ui.html"\)\.hasAnyRole\("SUPER_ADMIN", "ADMIN"\)/);
   assert.doesNotMatch(security, /requestMatchers\([^\n]*\/v3\/api-docs[^\n]*\)\.permitAll\(\)/);
 });
