@@ -44,7 +44,7 @@ test('auth repair preserves Android version policy enforcement and does not mask
  assert.match(api,/X-Jnapanam-Version-Code/);
  assert.match(api,/announceServerRequiredUpdate\(\)/);
  assert.match(api,/if\(status===426\)/);
- assert.match(api,/if\(publicAuth&&path==='\/api\/v1\/auth\/login'\)/);
+ assert.match(api,/if\(path==='\/api\/v1\/auth\/login' && \(status===401\|\|status===503\)\)/);
  assert.match(api,/MFA_REQUIRED/);
  assert.match(login,/setMfaRequired\(true\)/);
 });
