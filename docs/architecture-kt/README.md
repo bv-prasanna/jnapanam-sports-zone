@@ -31,20 +31,34 @@ Parsed from [`apps/backend/src/main/resources/db/migration/V1__identity_schema.s
 ```mermaid
 erDiagram
     ROLES {
-        string id PK
+        BIGSERIAL id PK
+        VARCHAR name
     }
     USERS {
-        string id PK
+        UUID id PK
+        VARCHAR full_name
+        VARCHAR email
+        VARCHAR mobile
+        VARCHAR password_hash
+        VARCHAR status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
     }
     USER_ROLES {
-        string id PK
+        UUID user_id PK
+        BIGINT role_id PK
     }
     REFRESH_TOKENS {
-        string id PK
+        UUID id PK
+        UUID user_id FK
+        CHAR token_hash
+        TIMESTAMPTZ expires_at
+        TIMESTAMPTZ revoked_at
+        TIMESTAMPTZ created_at
     }
-    USERS ||--o{ USER_ROLES : references
-    ROLES ||--o{ USER_ROLES : references
-    USERS ||--o{ REFRESH_TOKENS : references
+    USERS ||--o{ USER_ROLES : user_id
+    ROLES ||--o{ USER_ROLES : role_id
+    USERS ||--o{ REFRESH_TOKENS : user_id
 ```
 **Baseline tables detected:** `roles`, `users`, `user_roles`, `refresh_tokens`.
 
