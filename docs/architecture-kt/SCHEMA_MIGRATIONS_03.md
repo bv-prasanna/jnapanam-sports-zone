@@ -1,6 +1,6 @@
 # Jnapanam migration schema: Part 3
 
-> SQL files 29–42 of 60, from `main` on 2026-11-09. **Source-derived partial schema, not live database schema.**
+> SQL files V29–V43 (V42 absent) of 60, from `main` on 2026-11-09. **Source-derived partial schema, not live database schema.**
 
 ## Migration inventory
 - [`V29__advanced_release1_workflows.sql`](../../apps/backend/src/main/resources/db/migration/V29__advanced_release1_workflows.sql)

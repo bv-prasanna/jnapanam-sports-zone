@@ -6,7 +6,7 @@
 |---|---|---|
 | 1 | 1–14 | [Tables, ER, columns and ALTER notes](SCHEMA_MIGRATIONS_01.md) |
 | 2 | 15–28 | [Tables, ER, columns and ALTER notes](SCHEMA_MIGRATIONS_02.md) |
-| 3 | 29–42 | [Tables, ER, columns and ALTER notes](SCHEMA_MIGRATIONS_03.md) |
+| 3 | 29–43 (V42 absent) | [Tables, ER, columns and ALTER notes](SCHEMA_MIGRATIONS_03.md) |
 | 4 | 44–57 | [Tables, ER, columns and ALTER notes](SCHEMA_MIGRATIONS_04.md) |
 | 5 | 58–61 | [Tables, ER, columns and ALTER notes](SCHEMA_MIGRATIONS_05.md) |
 
