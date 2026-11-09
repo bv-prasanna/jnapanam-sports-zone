@@ -1,5 +1,5 @@
 # Jnapanam schema migrations: Part 5
-> Final 4 of 60 migration SQL files on `main`, retrieved 2026-11-09. **Not a live schema export.**
+> Files V58–V61 (final 4 of 60 SQL migration files) on `main`, retrieved 2026-11-09. **Not a live schema export.**
 
 ## Files
 - [`V58__facility_kannada_terms.sql`](../../apps/backend/src/main/resources/db/migration/V58__facility_kannada_terms.sql)

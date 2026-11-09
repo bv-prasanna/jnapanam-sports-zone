@@ -2,6 +2,9 @@
 
 ## Expanded handover bundle (November 10, 2026)
 
+- [Every web and Android route: source inspection and UAT cases](PAGE_BY_PAGE_UAT_2026-11-10.md)
+- [Security findings, HTTP error codes and production gates](SECURITY_REVIEW_2026-11-10.md)
+
 - [Deployment topology and environment preflight](DEPLOYMENT_TOPOLOGY.md)
 - [System architecture and critical booking/payment sequences](SYSTEM_ARCHITECTURE.md)
 - [Core logical ER relationships and schema caveats](CORE_ER.md)

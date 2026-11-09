@@ -10,7 +10,7 @@ Attendees: Super Admin, Admin, Operations/Front Desk, Shop Keeper, Finance, venu
 
 | Section | Demo | Evidence to retain |
 |---|---|---|
-| 1. Architecture (5m) | Explain DEPLOYMENT_TOPOLOGY.md, SYSTEM_ARCHITECTURE.md and ER_CORE.md | Deployment SHA / diagram version |
+| 1. Architecture (5m) | Explain DEPLOYMENT_TOPOLOGY.md, SYSTEM_ARCHITECTURE.md and CORE_ER.md | Deployment SHA / diagram version |
 | 2. Access (10m) | Register / login / MFA, wrong password, session refresh, role-specific sidebars | 401/403/MFA code scenarios and audit ID |
 | 3. Catalog (10m) | Sport, facility, multiple weekly hours, date override, blackout and booking capacity | Admin edit + public slot preview |
 | 4. Booking (10m) | Customer hold, confirm, PAY_NOW/PAY_AT_VENUE, booking details and cancellation | Booking number, price/tax snapshot |

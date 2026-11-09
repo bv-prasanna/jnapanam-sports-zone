@@ -1,6 +1,6 @@
 # Jnapanam migration schema: Part 4
 
-> SQL files 43–56 of 60, from `main` on 2026-11-09. **Source-derived partial schema, not live database schema.**
+> SQL files V44–V57 of 60, from `main` on 2026-11-09. **Source-derived partial schema, not live database schema.**
 
 ## Migration inventory
 - [`V44__daily_booking_digest_deliveries.sql`](../../apps/backend/src/main/resources/db/migration/V44__daily_booking_digest_deliveries.sql)
