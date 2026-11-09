@@ -15,7 +15,8 @@ test('mobile distinguishes uncertain refunds and MFA mail delivery failures from
   const api=await readFile(new URL('../../mobile/src/lib/api.ts',import.meta.url),'utf8');
   assert.match(api,/problem\?\.code==='REFUND_STATUS_UNCERTAIN'/);
   assert.match(api,/Check Razorpay and reconcile the payment before trying again/);
-  assert.match(api,/problem\?\.code==='MFA_DELIVERY_FAILED'/);
+  assert.match(api,/code==='MFA_DELIVERY_FAILED'/);
+  assert.match(api,/const code=problem\?\.code;/);
   assert.ok(api.indexOf("problem?.code==='REFUND_STATUS_UNCERTAIN'")<api.indexOf("if(status>=500)"));
 });
 
