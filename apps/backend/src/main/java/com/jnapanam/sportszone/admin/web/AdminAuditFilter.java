@@ -74,8 +74,9 @@ public class AdminAuditFilter extends OncePerRequestFilter {
     }
 
     private static String clientAddress(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        return forwarded == null || forwarded.isBlank() ? request.getRemoteAddr() : limited(forwarded.split(",")[0].trim(), 80);
+        // Direct client-supplied forwarding headers are untrusted. The configured ingress
+        // must normalize the real client address before it reaches the servlet request.
+        return limited(request.getRemoteAddr(), 80);
     }
 
     private static Resource resource(String path) {

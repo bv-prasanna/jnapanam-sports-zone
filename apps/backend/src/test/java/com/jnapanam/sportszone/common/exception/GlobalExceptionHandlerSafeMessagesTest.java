@@ -23,6 +23,19 @@ class GlobalExceptionHandlerSafeMessagesTest {
         assertEquals(400,result.getStatusCode().value());
         assertFalse(result.getBody().getDetail().contains("password"));
     }
+    @Test void mfaDeliveryAndInvalidCodeHaveSpecificSupportCodes(){
+        assertEquals("MFA_DELIVERY_FAILED",
+                advice.mfaEmailDelivery(new MfaEmailDeliveryException()).getBody().getProperties().get("code"));
+        assertEquals("MFA_INVALID",
+                advice.invalidMfaCode(new InvalidMfaCodeException()).getBody().getProperties().get("code"));
+    }
+    @Test void refundUncertaintyNeverClaimsSuccess(){
+        var response=advice.refundUncertain(
+                new com.jnapanam.sportszone.payment.gateway.RefundGatewayUncertainException());
+        assertEquals(503,response.getStatusCode().value());
+        assertEquals("REFUND_STATUS_UNCERTAIN",response.getBody().getProperties().get("code"));
+        assertTrue(response.getBody().getDetail().contains("reconcile"));
+    }
     @Test void referenceAndSafeErrorCategoryAreAssociatedWithRequest(){
         var request=new org.springframework.mock.web.MockHttpServletRequest("GET","/api/v1/bookings");
         request.setAttribute("jnapanam.correlationId","support-ref-1234");

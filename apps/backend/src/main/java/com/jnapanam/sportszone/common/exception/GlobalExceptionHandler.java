@@ -26,6 +26,7 @@ public class GlobalExceptionHandler {
         ResponseEntity<ProblemDetail> result=problem(HttpStatus.SERVICE_UNAVAILABLE,
                 "Unable to send the sign-in verification email. Please retry or contact support.");
         result.getBody().setProperty("code","MFA_DELIVERY_FAILED");
+        setErrorCode("MFA_DELIVERY_FAILED");
         return result;
     }
     @ExceptionHandler(InvalidMfaCodeException.class)
@@ -33,11 +34,15 @@ public class GlobalExceptionHandler {
         ResponseEntity<ProblemDetail> result=problem(HttpStatus.UNAUTHORIZED,
                 "Verification code invalid or expired. Request a new code if necessary.");
         result.getBody().setProperty("code","MFA_INVALID");
+        setErrorCode("MFA_INVALID");
         return result;
     }
     @ExceptionHandler(com.jnapanam.sportszone.payment.gateway.RefundGatewayUncertainException.class)
     ResponseEntity<ProblemDetail> refundUncertain(com.jnapanam.sportszone.payment.gateway.RefundGatewayUncertainException e){
-        return problem(HttpStatus.SERVICE_UNAVAILABLE,e.getMessage());
+        ResponseEntity<ProblemDetail> result=problem(HttpStatus.SERVICE_UNAVAILABLE,e.getMessage());
+        result.getBody().setProperty("code","REFUND_STATUS_UNCERTAIN");
+        setErrorCode("REFUND_STATUS_UNCERTAIN");
+        return result;
     }
     @ExceptionHandler(BadRequestException.class) ResponseEntity<ProblemDetail> badRequest(BadRequestException ex) { return problem(HttpStatus.BAD_REQUEST, ex.getMessage()); }
     @ExceptionHandler(ConflictException.class) ResponseEntity<ProblemDetail> conflict(ConflictException ex) { return problem(HttpStatus.CONFLICT, ex.getMessage()); }
@@ -51,9 +56,13 @@ public class GlobalExceptionHandler {
     ResponseEntity<ProblemDetail> validation(MethodArgumentNotValidException ex) {
         Map<String,String> errors = ex.getBindingResult().getFieldErrors().stream().collect(Collectors.toMap(e -> e.getField(), e -> e.getDefaultMessage() == null ? "invalid" : e.getDefaultMessage(), (a,b) -> a));
         String summary = errors.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining("; "));
-        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, summary.isBlank() ? "Please correct the highlighted fields" : summary);
-        detail.setType(URI.create("https://jnapanamsportszone.in/problems/validation"));
-        detail.setProperty("errors", errors); return ResponseEntity.badRequest().body(detail);
+        ResponseEntity<ProblemDetail> response = problem(HttpStatus.BAD_REQUEST,
+                summary.isBlank() ? "Please correct the highlighted fields" : summary);
+        response.getBody().setType(URI.create("https://jnapanamsportszone.in/problems/validation"));
+        response.getBody().setProperty("code","VALIDATION_FAILED");
+        response.getBody().setProperty("errors",errors);
+        setErrorCode("VALIDATION_FAILED");
+        return response;
     }
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ProblemDetail> forbidden(AccessDeniedException ex){
@@ -88,6 +97,13 @@ public class GlobalExceptionHandler {
         LOG.error("Unhandled API exception class={} correlationId={}",ex.getClass().getSimpleName(),reference);
         return problem(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Something went wrong. Please try again or contact support.");
+    }
+
+    private void setErrorCode(String code) {
+        var attrs=RequestContextHolder.getRequestAttributes();
+        if(attrs instanceof ServletRequestAttributes servlet){
+            servlet.getRequest().setAttribute("jnapanam.errorCode",code);
+        }
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String message) {

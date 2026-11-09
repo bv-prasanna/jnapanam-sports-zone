@@ -30,6 +30,16 @@ class ApiTelemetryFilterTest {
                 new MockHttpServletRequest("GET","/api/v1/public/sports"),new MockHttpServletResponse(),(a,b)->{});
         verifyNoInteractions(repo);
     }
+    @Test void untrustedForwardedForCannotSpoofAuditIp() throws Exception {
+        var repo=mock(AuditLogRepository.class);
+        var request=new MockHttpServletRequest("POST","/api/v1/bookings");
+        request.setRemoteAddr("192.0.2.10");
+        request.addHeader("X-Forwarded-For","203.0.113.99, 198.51.100.8");
+        new AdminAuditFilter(repo).doFilterInternal(request,new MockHttpServletResponse(),(a,b)->{});
+        var captured=ArgumentCaptor.forClass(AuditLog.class);
+        verify(repo).save(captured.capture());
+        assertEquals("192.0.2.10",captured.getValue().getRemoteAddress());
+    }
     @Test void earlyDeniedRequestsAreLoggedAndUntrustedCorrelationIdsAreDiscarded() throws Exception {
         var repo=mock(AuditLogRepository.class);
         var request=new MockHttpServletRequest("GET","/api/v1/admin/errors");
