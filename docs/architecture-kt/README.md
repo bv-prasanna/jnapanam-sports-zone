@@ -1,4 +1,16 @@
 # Jnapanam Sports Zone: Architecture, Deployment, ER, DB, Migration and KT
+
+## Expanded handover bundle (November 10, 2026)
+
+- [Deployment topology and environment preflight](DEPLOYMENT_TOPOLOGY.md)
+- [System architecture and critical booking/payment sequences](SYSTEM_ARCHITECTURE.md)
+- [Core logical ER relationships and schema caveats](CORE_ER.md)
+- [Physical DB schema audit, migration plan and read-only SQL](DB_SCHEMA_AND_MIGRATION.md)
+- [Status code, audit security and web/mobile UAT checklist](HTTP_AUDIT_UI_CHECKLIST.md)
+- [KT demonstration and release sign-off](KT_DEMO.md)
+- [Read-only migration source verification script](../../scripts/verify-flyway-source.sh)
+
+> These additional documents do not assert live production verification; source-only review is not customer UAT or a verified database restore.
 > **Snapshot:** 2026-11-09. Evidence: [bv-prasanna/jnapanam-sports-zone](https://github.com/bv-prasanna/jnapanam-sports-zone) default branch `main`. This is **source-derived**, not a live deployment or data audit.
 **Environment:** confirm live Northflank/Cloudflare configuration, DB, signing, keys and deployment SHA with operators; code alone is not deployment proof.
 ## 1. Application architecture
