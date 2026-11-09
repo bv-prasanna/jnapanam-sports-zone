@@ -16,12 +16,14 @@ export default function OperationsExceptions(){
  const [payments,setPayments]=useState<Payment[]>([]);
  const [error,setError]=useState("");
  const [loading,setLoading]=useState(true);
+ const [ticketsLoaded,setTicketsLoaded]=useState(false);
+ const [paymentsLoaded,setPaymentsLoaded]=useState(false);
  const load=useCallback(async()=>{
    if(!allowed)return;
-   setError("");setLoading(true);
+   setError("");setLoading(true);setTicketsLoaded(false);setPaymentsLoaded(false);
    const [s,p]=await Promise.allSettled([api<Ticket[]>("/api/v1/admin/support"),api<Payment[]>("/api/v1/admin/payments")]);
-   if(s.status==="fulfilled")setTickets(s.value);else setError("Support tickets could not be loaded. "+(s.reason instanceof ApiError?s.reason.message:""));
-   if(p.status==="fulfilled")setPayments(p.value);else setError(value=>value+" Payment records could not be loaded. "+(p.reason instanceof ApiError?p.reason.message:""));
+   if(s.status==="fulfilled"){setTickets(s.value);setTicketsLoaded(true);}else{setTickets([]);setError("Support tickets could not be loaded. "+(s.reason instanceof ApiError?s.reason.message:""));}
+   if(p.status==="fulfilled"){setPayments(p.value);setPaymentsLoaded(true);}else{setPayments([]);setError(value=>value+" Payment records could not be loaded. "+(p.reason instanceof ApiError?p.reason.message:""));}
    setLoading(false);
  },[allowed]);
  useEffect(()=>{if(ready&&!allowed)router.replace(user?"/dashboard":"/login");},[ready,allowed,router,user]);
@@ -43,12 +45,12 @@ export default function OperationsExceptions(){
    </div>
    <section className={styles.card}><div className={styles.sectionHead}><h2>Customer support / complaints</h2><span>{tickets.length} records</span></div>
      <div className={styles.scroll}><table><thead><tr><th>Ticket</th><th>Subject</th><th>Customer</th><th>Priority</th><th>Status</th></tr></thead><tbody>{tickets.map(t=><tr key={t.id}><td>{t.ticket_number||"—"}</td><td>{t.subject||"—"}</td><td>{t.customer_name||"—"}</td><td>{readable(t.priority)}</td><td>{readable(t.status)}</td></tr>)}</tbody></table></div>
-     {tickets.length===0&&<p className={styles.empty}>No support tickets are recorded.</p>}
+     {!loading&&ticketsLoaded&&tickets.length===0&&<p className={styles.empty}>No support tickets are recorded.</p>}
    </section>
    <section className={styles.card}><div className={styles.sectionHead}><h2>Payment records</h2><span>{payments.length} records</span></div>
      <p className={styles.note}>This is an application payment-status summary, not a verified bank or Razorpay settlement reconciliation.</p>
      <div className={styles.scroll}><table><thead><tr><th>Receipt</th><th>Purpose</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead><tbody>{payments.slice(0,100).map(p=><tr key={p.id}><td>{p.receiptNumber||"—"}</td><td>{readable(p.purpose)}</td><td>{rup(Number(p.amountPaise||0))}</td><td>{readable(p.status)}</td><td>{p.createdAt?new Date(p.createdAt).toLocaleDateString("en-IN"):"—"}</td></tr>)}</tbody></table></div>
-     {payments.length===0&&<p className={styles.empty}>No payment records are recorded.</p>}
+     {!loading&&paymentsLoaded&&payments.length===0&&<p className={styles.empty}>No payment records are recorded.</p>}
      {payments.length>100&&<p className={styles.note}>Showing the first 100 records. Open Payments in the admin console for full details.</p>}
    </section>
  </main>;

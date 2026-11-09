@@ -24,8 +24,8 @@ type ActionKind = "check-out"|"cancel"|"no-show";
 
 function iso(date:Date){return date.toISOString().slice(0,10)}
 function todayLocal(){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}
-function addDays(value:string,days:number){const d=new Date(`${value}T00:00:00`);d.setDate(d.getDate()+days);return iso(d)}
-function monthEnd(value:string){const [y,m]=value.split("-").map(Number);return iso(new Date(y,m,0))}
+function addDays(value:string,days:number){const d=new Date(`${value}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return iso(d)}
+function monthEnd(value:string){const [y,m]=value.split("-").map(Number);return iso(new Date(Date.UTC(y,m,0)))}
 function pretty(value?:string){return value?value.replaceAll("_"," "):"—"}
 function moneyPaise(value?:number){return value==null?"—":new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(value/100)}
 function message(error:unknown,fallback:string){return error instanceof ApiError&&error.message?error.message:fallback}
