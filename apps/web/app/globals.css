@@ -450,6 +450,59 @@
 .site-footer .footer-app-qr:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 @media(max-width:520px){.site-footer .footer-app-qr{max-width:320px}}
 
+
+/* UAT visual-quality pass: consistent premium form surfaces and keyboard feedback.
+   Scoped to public authentication/contact surfaces to avoid changing operator workflows. */
+.auth-page .auth-card,.contact-form{
+  border:1px solid #e2d0b3;
+  background:linear-gradient(165deg,#fffefa 0%,#fffaf1 100%);
+  box-shadow:0 22px 60px #101c1030,0 2px 8px #28330f12;
+}
+.auth-page .auth-card{
+  width:min(500px,100%);
+  padding:clamp(22px,4vw,40px);
+  gap:18px;
+}
+.auth-page .auth-card h1{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(30px,4vw,42px);
+  letter-spacing:-.025em;
+  line-height:1.15;
+  color:var(--olive);
+}
+.auth-page .auth-card :is(input,select,textarea),
+.contact-form :is(input,select,textarea){
+  min-height:46px;
+  width:100%;
+  max-width:100%;
+  transition:border-color .16s ease,box-shadow .16s ease;
+}
+.auth-page .auth-card :is(input,select,textarea):focus-visible,
+.contact-form :is(input,select,textarea):focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:2px;
+  border-color:var(--olive);
+  box-shadow:0 0 0 4px #d99a3224;
+}
+.auth-page .auth-card .btn{min-height:46px}
+.auth-page .auth-links{flex-wrap:wrap;line-height:1.5}
+.auth-page :is(a,button):focus-visible,
+.site-header :is(a,button):focus-visible,
+.site-footer :is(a,button):focus-visible{
+  outline:3px solid var(--gold);
+  outline-offset:3px;
+}
+@media(max-width:520px){
+  .auth-page{min-height:calc(100dvh - 130px);padding:30px 14px}
+  .auth-page .auth-card{padding:23px 20px;border-radius:16px}
+  .auth-page .auth-links{flex-direction:column;align-items:flex-start;gap:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .auth-page .auth-card :is(input,select,textarea),
+  .contact-form :is(input,select,textarea){transition:none}
+}
+
+
 /* The permanent Android download QR sits BESIDE the official footer logo,
    not below the venue contact details. Keep them together at all widths. */
 .site-footer .footer-brand-block{min-width:0}
