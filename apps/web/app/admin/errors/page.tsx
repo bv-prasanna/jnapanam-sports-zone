@@ -10,10 +10,12 @@ type Failure={id:string;occurredAt:string;method:string;path:string;status:numbe
   correlationId:string|null;durationMs:number;action:string};
 const statuses=[{value:"",label:"All errors"},{value:"400",label:"400 Bad request"},
   {value:"401",label:"401 Login / session"},{value:"403",label:"403 Permission"},
-  {value:"404",label:"404 Not found"},{value:"409",label:"409 Conflict"},
-  {value:"429",label:"429 Rate limited"},{value:"500",label:"500 Server error"},
-  {value:"502",label:"502 Bad gateway"},{value:"503",label:"503 Unavailable"}];
-function statusName(n:number){return n>=500?"Server failure":n===401?"Authentication":n===403?"Access denied":n===404?"Not found":n===429?"Too many requests":n===409?"Conflict":"Request rejected";}
+  {value:"404",label:"404 Not found"},{value:"408",label:"408 Timeout"},
+  {value:"409",label:"409 Conflict"},{value:"422",label:"422 Validation"},
+  {value:"426",label:"426 App update"},{value:"429",label:"429 Rate limited"},
+  {value:"500",label:"500 Server error"},{value:"502",label:"502 Bad gateway"},
+  {value:"503",label:"503 Unavailable"},{value:"504",label:"504 Gateway timeout"}];
+function statusName(n:number){return n===408||n===504?"Timeout":n===426?"App update required":n===422?"Validation":n===502||n===503?"Service unavailable":n>=500?"Server failure":n===401?"Authentication":n===403?"Access denied":n===404?"Not found":n===429?"Too many requests":n===409?"Conflict":"Request rejected";}
 export default function ErrorLogs(){
  const {user,ready}=useApp();
  const router=useRouter();
@@ -22,6 +24,7 @@ export default function ErrorLogs(){
  const [rows,setRows]=useState<Failure[]>([]);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
+ const [copyFeedback,setCopyFeedback]=useState("");
  const load=useCallback(async()=>{
    if(!allowed)return;
    setBusy(true);setError("");
@@ -32,6 +35,15 @@ export default function ErrorLogs(){
    }catch(e){setError(e instanceof ApiError?e.message:"Unable to load error logs.");}
    finally{setBusy(false);}
  },[allowed,status]);
+ async function copyReference(reference:string){
+   try{
+     if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");
+     await navigator.clipboard.writeText(reference);
+     setCopyFeedback("Support reference copied. Share it with the technical support team.");
+   }catch{
+     setCopyFeedback("Automatic copying is unavailable. Select the reference ID and copy it manually.");
+   }
+ }
  useEffect(()=>{if(ready&&!allowed)router.replace(user?"/dashboard":"/login");},[ready,allowed,user,router]);
  useEffect(()=>{void load();},[load]);
  if(!ready||!allowed)return <main className={styles.page}>Checking administrator access…</main>;
@@ -47,6 +59,7 @@ export default function ErrorLogs(){
      <button type="button" onClick={()=>void load()} disabled={busy}>{busy?"Loading…":"Refresh logs"}</button>
    </div>
    {error&&<p className={styles.error} role="alert">{error}</p>}
+   {copyFeedback&&<p className={styles.hint} role="status">{copyFeedback}</p>}
    <p className={styles.count} role="status">Showing {rows.length} recent matching errors (maximum 100 per view).</p>
    <div className={styles.tableWrap}><table><thead><tr>
      <th>When</th><th>Status</th><th>API operation</th><th>Error code</th><th>Reference ID</th><th>Elapsed</th>
@@ -55,7 +68,7 @@ export default function ErrorLogs(){
      <td><strong className={r.status>=500?styles.critical:styles.warning}>{r.status}</strong><small>{statusName(r.status)}</small></td>
      <td><span className={styles.method}>{r.method}</span><code>{r.path}</code></td>
      <td><code>{r.action}</code></td>
-     <td>{r.correlationId?<button className={styles.copy} title="Copy support reference" type="button" onClick={()=>{void navigator.clipboard?.writeText(r.correlationId!);}}>{r.correlationId}</button>:"Unavailable"}</td>
+     <td>{r.correlationId?<button className={styles.copy} title="Copy support reference" aria-label={"Copy support reference "+r.correlationId} type="button" onClick={()=>void copyReference(r.correlationId!)}>{r.correlationId}</button>:"Unavailable"}</td>
      <td>{r.durationMs} ms</td>
    </tr>)}</tbody></table>
    {!busy&&rows.length===0&&<p className={styles.empty}>No matching error records found.</p>}</div>
