@@ -4,6 +4,10 @@
 
 ## API response contract
 
+The 2026-11-10 hardening PR adds typed Android MFA errors and prevents bypass of login throttling using untrusted X-Forwarded-For. Throttling now returns a stable AUTH_RATE_LIMITED code, Retry-After and available requestId (from the outer telemetry filter). This is **in-process**, not a distributed/WAF solution. Review [security findings](SECURITY_REVIEW_2026-11-10.md) and [route register](PAGE_BY_PAGE_UAT_2026-11-10.md).
+
+
+
 Errors should use RFC 9457-style Spring ProblemDetail: HTTP status; safe detail; stable property code; requestId; response header X-Correlation-ID. Clients must use structured codes rather than guessing from message text.
 
 | HTTP | Meaning | Expected UI |

@@ -134,7 +134,7 @@ const en = {
     createAccount: 'Create Account', registerDescription: 'Register once to book facilities and join programs.',
     verifyEmail:'Verify email', emailOtpSentTo:'We sent a 6-digit verification code to:', checkSpamFolder:'Check this inbox, including spam or junk.',emailVerificationCode:'Email verification code',
     sixDigitOtp:'6-digit OTP',sendEmailOtp:'Send email OTP',verifyAndCreateAccount:'Verify & Create Account',changeEmail:'Wrong email? Change address',validEmailOtp:'Enter the 6-digit code from your email.',
-    loginRequired: 'Login required', validCredentials: 'Enter a valid email and password.', validName: 'Enter a proper name using letters only.',
+    loginMfaResend:'Resend verification code',loginMfaVerify:'Verify & Login',loginMfaInvalid:'Verification code invalid or expired. Request a new code.',loginMfaDeliveryFailed:'Unable to send the verification email. Please try again.',loginInvalidPassword:'Incorrect email/mobile or password.',loginRequired: 'Login required', validCredentials: 'Enter a valid email and password.', validName: 'Enter a proper name using letters only.',
     validEmail: 'Enter a valid email address.', validMobile: 'Mobile number is required. Enter at least 10 digits (up to 20 characters).',
     passwordLength: 'Password must contain at least 8 characters.', passwordMismatch: 'Passwords do not match.', smsOtp:'SMS verification code', sendOtp:'Send SMS OTP', verifyOtp:'Verify OTP', resetPassword:'Reset password', deviceVerified:'This mobile device is verified for your session',
   },

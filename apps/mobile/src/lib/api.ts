@@ -25,7 +25,7 @@ let sessionExpiredHandler:(()=>void)|null=null;
 export function setAccessToken(token:string|null){accessToken=token;}
 export function onSessionExpired(handler:(()=>void)|null){sessionExpiredHandler=handler;}
 export class ApiError extends Error {
-  constructor(message:string,public status:number){super(message);this.name='ApiError';}
+  constructor(message:string,public status:number,public code?:string){super(message);this.name='ApiError';}
 }
 const friendly=(key:'network'|'timeout'|'server'|'session'|'generic')=>i18n.t('errors.'+key);
 const technical=/socketexception|fetch failed|network request failed|software caused connection abort|stacktrace|java\.|exception:|connection refused|read timed out|unexpected token/i;
@@ -115,11 +115,14 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
     if(status===426){announceServerRequiredUpdate();throw new ApiError('An app update is required to continue. Open the update screen.',426);}
     if(status===401){
       if(publicAuth&&path==='/api/v1/auth/login'){
-        const detail=await response.json().catch(()=>null);
-        const message=detail?.detail||detail?.message;
-        if(typeof message==='string'&&message.includes('MFA code sent'))
-          throw new ApiError('MFA code sent to your registered email. Enter the 6-digit verification code.',401);
-        throw new ApiError('Invalid login details or verification code. Please try again.',401);
+        // Stable backend ProblemDetail.code; never infer MFA from English text.
+        const problem=await response.json().catch(()=>null);
+        const code=problem?.code;
+        if(code==='MFA_REQUIRED')
+          throw new ApiError('A verification code was requested for your registered email.',401,'MFA_REQUIRED');
+        if(code==='MFA_INVALID')
+          throw new ApiError('Invalid or expired verification code.',401,'MFA_INVALID');
+        throw new ApiError('Invalid email/mobile or password. Please try again.',401,'INVALID_CREDENTIALS');
       }
       if(publicAuth)throw new ApiError('We could not verify these details. Please try again.',401);
       throw new ApiError(friendly('session'),401);
@@ -128,8 +131,9 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
       const problem=await response.json().catch(()=>null);
       if(problem?.code==='REFUND_STATUS_UNCERTAIN')
         throw new ApiError('Refund status could not be confirmed. Check Razorpay and reconcile the payment before trying again.'+supportRef,503);
-      if(publicAuth&&path==='/api/v1/auth/login'&&problem?.code==='MFA_DELIVERY_FAILED')
-        throw new ApiError('We could not send the verification email. Please contact support or try signing in later.'+supportRef,503);
+      const code=problem?.code;
+      if(publicAuth&&path==='/api/v1/auth/login'&&code==='MFA_DELIVERY_FAILED')
+        throw new ApiError('Unable to send verification email. Please retry or contact support.'+supportRef,503,'MFA_DELIVERY_FAILED');
       throw new ApiError(friendly('server')+supportRef,503);
     }
     if(status===403)throw new ApiError('You do not have permission to perform this action.',403);
