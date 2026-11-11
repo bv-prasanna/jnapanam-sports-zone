@@ -1,6 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {router,useFocusEffect} from 'expo-router';
+import {useTranslation} from 'react-i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BrandColors } from '@/constants/brand';
 import { useAuth } from '@/features/auth/auth-context';
@@ -32,11 +34,8 @@ type QueueState = 'PAYMENT_DUE' | 'READY' | 'CHECKED_IN';
 const staffRoles = ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS'];
 const terminalStatuses = new Set(['CANCELLED', 'COMPLETED', 'NO_SHOW']);
 
-function localDateValue(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function localDateValue(offset=0) {
+  return new Date(Date.now()+330*60_000+offset*86_400_000).toISOString().slice(0,10);
 }
 
 function queueState(booking: Booking): QueueState {
@@ -58,10 +57,17 @@ function queueLabel(state: QueueState) {
 }
 
 export default function OperationsScreen() {
+  const {t}=useTranslation();
   const { user } = useAuth();
   const allowed = !!user?.roles.some((role) => staffRoles.includes(role));
   const isAdmin = !!user?.roles.some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
   const today = useMemo(() => localDateValue(), []);
+  const [selectedDate,setSelectedDate]=useState(today);
+  const [manualBooking,setManualBooking]=useState<Booking|null>(null);
+  const [identity,setIdentity]=useState<{customerName:string;profilePhotoUrl?:string;photoAvailable:boolean;documentAvailable:boolean;documentType?:string;documentStatus?:string}|null>(null);
+  const [documentPreview,setDocumentPreview]=useState<string|null>(null);
+  const [identityBusy,setIdentityBusy]=useState(false);
+  const [manualVerified,setManualVerified]=useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [query, setQuery] = useState('');
   const [sportFilter, setSportFilter] = useState('ALL');
@@ -70,22 +76,25 @@ export default function OperationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
-    if (!allowed) return;
+    if (!allowed) return false;
     try {
       setError('');
-      const rows = await api<Booking[]>(`/api/v1/admin/bookings?date=${today}`);
-      setBookings(rows.filter((booking) => booking.date === today && !terminalStatuses.has(booking.status)));
+      const rows = await api<Booking[]>(`/api/v1/admin/bookings?date=${selectedDate}`);
+      setBookings(rows.filter((booking) => booking.date === selectedDate && !terminalStatuses.has(booking.status)));
+      return true;
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Unable to load today’s bookings.');
+      return false;
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [allowed, today]);
+  }, [allowed, selectedDate]);
 
-  useEffect(() => { void load(); }, [load]);
+  useFocusEffect(useCallback(()=>{void load();},[load]));
 
   const sports = useMemo(() => Array.from(new Set(bookings.map((booking) => booking.sportName).filter(Boolean) as string[])).sort(), [bookings]);
   const facilities = useMemo(() => Array.from(new Set(bookings
@@ -119,7 +128,7 @@ export default function OperationsScreen() {
   async function run(booking: Booking, action: OperationAction) {
     try {
       setBusy(booking.id + action);
-      setError('');
+      setError('');setNotice('');
       const path = action === 'check-in'
         ? `/api/v1/operations/bookings/${booking.bookingNumber}/check-in`
         : `/api/v1/operations/bookings/${booking.id}/${action}`;
@@ -129,7 +138,14 @@ export default function OperationsScreen() {
           ? { reason: action === 'no-show' ? 'Customer did not arrive within the permitted grace period' : 'Cancelled by admin' }
           : undefined;
       await api(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
-      await load();
+      const refreshed=await load();
+      const message=action==='check-in'?t('mobileOperations.checkinRecorded',{number:booking.bookingNumber}):
+        action==='check-out'?t('mobileOperations.checkoutRecorded',{number:booking.bookingNumber}):
+        action==='check-in/reverse'?t('mobileOperations.reversalRecorded',{number:booking.bookingNumber}):
+        action==='no-show'?t('mobileOperations.noShowRecorded',{number:booking.bookingNumber}):
+        action==='cancel-and-refund'?t('mobileOperations.refundSubmitted',{number:booking.bookingNumber}):
+        t('mobileOperations.cancelRecorded',{number:booking.bookingNumber});
+      setNotice(message+(refreshed?'':' '+t('mobileOperations.refreshWarning')));
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : `Unable to ${action.replaceAll('-', ' ')} booking.`);
     } finally { setBusy(''); }
@@ -138,12 +154,14 @@ export default function OperationsScreen() {
   async function collectPayment(booking: Booking, paymentMethod: 'CASH' | 'UPI' | 'CARD') {
     try {
       setBusy(booking.id + 'payment');
-      setError('');
+      setError('');setNotice('');
       await api(`/api/v1/operations/bookings/${booking.id}/collect-payment`, {
         method: 'POST',
         body: JSON.stringify({ paymentMethod, reference: `${paymentMethod} collected by operations mobile` }),
       });
-      await load();
+      const refreshed=await load();
+      const message=t('mobileOperations.paymentRecorded',{number:booking.bookingNumber,method:paymentMethod});
+      setNotice(message+(refreshed?'':' '+t('mobileOperations.refreshWarning')));
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Unable to collect onsite payment.');
     } finally { setBusy(''); }
@@ -160,13 +178,29 @@ export default function OperationsScreen() {
 
   function confirm(booking: Booking, action: OperationAction) {
     const messages: Record<OperationAction, string> = {
-      'check-in': 'Confirm that payment is cleared and you verified the booked customer using an acceptable ID.',
+      'check-in': 'Confirm payment, photo and submitted document against the customer before entry.',
       'check-out': 'Confirm that the customer has completed the facility session.',
       'check-in/reverse': 'Reverse this check-in? Use this only to correct an admin mistake.',
       'no-show': 'Mark this customer as no-show after the configured grace period?',
       'cancel': 'Cancel this unpaid booking?',
       'cancel-and-refund': 'Cancel this paid booking and initiate its refund?',
     };
+    if(action==='check-in'){
+      setManualBooking(booking);setIdentity(null);setDocumentPreview(null);setManualVerified(false);setIdentityBusy(true);
+      const url='/api/v1/operations/bookings/'+encodeURIComponent(booking.bookingNumber)+'/identity';
+      void (async()=>{
+        try{
+          const info=await api<{customerName:string;profilePhotoUrl?:string;photoAvailable:boolean;documentAvailable:boolean;documentType?:string;documentStatus?:string}>(url);
+          setIdentity(info);
+          if(info.documentAvailable){
+            const preview=await api<{mediaType:string;dataBase64:string}>(url+'/document-preview');
+            setDocumentPreview('data:'+preview.mediaType+';base64,'+preview.dataBase64);
+          }
+        }catch(e){setError(e instanceof ApiError?e.message:'Unable to load identity document. Use the web check-in console.')}
+        finally{setIdentityBusy(false);}
+      })();
+      return;
+    }
     Alert.alert(action.replaceAll('-', ' ').replace('/', ' ').toUpperCase(), messages[action], [
       { text: 'Back', style: 'cancel' },
       { text: 'Confirm', style: ['cancel', 'cancel-and-refund', 'no-show'].includes(action) ? 'destructive' : 'default', onPress: () => void run(booking, action) },
@@ -174,36 +208,45 @@ export default function OperationsScreen() {
   }
 
   if (!allowed) {
-    return <View style={styles.center}><Text style={styles.title}>Operations access required</Text><Text style={styles.muted}>Sign in with an Operations, Admin, or Super Admin account.</Text></View>;
+    return <View style={styles.center}><Text style={styles.title}>{t("mobileOperations.accessRequired")}</Text><Text style={styles.muted}>{t("mobileOperations.accessDescription")}</Text></View>;
   }
 
   return <ScrollView style={styles.screen} contentContainerStyle={styles.content}
     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
     <View style={styles.heading}>
-      <View><Text style={styles.eyebrow}>TODAY · {today}</Text><Text style={styles.title}>Facility operations</Text></View>
+      <View><Text style={styles.eyebrow}>OPERATIONS · {selectedDate}</Text><Text style={styles.title}>{t("mobileOperations.title")}</Text></View>
       <Pressable style={styles.refresh} onPress={() => void load()}><MaterialCommunityIcons name="refresh" size={24} color={BrandColors.primary} /></Pressable>
     </View>
-    <Text style={styles.muted}>Today’s queue for the selected sport/facility. Payment must be cleared before the customer can enter.</Text>
+    <Text style={styles.muted}>{t("mobileOperations.description")}</Text>
+    <Pressable style={styles.scanButton} onPress={()=>router.push('/scan-checkin')}>
+      <MaterialCommunityIcons name="qrcode-scan" size={22} color="#fff"/><Text style={styles.scanText}>Scan customer check-in QR</Text>
+    </Pressable>
+    <View style={styles.dateRow}>{([["Today",0],["Tomorrow",1],["Day after",2]] as const).map(([label,days])=>
+      <Pressable key={label} accessibilityRole="button" accessibilityState={{selected:selectedDate===localDateValue(days)}}
+        onPress={()=>setSelectedDate(localDateValue(days))} style={[styles.dateButton,selectedDate===localDateValue(days)&&styles.dateSelected]}>
+        <Text style={[styles.dateText,selectedDate===localDateValue(days)&&styles.dateSelectedText]}>{label}</Text>
+      </Pressable>)}</View>
 
-    <Text style={styles.filterTitle}>Sport</Text>
+    <Text style={styles.filterTitle}>{t("mobileOperations.sport")}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-      {['ALL', ...sports].map((sport) => <FilterChip key={sport} label={sport === 'ALL' ? 'All sports' : sport} selected={sportFilter === sport} onPress={() => { setSportFilter(sport); setFacilityFilter('ALL'); }} />)}
+      {['ALL', ...sports].map((sport) => <FilterChip key={sport} label={sport === 'ALL' ? t("mobileOperations.allSports") : sport} selected={sportFilter === sport} onPress={() => { setSportFilter(sport); setFacilityFilter('ALL'); }} />)}
     </ScrollView>
-    <Text style={styles.filterTitle}>Facility</Text>
+    <Text style={styles.filterTitle}>{t("mobileOperations.facility")}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-      {['ALL', ...facilities].map((facility) => <FilterChip key={facility} label={facility === 'ALL' ? 'All facilities' : facility} selected={facilityFilter === facility} onPress={() => setFacilityFilter(facility)} />)}
+      {['ALL', ...facilities].map((facility) => <FilterChip key={facility} label={facility === 'ALL' ? t("mobileOperations.allFacilities") : facility} selected={facilityFilter === facility} onPress={() => setFacilityFilter(facility)} />)}
     </ScrollView>
 
     <View style={styles.summaryRow}>
-      <View style={styles.summary}><Text style={styles.summaryValue}>{paymentDue}</Text><Text style={styles.summaryLabel}>Payment due</Text></View>
-      <View style={styles.summary}><Text style={styles.summaryValue}>{ready}</Text><Text style={styles.summaryLabel}>Ready</Text></View>
-      <View style={styles.summary}><Text style={styles.summaryValue}>{checkedIn}</Text><Text style={styles.summaryLabel}>Checked in</Text></View>
+      <View style={styles.summary}><Text style={styles.summaryValue}>{paymentDue}</Text><Text style={styles.summaryLabel}>{t("mobileOperations.paymentDue")}</Text></View>
+      <View style={styles.summary}><Text style={styles.summaryValue}>{ready}</Text><Text style={styles.summaryLabel}>{t("mobileOperations.ready")}</Text></View>
+      <View style={styles.summary}><Text style={styles.summaryValue}>{checkedIn}</Text><Text style={styles.summaryLabel}>{t("mobileOperations.checkedIn")}</Text></View>
     </View>
     <View style={styles.search}><MaterialCommunityIcons name="magnify" size={22} color={BrandColors.textSecondary} />
-      <TextInput value={query} onChangeText={setQuery} placeholder="Booking no., customer, mobile, facility" style={styles.searchInput} /></View>
-    {!!error && <Text style={styles.error}>{error}</Text>}
-    <Text style={styles.count}>{visible.length} today’s bookings</Text>
-    {loading ? <ActivityIndicator color={BrandColors.accent} /> : visible.length === 0 ? <Text style={styles.empty}>{query ? 'No matching booking for today.' : 'No active bookings for this sport/facility today.'}</Text> : visible.map((booking) => {
+      <TextInput value={query} onChangeText={setQuery} placeholder={t("mobileOperations.search")} style={styles.searchInput} /></View>
+    {!!error && <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>}
+    {!!notice && <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text>}
+    <Text style={styles.count}>{t("mobileOperations.bookingCount",{count:visible.length})}</Text>
+    {loading ? <ActivityIndicator color={BrandColors.accent} /> : visible.length === 0 ? <Text style={styles.empty}>{query ? t("mobileOperations.noMatching") : t("mobileOperations.noActive")}</Text> : visible.map((booking) => {
       const state = queueState(booking);
       const checkedInNow = !!booking.checkedInAt;
       const checkedOut = !!booking.checkedOutAt;
@@ -219,17 +262,37 @@ export default function OperationsScreen() {
         <Text style={styles.detail}>{booking.sportName || 'Sport'} · {booking.startTime || '—'}–{booking.endTime || '—'}</Text>
         <Text style={styles.customer}>{booking.customerName || booking.customerEmail || 'Customer'} {booking.customerMobile ? `· ${booking.customerMobile}` : ''}</Text>
         <View style={styles.actions}>
-          {active && !paid && !checkedInNow && <Action label="Collect payment" icon="cash-check" busy={busy === booking.id + 'payment'} onPress={() => askPayment(booking)} />}
-          {active && !checkedInNow && paid && <Action label="Verify & check in" icon="account-check-outline" busy={busy === booking.id + 'check-in'} onPress={() => confirm(booking, 'check-in')} />}
-          {active && checkedInNow && !checkedOut && <Action label="Check out" icon="logout-variant" busy={busy === booking.id + 'check-out'} onPress={() => confirm(booking, 'check-out')} />}
-          {active && !checkedInNow && <Action label="No-show" icon="account-off-outline" danger busy={busy === booking.id + 'no-show'} onPress={() => confirm(booking, 'no-show')} />}
-          {isAdmin && active && checkedInNow && !checkedOut && <Action label="Reverse check-in" icon="undo-variant" busy={busy === booking.id + 'check-in/reverse'} onPress={() => confirm(booking, 'check-in/reverse')} />}
+          {active && !paid && !checkedInNow && <Action label={t("mobileOperations.collect")} icon="cash-check" busy={busy === booking.id + 'payment'} onPress={() => askPayment(booking)} />}
+          {active && !checkedInNow && paid && <Action label={t("mobileOperations.checkin")} icon="account-check-outline" busy={busy === booking.id + 'check-in'} onPress={() => confirm(booking, 'check-in')} />}
+          {active && checkedInNow && !checkedOut && <Action label={t("mobileOperations.checkout")} icon="logout-variant" busy={busy === booking.id + 'check-out'} onPress={() => confirm(booking, 'check-out')} />}
+          {active && !checkedInNow && <Action label={t("mobileOperations.noShow")} icon="account-off-outline" danger busy={busy === booking.id + 'no-show'} onPress={() => confirm(booking, 'no-show')} />}
+          {isAdmin && active && checkedInNow && !checkedOut && <Action label={t("mobileOperations.reverse")} icon="undo-variant" busy={busy === booking.id + 'check-in/reverse'} onPress={() => confirm(booking, 'check-in/reverse')} />}
           {isAdmin && active && (paid
-            ? <Action label="Cancel & refund" icon="cash-refund" danger busy={busy === booking.id + 'cancel-and-refund'} onPress={() => confirm(booking, 'cancel-and-refund')} />
-            : <Action label="Cancel" icon="calendar-remove-outline" danger busy={busy === booking.id + 'cancel'} onPress={() => confirm(booking, 'cancel')} />)}
+            ? <Action label={t("mobileOperations.refund")} icon="cash-refund" danger busy={busy === booking.id + 'cancel-and-refund'} onPress={() => confirm(booking, 'cancel-and-refund')} />
+            : <Action label={t("mobileOperations.cancel")} icon="calendar-remove-outline" danger busy={busy === booking.id + 'cancel'} onPress={() => confirm(booking, 'cancel')} />)}
         </View>
       </View>;
     })}
+    <Modal animationType="slide" transparent visible={!!manualBooking} onRequestClose={()=>setManualBooking(null)}>
+      <View style={styles.manualBackdrop}><ScrollView contentContainerStyle={styles.manualCard}>
+        <Text style={styles.title}>Verify before manual check-in</Text>
+        <Text style={styles.customer}>{manualBooking?.customerName} · {manualBooking?.bookingNumber}</Text>
+        <Text style={styles.muted}>{manualBooking?.sportName} · {manualBooking?.facilityName} · {manualBooking?.startTime?.slice(0,5)}–{manualBooking?.endTime?.slice(0,5)}</Text>
+        {identityBusy&&<ActivityIndicator color={BrandColors.accent}/>}
+        {identity?.profilePhotoUrl?<Image source={{uri:identity.profilePhotoUrl}} style={styles.manualPhoto}/>:<Text style={styles.error}>No uploaded profile photo. Compare the customer's physical ID and use the web check-in console for document review.</Text>}
+        <Text style={styles.muted}>Document: {identity?.documentType||'Not uploaded'} · {identity?.documentStatus||'No status'}</Text>
+        {documentPreview&&<Image source={{uri:documentPreview}} resizeMode="contain" style={styles.documentPreview} accessibilityLabel="Private preview of uploaded identity document"/>}
+        <Text style={styles.muted}>Compare this uploaded photo and document to the customer and their original ID. If a preview is unavailable, use the secure web console.</Text>
+        <Pressable style={styles.manualCheck} onPress={()=>setManualVerified(v=>!v)}>
+          <MaterialCommunityIcons name={manualVerified?'checkbox-marked':'checkbox-blank-outline'} size={25} color={BrandColors.primary}/>
+          <Text style={styles.customer}>I verified the customer's identity and confirmed payment.</Text>
+        </Pressable>
+        <Pressable disabled={!manualVerified||identityBusy||!documentPreview||!identity?.photoAvailable||!!busy} style={[styles.scanButton,(!manualVerified||identityBusy||!documentPreview||!identity?.photoAvailable)&&styles.disabled]}
+          onPress={()=>{if(manualBooking){const booking=manualBooking;setManualBooking(null);void run(booking,'check-in');}}}>
+          <Text style={styles.scanText}>Confirm manual check-in</Text></Pressable>
+        <Pressable style={styles.dateButton} onPress={()=>setManualBooking(null)}><Text style={styles.dateText}>Close</Text></Pressable>
+      </ScrollView></View>
+    </Modal>
   </ScrollView>;
 }
 
@@ -245,10 +308,18 @@ function Action({ label, icon, danger, busy, onPress }: { label: string; icon: k
 }
 
 const styles = StyleSheet.create({
-  screen:{flex:1,backgroundColor:BrandColors.background},content:{padding:20,paddingTop:52,paddingBottom:110,gap:14},center:{flex:1,padding:28,alignItems:'center',justifyContent:'center',backgroundColor:BrandColors.background,gap:8},
+  screen:{flex:1,backgroundColor:BrandColors.background},content:{padding:20,paddingTop:18,paddingBottom:34,gap:14},
+  scanButton:{backgroundColor:BrandColors.primary,borderRadius:12,padding:13,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9},
+  scanText:{color:'#fff',fontWeight:'900',fontSize:15},dateRow:{flexDirection:'row',gap:8},
+  dateButton:{padding:12,borderWidth:1,borderColor:BrandColors.border,borderRadius:12,alignItems:'center',flex:1},
+  dateSelected:{backgroundColor:BrandColors.primary,borderColor:BrandColors.primary},dateText:{color:BrandColors.primary,fontWeight:'800'},
+  dateSelectedText:{color:'#fff'},manualBackdrop:{flex:1,backgroundColor:'#0009',justifyContent:'center',padding:15},
+  manualCard:{backgroundColor:'#fff',borderRadius:17,padding:20,gap:12},manualPhoto:{width:132,height:132,borderRadius:14},documentPreview:{width:'100%',height:250,borderRadius:12,backgroundColor:'#f5f0e7'},
+  manualCheck:{flexDirection:'row',gap:10,alignItems:'center'},disabled:{opacity:.5},
+center:{flex:1,padding:28,alignItems:'center',justifyContent:'center',backgroundColor:BrandColors.background,gap:8},
   heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},eyebrow:{color:BrandColors.accent,fontSize:12,fontWeight:'900',letterSpacing:1.3},title:{color:BrandColors.textPrimary,fontSize:30,fontWeight:'900',marginTop:4},muted:{color:BrandColors.textSecondary,fontSize:15,lineHeight:22},
   filterTitle:{color:BrandColors.textPrimary,fontSize:12,fontWeight:'900',marginBottom:-7},filters:{gap:8,paddingRight:10},filterChip:{borderWidth:1,borderColor:BrandColors.border,backgroundColor:BrandColors.surface,borderRadius:18,paddingHorizontal:13,paddingVertical:8},filterChipSelected:{borderColor:BrandColors.primary,backgroundColor:BrandColors.primary},filterChipText:{fontSize:12,fontWeight:'800',color:BrandColors.textSecondary},filterChipTextSelected:{color:BrandColors.white},
   refresh:{width:44,height:44,borderRadius:22,backgroundColor:BrandColors.surface,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:BrandColors.border},summaryRow:{flexDirection:'row',gap:8},summary:{flex:1,backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:14,padding:12},summaryValue:{fontSize:22,fontWeight:'900',color:BrandColors.primary},summaryLabel:{fontSize:11,fontWeight:'800',color:BrandColors.textSecondary,marginTop:2},
-  search:{flexDirection:'row',alignItems:'center',backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:16,paddingHorizontal:14},searchInput:{flex:1,minHeight:52,marginLeft:8,color:BrandColors.textPrimary},error:{color:'#A32613',backgroundColor:'#FFF0ED',borderRadius:12,padding:12},count:{color:BrandColors.textSecondary,fontWeight:'800'},
+  search:{flexDirection:'row',alignItems:'center',backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:16,paddingHorizontal:14},searchInput:{flex:1,minHeight:52,marginLeft:8,color:BrandColors.textPrimary},notice:{backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,padding:12,borderRadius:12,color:BrandColors.textPrimary,fontWeight:"700"},error:{color:'#A32613',backgroundColor:'#FFF0ED',borderRadius:12,padding:12},count:{color:BrandColors.textSecondary,fontWeight:'800'},
   card:{backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border,borderRadius:18,padding:16,gap:7},cardTop:{flexDirection:'row',justifyContent:'space-between',gap:10},number:{color:BrandColors.accent,fontWeight:'900'},status:{color:BrandColors.primary,fontSize:11,fontWeight:'900',backgroundColor:'#E9F3E6',paddingHorizontal:9,paddingVertical:4,borderRadius:12},paymentBadge:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:6,borderRadius:10,paddingHorizontal:10,paddingVertical:7,borderWidth:1},paymentPaid:{backgroundColor:'#ECFDF3',borderColor:'#86D3A7'},paymentDue:{backgroundColor:'#FFF4E8',borderColor:'#F2B585'},paymentText:{fontSize:12,fontWeight:'900'},paymentPaidText:{color:'#146C43'},paymentDueText:{color:'#9A3412'},facility:{color:BrandColors.textPrimary,fontSize:19,fontWeight:'900'},customer:{color:BrandColors.textPrimary,fontWeight:'700',marginTop:3},detail:{color:BrandColors.textSecondary,lineHeight:20},actions:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:8},action:{flexDirection:'row',alignItems:'center',gap:6,borderWidth:1,borderColor:BrandColors.primary,borderRadius:12,paddingHorizontal:11,paddingVertical:9},dangerAction:{borderColor:'#D86955',backgroundColor:'#FFF8F6'},actionText:{color:BrandColors.primary,fontSize:12,fontWeight:'900'},dangerText:{color:'#A32613'},empty:{textAlign:'center',color:BrandColors.textSecondary,padding:30}
 });

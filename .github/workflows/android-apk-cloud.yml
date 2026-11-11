@@ -1,0 +1,286 @@
+name: Android APK cloud build
+# Jnapanam owner requested a new APK on 2026-11-04; build once on main merge.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/android-apk-cloud.yml
+      - apps/mobile/**
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Public HTTPS backend origin, without trailing slash'
+        required: true
+        type: string
+      build_type:
+        description: 'debug = developer testing; release-uat = smaller APK signed with temporary UAT key (not production)'
+        required: true
+        default: release-uat
+        type: choice
+        options:
+          - release-uat
+          - debug
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'https://p01--jnapanam-sports-zone--v9mpkwy69gfr.code.run' }}
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Use hosted Android SDK
+        run: |
+          test -d "${ANDROID_HOME:-/usr/local/lib/android/sdk}/platform-tools"
+          echo "Using SDK ${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+      - name: Validate public API URL
+        shell: bash
+        run: |
+          case "$EXPO_PUBLIC_API_URL" in
+            https://*) ;;
+            *) echo 'Backend API URL must use HTTPS'; exit 1 ;;
+          esac
+      - name: Install packages and check TypeScript
+        run: |
+          npm ci
+          npx tsc --noEmit
+      - name: Normalize and validate Jnapanam logo for Expo
+        shell: bash
+        run: |
+          python3 -m pip install --quiet --user 'Pillow>=10,<13'
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageFile, ImageOps
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
+          source = Path("../web/public/images/jnapanam-logo.png")
+          if not source.is_file() or source.stat().st_size < 1000:
+              raise SystemExit("Canonical website PNG logo is missing or suspiciously small")
+          try:
+              with Image.open(source) as original:
+                  original.load()
+                  logo = original.convert("RGBA")
+          except Exception as exc:
+              raise SystemExit(f"Cannot decode source PNG logo: {exc}")
+          if min(logo.size) < 128:
+              raise SystemExit(f"Logo resolution too low: {logo.size}")
+          dest = Path("assets/images")
+          dest.mkdir(parents=True, exist_ok=True)
+          def save(name, size, padding):
+              canvas = Image.new("RGBA", (size, size), "white")
+              interior = size - 2 * padding
+              fitted = ImageOps.contain(logo, (interior, interior), Image.Resampling.LANCZOS)
+              canvas.alpha_composite(fitted, ((size-fitted.width)//2, (size-fitted.height)//2))
+              out = dest / name
+              canvas.convert("RGB").save(out, "PNG", optimize=True)
+              with Image.open(out) as check:
+                  check.verify()
+              print(f"Validated {out}: {size}x{size}, {out.stat().st_size} bytes")
+          save("icon.png", 1024, 48)
+          save("android-icon-foreground.png", 1024, 180)
+          save("favicon.png", 256, 12)
+          save("splash-icon.png", 512, 20)
+          PY
+      - name: Validate and normalize all bundled PNG resources
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageFile, ImageOps
+          # Some committed Jnapanam PNGs contain damaged chunks; recover decodable pixels
+          # and rewrite as clean PNGs before Metro/AAPT2 examines the resources.
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
+          roots = [Path("assets"), Path("src")]
+          count = 0
+          for root in roots:
+              if not root.exists():
+                  continue
+              for path in root.rglob("*.png"):
+                  try:
+                      with Image.open(path) as original:
+                          original.load()
+                          image = ImageOps.exif_transpose(original).convert("RGBA")
+                      if max(image.size) > 2048:
+                          image.thumbnail((2048, 2048), Image.Resampling.LANCZOS)
+                      temp = path.with_suffix(".normalized.png")
+                      image.save(temp, "PNG", optimize=True)
+                      with Image.open(temp) as check:
+                          check.verify()
+                      temp.replace(path)
+                      count += 1
+                  except Exception as exc:
+                      if path.name.startswith("jnapanam-logo"):
+                          fallback = Path("assets/images/icon.png")
+                          if not fallback.is_file():
+                              raise SystemExit(f"Damaged logo {path}, fallback missing: {exc}")
+                          path.write_bytes(fallback.read_bytes())
+                          with Image.open(path) as check:
+                              check.verify()
+                          count += 1
+                          print(f"Replaced damaged {path} with validated icon")
+                      else:
+                          raise SystemExit(f"Invalid Android-bundled image {path}: {exc}")
+          print(f"Validated and normalized {count} bundled PNG images")
+          PY
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --clean
+      - name: Install required Android SDK and NDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$SDK/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          fi
+          test -n "$SDKMANAGER" && test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$SDK" --licenses >/dev/null || true
+          # Retry transient truncated NDK archives from the hosted SDK mirror.
+          for attempt in 1 2 3; do
+            if "$SDKMANAGER" --sdk_root="$SDK" "ndk;27.1.12297006" "platform-tools" &&
+               test -s "$SDK/ndk/27.1.12297006/source.properties"; then
+              echo "NDK installed on attempt $attempt"
+              break
+            fi
+            echo "::warning::Android SDK download attempt $attempt failed; retrying"
+            rm -rf "$SDK/.temp" "$SDK/ndk/27.1.12297006"
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep $((attempt*10))
+          done
+          test -s "$SDK/ndk/27.1.12297006/source.properties"
+          echo "Required NDK 27.1.12297006 installed"
+      - name: Build installable debug APK
+        if: github.event_name == 'workflow_dispatch' && inputs.build_type == 'debug'
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Load and validate permanent Android signing key
+        if: github.event_name == 'push' || inputs.build_type == 'release-uat'
+        shell: bash
+        env:
+          JNAPANAM_APK_KEYSTORE_BASE64: ${{ secrets.JNAPANAM_APK_KEYSTORE_BASE64 }}
+          JNAPANAM_APK_STORE_PASSWORD: ${{ secrets.JNAPANAM_APK_STORE_PASSWORD }}
+          JNAPANAM_APK_KEY_ALIAS: ${{ secrets.JNAPANAM_APK_KEY_ALIAS }}
+          JNAPANAM_APK_KEY_PASSWORD: ${{ secrets.JNAPANAM_APK_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$JNAPANAM_APK_KEYSTORE_BASE64" ] || [ -z "$JNAPANAM_APK_STORE_PASSWORD" ] || [ -z "$JNAPANAM_APK_KEY_ALIAS" ] || [ -z "$JNAPANAM_APK_KEY_PASSWORD" ]; then
+            echo "::error::All four permanent APK signing secrets are required. Refusing to generate a disposable signing certificate."
+            exit 1
+          fi
+          # Base64 copied from Windows PowerShell may include CR/LF or wrapped whitespace.
+          # Normalize whitespace only; never print the sensitive keystore or Base64.
+          if ! printf '%s' "$JNAPANAM_APK_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$RUNNER_TEMP/jnapanam-uat.p12"; then
+            rm -f "$RUNNER_TEMP/jnapanam-uat.p12"
+            echo "::error::JNAPANAM_APK_KEYSTORE_BASE64 is not valid Base64. Re-encode the existing .p12 file and replace only that GitHub secret."
+            exit 1
+          fi
+          chmod 600 "$RUNNER_TEMP/jnapanam-uat.p12"
+          test -s "$RUNNER_TEMP/jnapanam-uat.p12"
+          keytool -list -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -storepass "$JNAPANAM_APK_STORE_PASSWORD" -alias "$JNAPANAM_APK_KEY_ALIAS" >/dev/null
+          echo "ANDROID_APK_SIGNING_PERSISTENT=true" >> "$GITHUB_ENV"
+          echo "ANDROID_APK_STORE_PASSWORD=$JNAPANAM_APK_STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_APK_KEY_ALIAS=$JNAPANAM_APK_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ANDROID_APK_KEY_PASSWORD=$JNAPANAM_APK_KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "Permanent Android signing keystore and alias verified."
+
+      - name: Build minified UAT release APK
+        if: github.event_name == 'push' || inputs.build_type == 'release-uat'
+        shell: bash
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace \
+            -PreactNativeArchitectures=arm64-v8a \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/jnapanam-uat.p12" \
+            -Pandroid.injected.signing.store.password="$ANDROID_APK_STORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$ANDROID_APK_KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$ANDROID_APK_KEY_PASSWORD"
+          test -s app/build/outputs/apk/release/app-release.apk
+      - name: Verify release APK signature matches permanent keystore
+        if: github.event_name == 'push' || inputs.build_type == 'release-uat'
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          APKSIGNER="$(find "$SDK/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          test -n "$APKSIGNER" && test -x "$APKSIGNER"
+          REPORT="$RUNNER_TEMP/jnapanam-apk-signature.txt"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$REPORT"
+          # Android build-tools may label the signer "V2 Signer:", "V3 Signer:",
+          # or "Signer #1". Match the certificate digest, not the signer prefix.
+          actual="$(awk -F 'certificate SHA-256 digest: ' 'NF>1 {print $2; exit}' "$REPORT" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+          expected="$(keytool -list -v -storetype PKCS12 -keystore "$RUNNER_TEMP/jnapanam-uat.p12" -storepass "$ANDROID_APK_STORE_PASSWORD" -alias "$ANDROID_APK_KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' | head -n1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+          if ! [[ "$actual" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Unable to parse APK signer certificate SHA256 from apksigner output."
+            exit 1
+          fi
+          if ! [[ "$expected" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Unable to parse keystore certificate SHA256 from keytool output."
+            exit 1
+          fi
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::APK signing certificate differs from permanent keystore certificate."
+            echo "APK signer SHA256: $actual"
+            echo "Keystore SHA256: $expected"
+            exit 1
+          fi
+          echo "Verified APK signing certificate SHA256: $actual"
+          sha256sum "$APK"
+
+      - name: Report APK size and native ABI footprint
+        shell: bash
+        run: |
+          find android/app/build/outputs/apk -name '*.apk' -exec ls -lh {} \;
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          for apk in Path("android/app/build/outputs/apk").rglob("*.apk"):
+              with ZipFile(apk) as archive:
+                  by_abi = {}
+                  for entry in archive.infolist():
+                      if entry.filename.startswith("lib/") and entry.filename.endswith(".so"):
+                          abi = entry.filename.split("/")[1]
+                          by_abi[abi] = by_abi.get(abi, 0) + entry.file_size
+                  print(f"{apk.name}: compressed bytes={apk.stat().st_size:,}")
+                  for abi, amount in sorted(by_abi.items()):
+                      print(f"  native libraries {abi}: {amount/1024/1024:.1f} MiB unpacked")
+                  if apk.name=="app-release.apk" and any(abi!="arm64-v8a" for abi in by_abi):
+                      print("WARNING: additional ABIs found; check Gradle ABI filters before production. UAT APK remains available.")
+          PY
+      - name: Upload debug APK
+        if: github.event_name == 'workflow_dispatch' && inputs.build_type == 'debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jnapanam-debug-apk
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
+      - name: Upload lightweight UAT APK
+        if: github.event_name == 'push' || inputs.build_type == 'release-uat'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jnapanam-lightweight-uat-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 7
+          if-no-files-found: error
+
+# UAT native GPS verification build — PR45 merged, 2026-10-24.

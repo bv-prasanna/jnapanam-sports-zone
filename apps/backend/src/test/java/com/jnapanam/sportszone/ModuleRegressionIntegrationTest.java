@@ -59,9 +59,10 @@ class ModuleRegressionIntegrationTest {
     @Test
     void configuredUatOtpCanVerifyRegistrationWithoutProviderOtp() throws Exception {
         String mobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(mobile);
         String email = uniqueEmail("fixed-otp");
         String body = "{\"fullName\":\"OTP Test User\",\"email\":\"" + email
-                + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"9876\"}";
+                + "\",\"mobile\":\"" + mobile + "\",\"password\":\"Test@12345\",\"otp\":\"987654\"}";
 
         // Fixed test OTP must never authenticate before a challenge was requested.
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
@@ -80,7 +81,7 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isConflict());
 
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
-                        .contentType(MediaType.APPLICATION_JSON).content(body.replace("9876", "1111")))
+                        .contentType(MediaType.APPLICATION_JSON).content(body.replace("987654", "111111")))
                 .andExpect(status().isBadRequest());
         Integer failedAttempts = jdbc.queryForObject(
                 "select attempts from mobile_otp_challenges where mobile=? and purpose='REGISTRATION' order by created_at desc limit 1",
@@ -101,6 +102,7 @@ class ModuleRegressionIntegrationTest {
     @Test
     void fixedUatOtpStillExpiresAndLocksOutAfterFiveAttempts() throws Exception {
         String mobile = "9" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(mobile);
         mvc.perform(post("/api/v1/auth/otp/registration/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"mobile\":\"" + mobile + "\"}"))
@@ -111,7 +113,7 @@ class ModuleRegressionIntegrationTest {
         for (int i = 0; i < 5; i++) {
             mvc.perform(post("/api/v1/auth/otp/registration/verify")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(String.format(json, "1111")))
+                            .content(String.format(json, "111111")))
                     .andExpect(status().isBadRequest());
         }
         Integer attempts = jdbc.queryForObject(
@@ -120,10 +122,11 @@ class ModuleRegressionIntegrationTest {
         Assertions.assertEquals(5, attempts);
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(String.format(json, "9876")))
+                        .content(String.format(json, "987654")))
                 .andExpect(status().isBadRequest());
 
         String expiredMobile = "8" + String.format("%09d", Math.abs(UUID.randomUUID().hashCode()) % 1000000000L);
+        allowTestMobile(expiredMobile);
         mvc.perform(post("/api/v1/auth/otp/registration/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"mobile\":\"" + expiredMobile + "\"}"))
@@ -132,7 +135,7 @@ class ModuleRegressionIntegrationTest {
                 expiredMobile);
         mvc.perform(post("/api/v1/auth/otp/registration/verify")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(String.format(json.replace(mobile, expiredMobile), "9876")))
+                        .content(String.format(json.replace(mobile, expiredMobile), "987654")))
                 .andExpect(status().isBadRequest());
     }
 
@@ -245,6 +248,7 @@ class ModuleRegressionIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2))).andExpect(jsonPath("$[0].available").value(2)).andReturn();
         String slotId = field(slotResult, ID);
         TokenPair customer = register(uniqueEmail("booking-customer"));
+        addBookingProof(customer.accessToken());
         MvcResult holdResult = mvc.perform(post("/api/v1/bookings/holds").header("Authorization", bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"slotId\":\"" + slotId + "\",\"quantity\":2}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("ACTIVE")).andReturn();
@@ -253,7 +257,7 @@ class ModuleRegressionIntegrationTest {
                         .content("{\"slotId\":\"" + slotId + "\",\"quantity\":1}"))
                 .andExpect(status().isConflict());
         MvcResult bookingResult = mvc.perform(post("/api/v1/bookings/confirm").header("Authorization", bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"holdId\":\"" + holdId + "\"}"))
+                        .content("{\"holdId\":\"" + holdId + "\",\"acceptedTerms\":true}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CONFIRMED")).andReturn();
         String bookingId = field(bookingResult, ID);
         String bookingNumber=field(bookingResult,Pattern.compile("\\\"bookingNumber\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""));
@@ -292,6 +296,7 @@ class ModuleRegressionIntegrationTest {
 
     @Test
     void adminCreatesTrainingAndCustomerEnrollsAttendsAndCancels() throws Exception {
+         jdbc.update("UPDATE feature_visibility SET enabled=TRUE WHERE code='TRAINING'");
         String adminEmail=uniqueEmail("training-admin");register(adminEmail);promote(adminEmail,"ADMIN");String adminToken=login(adminEmail,"Test@12345").accessToken();
         String coachEmail=uniqueEmail("coach");register(coachEmail);promote(coachEmail,"COACH");
         String suffix=UUID.randomUUID().toString().substring(0,8).toUpperCase();String facilityCode="TRAIN_"+suffix;
@@ -317,6 +322,7 @@ class ModuleRegressionIntegrationTest {
         mvc.perform(put("/api/v1/admin/training/enrollments/{id}/attendance",enrollmentId).header("Authorization",bearer(adminToken)).contentType(MediaType.APPLICATION_JSON).content("{\"sessionDate\":\""+start+"\",\"present\":true}")).andExpect(status().isNoContent());
         mvc.perform(post("/api/v1/training/enrollments/{id}/cancel",enrollmentId).header("Authorization",bearer(customer.accessToken()))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
         mvc.perform(get("/api/v1/public/training/batches")).andExpect(status().isOk()).andExpect(jsonPath("$[*].id",hasItem(batchId))).andExpect(jsonPath("$[0].available").value(1));
+         jdbc.update("UPDATE feature_visibility SET enabled=FALSE WHERE code='TRAINING'");
     }
 
     @Test
@@ -550,12 +556,13 @@ class ModuleRegressionIntegrationTest {
                 .content("{\"dayOfWeek\":\"MONDAY\",\"openTime\":\"06:00:00\",\"closeTime\":\"08:00:00\",\"closed\":false}"))
                 .andExpect(status().isOk());
         MvcResult slots=mvc.perform(get("/api/v1/public/facilities/{id}/slots",facilityId).param("date",date.toString())).andExpect(status().isOk()).andReturn();
-        TokenPair customer=register(uniqueEmail("venue-customer"));MvcResult profile=mvc.perform(get("/api/v1/profile/me").header("Authorization",bearer(customer.accessToken()))).andReturn();String customerId=field(profile,ID);
+        TokenPair customer=register(uniqueEmail("venue-customer"));
+        addBookingProof(customer.accessToken());MvcResult profile=mvc.perform(get("/api/v1/profile/me").header("Authorization",bearer(customer.accessToken()))).andReturn();String customerId=field(profile,ID);
         String slotId=field(slots,ID);
         MvcResult hold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"slotId\":\""+slotId+"\",\"quantity\":1}"))
                 .andExpect(status().isCreated()).andReturn();
         MvcResult booking=mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\"}"))
+                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\",\"acceptedTerms\":true}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CONFIRMED")).andExpect(jsonPath("$.paymentStatus").value("UNPAID")).andReturn();
         String bookingId=field(booking,ID);String number=field(booking,Pattern.compile("\\\"bookingNumber\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""));
         mvc.perform(post("/api/v1/operations/bookings/{number}/check-in",number).header("Authorization",bearer(adminToken))).andExpect(status().isConflict());
@@ -572,7 +579,7 @@ class ModuleRegressionIntegrationTest {
         MvcResult secondHold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON).content("{\"slotId\":\""+secondSlot+"\",\"quantity\":1}"))
                 .andExpect(status().isCreated()).andReturn();
         mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"holdId\":\""+field(secondHold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\"}"))
+                .content("{\"holdId\":\""+field(secondHold,ID)+"\",\"paymentOption\":\"PAY_AT_VENUE\",\"acceptedTerms\":true}"))
                 .andExpect(status().isConflict());
     }
 
@@ -592,10 +599,11 @@ class ModuleRegressionIntegrationTest {
                 .content("{\"dayOfWeek\":\"MONDAY\",\"openTime\":\"06:00:00\",\"closeTime\":\"07:00:00\",\"closed\":false}")).andExpect(status().isOk());
         MvcResult slots=mvc.perform(get("/api/v1/public/facilities/{id}/slots",facilityId).param("date",date.toString())).andExpect(status().isOk()).andReturn();
         TokenPair customer=register(uniqueEmail("void-customer"));
+        addBookingProof(customer.accessToken());
         MvcResult hold=mvc.perform(post("/api/v1/bookings/holds").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"slotId\":\""+field(slots,ID)+"\",\"quantity\":1}")).andExpect(status().isCreated()).andReturn();
         MvcResult booking=mvc.perform(post("/api/v1/bookings/confirm").header("Authorization",bearer(customer.accessToken())).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_NOW\"}"))
+                .content("{\"holdId\":\""+field(hold,ID)+"\",\"paymentOption\":\"PAY_NOW\",\"acceptedTerms\":true}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("PENDING_PAYMENT")).andReturn();
         MvcResult payment=mvc.perform(post("/api/v1/payments/orders").header("Authorization",bearer(customer.accessToken()))
                 .header("Idempotency-Key","void-"+UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON)
@@ -659,6 +667,19 @@ class ModuleRegressionIntegrationTest {
         MvcResult result = mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody(email, password)))
                 .andExpect(status().isOk()).andReturn();
         return tokens(result);
+    }
+
+    private void addBookingProof(String token) throws Exception {
+        MvcResult profile = mvc.perform(get("/api/v1/profile/me").header("Authorization", bearer(token)))
+                .andExpect(status().isOk()).andReturn();
+        UUID userId = UUID.fromString(field(profile, ID));
+        jdbc.update("INSERT INTO booking_address_proofs(id,user_id,document_type,content_type,original_filename,document_bytes,status) VALUES (?,?,?,?,?,?,'PENDING')",
+                UUID.randomUUID(), userId, "DL", "application/pdf", "integration-test.pdf",
+                new byte[]{37,80,68,70,45,49,46,52});
+    }
+
+    private void allowTestMobile(String mobile) {
+        jdbc.update("INSERT INTO uat_otp_allowed_mobiles(mobile, active, note) VALUES (?,true,?) ON CONFLICT(mobile) DO UPDATE SET active=true", mobile, "Integration test fixture");
     }
 
     private void removeRole(String email,String role) {

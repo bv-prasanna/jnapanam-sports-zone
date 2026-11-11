@@ -13,20 +13,20 @@ export default function VenueCheckInScreen(){
   const params=useLocalSearchParams<{venue?:string}>();
   const {user,initializing}=useAuth();
   const venue=String(params.venue||'').toUpperCase();
-  const [bookings,setBookings]=useState<Booking[]>([]);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState('');const [message,setMessage]=useState('');
+  const [bookings,setBookings]=useState<Booking[]>([]);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState('');const [message,setMessage]=useState('');const [messageKind,setMessageKind]=useState<'success'|'warning'|'error'>('warning');
 
-  const load=useCallback(async()=>{
-    if(!user||!venue)return;
-    try{setLoading(true);setMessage('');setBookings(await api<Booking[]>(`/api/v1/checkin/venue/${encodeURIComponent(venue)}`));}
-    catch(e){setMessage(e instanceof ApiError?e.message:'Unable to verify this venue QR.');}
+  const load=useCallback(async(clearFeedback=true):Promise<boolean>=>{
+    if(!user||!venue)return false;
+    try{setLoading(true);if(clearFeedback)setMessage('');setBookings(await api<Booking[]>(`/api/v1/checkin/venue/${encodeURIComponent(venue)}`));return true;}
+    catch(e){setMessageKind('error');setMessage(e instanceof ApiError?e.message:'Unable to verify this venue QR.');return false;}
     finally{setLoading(false)}
   },[user,venue]);
   useEffect(()=>{void load()},[load]);
 
   async function checkIn(booking:Booking){
-    if(booking.paymentStatus==='UNPAID'){setMessage('Payment due — please contact the operator before check-in.');return;}
-    try{setBusy(booking.id);setMessage('');await api(`/api/v1/checkin/venue/${encodeURIComponent(venue)}/${encodeURIComponent(booking.bookingNumber)}`,{method:'POST'});setMessage(`Check-in successful for ${booking.bookingNumber}.`);await load();}
-    catch(e){setMessage(e instanceof ApiError?e.message:'Unable to check in.');}
+    if(booking.paymentStatus==='UNPAID'){setMessageKind('warning');setMessage('Payment due — please contact the operator before check-in.');return;}
+    try{setBusy(booking.id);setMessage('');await api(`/api/v1/checkin/venue/${encodeURIComponent(venue)}/${encodeURIComponent(booking.bookingNumber)}`,{method:'POST'});const refreshed=await load(false);setMessageKind(refreshed?'success':'warning');setMessage(refreshed?`Check-in confirmed for ${booking.bookingNumber}.`:`Check-in recorded for ${booking.bookingNumber}, but the booking list could not refresh. Please refresh and confirm.`);}
+    catch(e){setMessageKind('error');setMessage(e instanceof ApiError?e.message:'Unable to check in.');}
     finally{setBusy('')}
   }
 
@@ -36,11 +36,11 @@ export default function VenueCheckInScreen(){
 
   return <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
     <MaterialCommunityIcons name="qrcode-scan" size={46} color={BrandColors.primary}/><Text style={styles.eyebrow}>JNapanam Sports Zone</Text><Text style={styles.title}>Venue Check-in</Text><Text style={styles.muted}>Select today’s booking. Payment must be completed before entry.</Text>
-    {!!message&&<Text style={styles.message}>{message}</Text>}
+    {!!message&&<Text accessibilityLiveRegion="polite" style={[styles.message,messageKind==='success'?styles.messageSuccess:messageKind==='error'?styles.messageError:styles.messageWarning]}>{message}</Text>}
     {loading?<ActivityIndicator color={BrandColors.accent}/>:bookings.map(b=>{const paid=b.paymentStatus==='PAID'||b.paymentStatus==='NOT_REQUIRED';return <View key={b.id} style={styles.card}><View style={styles.row}><Text style={styles.number}>{b.bookingNumber}</Text><Text style={[styles.badge,paid?styles.paid:styles.due]}>{paid?'READY':'PAYMENT DUE'}</Text></View><Text style={styles.sport}>{b.sportName} · {b.facilityName}</Text><Text style={styles.muted}>{b.startTime?.slice(0,5)}–{b.endTime?.slice(0,5)}</Text><Pressable disabled={!!busy||!paid} style={[styles.primary,!paid&&styles.disabled]} onPress={()=>void checkIn(b)}><Text style={styles.primaryText}>{busy===b.id?'Checking in…':paid?'Check In':'Contact Operator'}</Text></Pressable></View>})}
     {!loading&&bookings.length===0&&<View style={styles.card}><Text style={styles.sport}>No eligible booking</Text><Text style={styles.muted}>Only today’s confirmed bookings appear here.</Text></View>}
     <Pressable style={styles.secondary} onPress={()=>router.replace('/')}><Text style={styles.secondaryText}>Back to Home</Text></Pressable>
   </ScrollView>;
 }
 
-const styles=StyleSheet.create({screen:{flex:1,backgroundColor:BrandColors.background},content:{padding:24,paddingTop:70,paddingBottom:100,gap:13},center:{flex:1,alignItems:'center',justifyContent:'center',padding:28,gap:12,backgroundColor:BrandColors.background},eyebrow:{fontSize:12,fontWeight:'900',letterSpacing:1,color:BrandColors.accent},title:{fontSize:29,fontWeight:'900',color:BrandColors.textPrimary},muted:{fontSize:14,lineHeight:21,color:BrandColors.textSecondary},message:{padding:12,borderRadius:12,backgroundColor:BrandColors.surface,color:BrandColors.textPrimary,fontWeight:'700'},card:{backgroundColor:BrandColors.surface,borderRadius:16,borderWidth:1,borderColor:BrandColors.border,padding:16,gap:8},row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},number:{fontWeight:'900',color:BrandColors.accent},sport:{fontSize:17,fontWeight:'900',color:BrandColors.textPrimary},badge:{fontSize:11,fontWeight:'900',paddingHorizontal:9,paddingVertical:5,borderRadius:10},paid:{backgroundColor:'#E9F8EE',color:'#146C43'},due:{backgroundColor:'#FFF1E8',color:'#9A3412'},primary:{backgroundColor:BrandColors.primary,borderRadius:12,paddingVertical:12,alignItems:'center',marginTop:4},primaryText:{color:BrandColors.white,fontWeight:'900'},disabled:{opacity:.45},secondary:{borderWidth:1,borderColor:BrandColors.border,borderRadius:12,paddingVertical:12,alignItems:'center'},secondaryText:{color:BrandColors.primary,fontWeight:'900'}});
+const styles=StyleSheet.create({screen:{flex:1,backgroundColor:BrandColors.background},content:{padding:24,paddingTop:18,paddingBottom:34,gap:13},center:{flex:1,alignItems:'center',justifyContent:'center',padding:28,gap:12,backgroundColor:BrandColors.background},eyebrow:{fontSize:12,fontWeight:'900',letterSpacing:1,color:BrandColors.accent},title:{fontSize:29,fontWeight:'900',color:BrandColors.textPrimary},muted:{fontSize:14,lineHeight:21,color:BrandColors.textSecondary},message:{padding:12,borderRadius:12,backgroundColor:BrandColors.surface,color:BrandColors.textPrimary,fontWeight:'700'},messageSuccess:{borderWidth:1,borderColor:'#B8DEC4'},messageWarning:{borderWidth:1,borderColor:'#E4C797'},messageError:{borderWidth:1,borderColor:'#E7B5AC'},card:{backgroundColor:BrandColors.surface,borderRadius:16,borderWidth:1,borderColor:BrandColors.border,padding:16,gap:8},row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},number:{fontWeight:'900',color:BrandColors.accent},sport:{fontSize:17,fontWeight:'900',color:BrandColors.textPrimary},badge:{fontSize:11,fontWeight:'900',paddingHorizontal:9,paddingVertical:5,borderRadius:10},paid:{backgroundColor:'#E9F8EE',color:'#146C43'},due:{backgroundColor:'#FFF1E8',color:'#9A3412'},primary:{backgroundColor:BrandColors.primary,borderRadius:12,paddingVertical:12,alignItems:'center',marginTop:4},primaryText:{color:BrandColors.white,fontWeight:'900'},disabled:{opacity:.45},secondary:{borderWidth:1,borderColor:BrandColors.border,borderRadius:12,paddingVertical:12,alignItems:'center'},secondaryText:{color:BrandColors.primary,fontWeight:'900'}});

@@ -1,0 +1,17 @@
+.sidebar{background:#22320f;color:#f9f9f5;padding:20px 15px 28px;min-height:calc(100vh - 112px);align-self:stretch;position:relative}.identity{display:grid;gap:8px;padding:16px 8px 20px;border-bottom:1px solid #ffffff32;margin-bottom:12px}.identity small{color:#d1d9c2;font-size:12px}.identity strong{font-size:15px;line-height:1.45;overflow-wrap:anywhere}.identity span{color:#d1d9c2;font-size:11px;overflow-wrap:anywhere}.sidebar nav{display:grid;gap:3px}.sidebar a{font:750 13px/1.4 Arial,Helvetica,sans-serif;text-decoration:none;color:#f4f6ee;padding:12px 13px;border-radius:10px;display:block}.sidebar a:hover,.sidebar a:focus-visible{background:#ffffff22;color:white}.sidebar a.active{background:#ecf5e9;color:#18370e;font-weight:900}
+/* The left account rail stays on the LEFT at desktop and tablet widths.
+   Smaller screens get a labelled, accessible hamburger instead of an overflowing strip. */
+.mobileToggle{display:none}
+.sidebar{min-width:0;background:var(--olive,#28330f)}
+.sidebar .identity strong,.sidebar a{overflow-wrap:anywhere}
+.sidebar a.active{background:var(--saffron,#c83a0a);color:white}
+.sidebar a:focus-visible,.mobileToggle:focus-visible{outline:3px solid var(--gold,#d99a32);outline-offset:2px}
+@media(max-width:950px) and (min-width:761px){.sidebar{padding:16px 10px;min-height:calc(100vh - 112px)}.sidebar a{padding:11px 9px;font-size:12px}}
+@media(max-width:760px){
+ .mobileToggle{display:flex;align-items:center;justify-content:center;width:calc(100% - 28px);margin:14px;min-height:44px;background:var(--olive,#28330f);color:white;border:1px solid var(--line,#e4d6be);border-radius:9px;font-size:14px;font-weight:800;cursor:pointer}
+ .sidebar{display:none;min-height:0;padding:14px}
+ .sidebarOpen{display:block}
+ .identity{padding:8px 6px 13px;margin-bottom:10px}
+ .sidebar nav{display:grid;gap:5px;max-height:50vh;overflow-y:auto}
+ .sidebar a{white-space:normal;padding:11px 13px;min-height:42px}
+}

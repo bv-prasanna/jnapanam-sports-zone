@@ -23,6 +23,10 @@ public class BookingSlot {
         this.id=UUID.randomUUID(); this.facility=facility; this.date=date; this.startTime=start; this.endTime=end;
         this.capacity=capacity; this.createdAt=Instant.now();
     }
+    public void reconfigure(LocalTime end, int newCapacity) {
+        if (heldCount != 0 || bookedCount != 0) throw new ConflictException("Existing reservations prevent slot changes");
+        this.endTime = end; this.capacity = newCapacity;
+    }
     public void hold(int quantity) { if (available()<quantity) throw new ConflictException("Requested capacity is no longer available"); heldCount+=quantity; }
     public void releaseHold(int quantity) { heldCount=Math.max(0, heldCount-quantity); }
     public void confirm(int quantity) { releaseHold(quantity); bookedCount+=quantity; }

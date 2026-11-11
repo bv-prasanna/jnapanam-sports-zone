@@ -23,30 +23,45 @@ public class SmsOtpService {
     private final JdbcTemplate jdbc;
     private final PasswordEncoder encoder;
     private final NotificationProviderRegistry providers;
+    private final com.jnapanam.sportszone.notification.provider.Fast2SmsWhatsAppOtpSender whatsapp;
+    private final String deliveryChannel;
     private final boolean testOtpEnabled;
     private final String testOtp;
+    private final java.util.Set<String> testMobiles;
 
     public SmsOtpService(
             JdbcTemplate jdbc,
             PasswordEncoder encoder,
             NotificationProviderRegistry providers,
+            com.jnapanam.sportszone.notification.provider.Fast2SmsWhatsAppOtpSender whatsapp,
+            @Value("${app.security.otp-delivery-channel:sms}") String deliveryChannel,
             @Value("${app.security.test-otp-enabled:false}") boolean testOtpEnabled,
-            @Value("${app.security.test-otp:9876}") String testOtp,
+            @Value("${app.security.test-otp:071977}") String testOtp,
+            @Value("${app.security.test-otp-allowed-mobiles:}") String testMobiles,
             Environment environment) {
         this.jdbc = jdbc;
         this.encoder = encoder;
         this.providers = providers;
+        this.whatsapp = whatsapp;
+        this.deliveryChannel = deliveryChannel;
         this.testOtpEnabled = testOtpEnabled;
         this.testOtp = testOtp;
+        this.testMobiles = java.util.Arrays.stream(testMobiles.split(",")).map(String::trim).filter(v -> !v.isBlank()).collect(java.util.stream.Collectors.toUnmodifiableSet());
         // The fixed test OTP must never be usable on a production profile,
         // including when the deployment accidentally enables its property.
         if (testOtpEnabled && (!environment.acceptsProfiles(Profiles.of("test", "uat", "dev", "local"))
                 || environment.acceptsProfiles(Profiles.of("prod", "production")))) {
             throw new IllegalStateException("Fixed OTP requires a non-production test, uat, dev or local profile");
         }
-        if (testOtpEnabled && (testOtp == null || !testOtp.matches("\\d{4,6}"))) {
-            throw new IllegalStateException("Test OTP must contain 4 to 6 digits");
+        if (testOtpEnabled && (testOtp == null || !testOtp.matches("\\d{6}"))) {
+            throw new IllegalStateException("Test OTP must contain exactly 6 digits");
         }
+    }
+
+    private boolean isTestMobile(String mobile) {
+        if (!testOtpEnabled) return false;
+        if (testMobiles.contains(mobile)) return true;
+        return Boolean.TRUE.equals(jdbc.queryForObject("select exists(select 1 from uat_otp_allowed_mobiles where mobile=? and active=true)", Boolean.class, mobile));
     }
 
     @Transactional
@@ -87,19 +102,23 @@ public class SmsOtpService {
             throw new ConflictException("OTP request limit reached. Please try again later.");
         }
 
-        String otp = testOtpEnabled ? testOtp : String.format("%06d", RANDOM.nextInt(1000000));
+        // Fixed OTP is strictly registration-only; never bypass SMS for password resets.
+        boolean testRequest = "REGISTRATION".equals(purpose) && isTestMobile(mobile);
+        String otp = testRequest ? testOtp : String.format("%06d", RANDOM.nextInt(1000000));
         jdbc.update(
                 "insert into mobile_otp_challenges(id,purpose,mobile,otp_hash,expires_at) values(?,?,?,?,?)",
                 UUID.randomUUID(), purpose, mobile, encoder.encode(otp),
                 Timestamp.from(Instant.now().plusSeconds(300)));
-        if (!testOtpEnabled) {
-            providers.sms().sendOtp(mobile, otp);
+        if (!testRequest) {
+            if ("whatsapp".equalsIgnoreCase(deliveryChannel)) whatsapp.send(mobile, otp);
+            else if ("sms".equalsIgnoreCase(deliveryChannel)) providers.sms().sendOtp(mobile, otp);
+            else throw new IllegalStateException("Unsupported OTP delivery channel");
         }
     }
 
     private void verify(String mobile, String purpose, String otp) {
         if (mobile == null || mobile.length() != 10 || otp == null
-                || !otp.matches(testOtpEnabled ? "\\d{4,6}" : "\\d{6}")) {
+                || !otp.matches("\\d{6}")) {
             throw new BadRequestException("Invalid OTP");
         }
         List<Map<String, Object>> challenges = jdbc.queryForList(

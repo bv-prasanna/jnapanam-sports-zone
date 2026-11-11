@@ -1,0 +1,18 @@
+.page{width:min(100%,1000px);min-width:0;padding:clamp(18px,3vw,42px);margin:0 auto;color:var(--ink,#20251c);background:var(--ivory,#fff9ef);box-sizing:border-box;overflow-wrap:anywhere}
+.heading{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:24px}
+.heading h1{font:750 clamp(28px,3vw,38px)/1.2 Georgia,'Times New Roman',serif;color:var(--olive,#28330f);margin:7px 0}
+.heading p{font-size:14px;color:var(--muted,#66705d);line-height:1.6;margin:0}
+.eyebrow{font-size:12px;letter-spacing:.13em;font-weight:800;color:var(--saffron,#c83a0a)}
+.heading a,.backLink a{display:inline-flex;align-items:center;border:1px solid var(--line,#e4d6be);background:#fffdf8;border-radius:9px;padding:10px 14px;text-decoration:none;color:var(--olive,#28330f);font-weight:750;font-size:14px}
+.heading a:hover,.backLink a:hover{background:#fff2e0;border-color:var(--saffron,#c83a0a)}
+.form{display:grid;gap:18px;border:1px solid var(--line,#e4d6be);border-radius:17px;background:#fffdf8;padding:clamp(18px,2.5vw,28px);box-shadow:0 6px 18px #28330f0d;min-width:0}
+.form label{display:grid;gap:8px;min-width:0;font-size:14px;font-weight:750;line-height:1.45}
+.form :is(textarea,select,input){box-sizing:border-box;width:100%;min-width:0;max-width:100%;padding:11px 13px;border-radius:9px;border:1px solid var(--line,#e4d6be);background:#fff;color:var(--ink,#20251c);font:400 14px/1.5 Arial,Helvetica,sans-serif}
+.form :is(textarea,select,input):focus-visible,.save:focus-visible,.heading a:focus-visible{outline:3px solid var(--gold,#d99a32);outline-offset:2px}
+.save{background:var(--saffron,#c83a0a);border:0;border-radius:9px;color:white;min-height:44px;font:750 14px Arial,Helvetica,sans-serif;padding:12px 18px;cursor:pointer;justify-self:start}
+.save:hover:not(:disabled){background:#aa3007}.save:disabled{opacity:.55;cursor:not-allowed}
+.error,.success{padding:12px 14px;border-radius:9px;line-height:1.5;font-size:14px;overflow-wrap:anywhere}
+.error{color:#9b2810;background:#fff0ed;border:1px solid #efb9aa}
+.success{color:#355e20;background:#f1f8e8;border:1px solid #c9dcb5}
+.backLink{margin:20px 0 0}
+@media(max-width:500px){.page{padding:14px}.heading{flex-direction:column}.save{justify-self:stretch}}

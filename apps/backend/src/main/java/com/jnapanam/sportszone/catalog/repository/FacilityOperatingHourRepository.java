@@ -6,7 +6,7 @@ import java.util.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FacilityOperatingHourRepository extends JpaRepository<FacilityOperatingHour, UUID> {
-    Optional<FacilityOperatingHour> findByFacilityIdAndDayOfWeek(UUID facilityId, DayOfWeek dayOfWeek);
+    List<FacilityOperatingHour> findByFacilityIdAndDayOfWeekOrderByOpenTimeAsc(UUID facilityId, DayOfWeek dayOfWeek);
     List<FacilityOperatingHour> findByFacilityIdOrderByDayOfWeekAsc(UUID facilityId);
 }
 

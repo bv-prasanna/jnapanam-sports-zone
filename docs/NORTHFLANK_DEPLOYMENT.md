@@ -1,7 +1,7 @@
 # Jnapanam Sports Zone — Northflank Sandbox deployment
 
 ## Scope and cost
-The Northflank Sandbox currently advertises two free services, one free database and two free cron jobs. **Sandbox is for development/pilot evaluation; not guaranteed production uptime, storage capacity or no future plan changes.** Verify resource limits, region, billing settings and database backups before enabling real bookings or payments.
+Use Northflank's current published plans and dashboard to check whether free Sandbox resources are available. **Sandbox is for development/pilot evaluation; free capacity and uptime are not guaranteed.** Verify resource limits, billing, region and database backups before enabling any real bookings or payments.
 
 Architecture: Cloudflare hosts the web frontend; Northflank hosts a Spring Boot Java 21 API in a combined service and a private PostgreSQL add-on. Customer/operator mobile clients call the same HTTPS backend URL.
 
@@ -21,7 +21,7 @@ Use the repository `bv-prasanna/jnapanam-sports-zone`. Merge the deployment PR o
 3. Build type **Dockerfile**; Dockerfile location **/apps/backend/Dockerfile**; build context **/apps/backend**. Enable BuildKit caching when offered.
 4. Choose an available free Sandbox compute plan. Set 1 replica; **do not accidentally select pay-as-you-go compute**.
 5. Expose a public **HTTP** port `8080`. Northflank handles HTTPS termination at the public endpoint.
-6. Add the runtime variables from `apps/backend/.env.northflank.example`. Use a project/service secret group if preferred. Set `SPRING_PROFILES_ACTIVE=prod`, `EXPOSE_DEVELOPMENT_RESET_TOKEN=false`, a **unique Base64-encoded JWT secret**, restrictive production CORS origin(s), and DB credentials.
+6. Add the runtime variables from `apps/backend/.env.northflank.example`. Use a project/service secret group if preferred. For this isolated pilot set `SPRING_PROFILES_ACTIVE=uat` and `PAYMENT_PROVIDER=mock`, `EXPOSE_DEVELOPMENT_RESET_TOKEN=false`, a **unique Base64-encoded JWT secret**, restrictive UAT CORS origin(s), and UAT-only DB credentials. A production deployment requires a separately reviewed `prod` configuration, unique secrets and a real configured payment provider.
 7. Never enable test OTP, password reset token disclosure or permissive CORS in the production profile. Don't ship default local database credentials or JWT secret.
 8. Create the service and watch build and startup logs. Flyway runs at startup and validates schema against Hibernate.
 
@@ -51,6 +51,12 @@ Expected: HTTP 200 with JSON `{"status":"UP"}`. If endpoint returns 401/403 veri
 5. Confirm payment provider and webhooks before accepting real payment. `PAYMENT_PROVIDER=mock` is **not** appropriate for live payments.
 6. Make a PostgreSQL backup and rehearse a restore to a separate database before public launch; check actual Sandbox backup/retention restrictions.
 7. Verify free resource usage and memory/CPU. A Java 21/Spring Boot + PostgreSQL deployment might exceed available Sandbox resources; if so, do not silently upgrade to a paid plan.
+
+## Safe promotion and production readiness
+
+- The example environment file is for **UAT only**, not production. A production environment requires `SPRING_PROFILES_ACTIVE=prod`, unique `JWT_SECRET`, `PAYMENT_PROVIDER=razorpay` (with valid server-side keys and webhook secret), explicit CORS origins, production PostgreSQL credentials and disabled test OTP.
+- Preserve the existing production JWT guard and Flyway migration history; do not deploy code just because a container build succeeds. Rehearse PostgreSQL restore and verify live health, notification and refund provider flows.
+- Cross-reference the current [deployment topology](architecture-kt/DEPLOYMENT_TOPOLOGY.md), [production runbook](PRODUCTION_RUNBOOK.md), [UAT gate](UAT_TO_PRODUCTION_GATE.md), and [schema/migration guide](architecture-kt/DB_SCHEMA_AND_MIGRATION.md).
 
 ## CI/CD and rollout
 The existing `.github/workflows/application-ci.yml` runs tests on PRs; `.github/workflows/northflank-docker-ci.yml` builds the Docker image for PRs/main without pushing or deploying. Northflank **Combined service** can auto-build and auto-deploy from the selected branch after Git integration. For initial pilot prefer manual promotion/approved main-only changes. GitHub tests and Northflank deploy are separate: block merging unless required checks pass.

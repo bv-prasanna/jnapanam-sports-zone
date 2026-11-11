@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -18,6 +18,7 @@ import { EmptyState, ScreenShell } from '@/components/screen-shell';
 import { BrandColors } from '@/constants/brand';
 import { useAuth } from '@/features/auth/auth-context';
 import { api } from '@/lib/api';
+import { completePayment } from '@/lib/payments';
 
 type Facility = {
   id: string;
@@ -27,6 +28,9 @@ type Facility = {
   sportName: string;
   locationLabel?: string;
   bookingPrice: number;
+  termsAndConditions?: string;
+  termsAndConditionsKn?: string;
+  bufferMinutes?: number;
 };
 
 type Sport = { code: string; name: string };
@@ -37,6 +41,8 @@ type Slot = {
   endTime: string;
   available: number;
 };
+
+type SlotQuote = {total: number; tax: number; unitPrice: number};
 
 type Booking = {
   id: string;
@@ -51,21 +57,11 @@ type Booking = {
   paymentStatus: string;
 };
 
-type PaymentOrder = {
-  id: string;
-  provider: string;
-};
-
 const terminalStatuses = new Set(['CANCELLED', 'COMPLETED', 'NO_SHOW']);
 
+// Facility schedules are in Asia/Kolkata regardless of the phone's time-zone.
 function dateValue(offset: number) {
-  const value = new Date();
-  value.setDate(value.getDate() + offset);
-  return value.toISOString().slice(0, 10);
-}
-
-function idempotencyKey() {
-  return `mobile-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return new Date(Date.now() + 330 * 60_000 + offset * 86_400_000).toISOString().slice(0,10);
 }
 
 type SelectOption = { value: string; label: string; subtitle?: string };
@@ -85,6 +81,7 @@ function SelectField({
   onChange(value: string): void;
   disabled?: boolean;
 }) {
+  const {t}=useTranslation();
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
   return (
@@ -92,6 +89,10 @@ function SelectField({
       <Text style={styles.fieldLabel}>{label}</Text>
       <Pressable
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${selected?.label || placeholder}`}
+        accessibilityHint={t("bookings.openChoices")}
+        accessibilityState={{disabled: Boolean(disabled)}}
         onPress={() => setOpen(true)}
         style={[styles.selectField, disabled && styles.disabled]}
       >
@@ -137,13 +138,27 @@ function SelectField({
 export default function BookingsScreen() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const dates = useMemo(() => Array.from({ length: 7 }, (_, index) => dateValue(index + 1)), []);
-  const [date, setDate] = useState(dates[0]);
+  const [today, setToday] = useState(() => dateValue(0));
+  const dates = useMemo(() => Array.from({ length: 7 }, (_, index) => {
+    const value = new Date(today + 'T00:00:00Z');
+    value.setUTCDate(value.getUTCDate() + index);
+    return value.toISOString().slice(0,10);
+  }), [today]);
+  const [date, setDate] = useState(() => dateValue(0));
+  // Refresh the venue date after midnight when the customer returns to this tab.
+  useFocusEffect(useCallback(() => {
+    const current = dateValue(0);
+    setToday(current);
+    setDate(selected => selected < current ? current : selected);
+  }, []));
   const [sports, setSports] = useState<Sport[]>([]);
   const [sportCode, setSportCode] = useState('');
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [facilityId, setFacilityId] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [proof, setProof] = useState<{status:string;reviewNote?:string|null}|null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [quotes, setQuotes] = useState<Record<string, SlotQuote>>({});
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -156,15 +171,18 @@ export default function BookingsScreen() {
     setLoading(true);
     setError('');
     try {
-      const [availableSports, availableFacilities, myBookings] = await Promise.all([
+      const [availableSports, availableFacilities, myBookings, verification] = await Promise.all([
         api<Sport[]>('/api/v1/public/sports'),
         api<Facility[]>('/api/v1/public/facilities'),
         api<Booking[]>('/api/v1/bookings/me'),
+        api<{status:string;reviewNote?:string|null}>('/api/v1/profile/address-proof'),
       ]);
       setSports(availableSports);
       setFacilities(availableFacilities);
       setBookings(myBookings);
-      setSportCode((current) => current || availableSports[0]?.code || availableFacilities[0]?.sportCode || '');
+      setProof(verification);
+      setSportCode((current) => current && availableFacilities.some(item => item.sportCode === current)
+        ? current : availableFacilities[0]?.sportCode || availableSports[0]?.code || '');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('common.tryAgain'));
     } finally {
@@ -185,6 +203,7 @@ export default function BookingsScreen() {
     if (!filteredFacilities.some((facility) => facility.id === facilityId)) {
       setFacilityId(filteredFacilities[0]?.id || '');
       setSlots([]);
+      setQuotes({});
     }
   }, [facilityId, filteredFacilities]);
 
@@ -201,6 +220,9 @@ export default function BookingsScreen() {
         `/api/v1/public/facilities/${facilityId}/slots?date=${date}`,
       );
       setSlots(result);
+      setQuotes({});
+      const calculated = result.length ? await api<Record<string, SlotQuote>>("/api/v1/public/pricing/slots/quotes", {method:"POST",body:JSON.stringify({slotIds: result.map(slot=>slot.id)})}) : {};
+      setQuotes(calculated);
       if (!result.length) setMessage(t('bookings.noSlots'));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('bookings.loadError'));
@@ -210,6 +232,14 @@ export default function BookingsScreen() {
   }
 
   async function book(slotId: string, paymentOption: 'PAY_NOW' | 'PAY_AT_VENUE') {
+    if(!user?.profilePhotoUrl){setError('Please upload a profile photo in My Profile before booking.');return;}
+    if(!proof||!['PENDING','APPROVED'].includes(proof.status)){
+      setError(proof?.status==='REJECTED'?t('bookings.proofRejected'):t('bookings.proofRequired'));return;
+    }
+    if (facilities.find(item => item.id === facilityId)?.termsAndConditions && !termsAccepted) {
+      setError(t('bookings.termsRequired')); return;
+    }
+    if (!quotes[slotId]) { setError(t("bookings.refreshPrices")); return; }
     const key = `${slotId}-${paymentOption}`;
     setProcessing(key);
     setError('');
@@ -221,36 +251,15 @@ export default function BookingsScreen() {
       });
       const booking = await api<Booking>('/api/v1/bookings/confirm', {
         method: 'POST',
-        body: JSON.stringify({ holdId: hold.id, paymentOption }),
+        body: JSON.stringify({ holdId: hold.id, paymentOption, expectedTotalPaise: Math.round(quotes[slotId].total * 100), acceptedTerms: termsAccepted }),
       });
 
-      if (paymentOption === 'PAY_NOW') {
-        const order = await api<PaymentOrder>('/api/v1/payments/orders', {
-          method: 'POST',
-          headers: { 'Idempotency-Key': idempotencyKey() },
-          body: JSON.stringify({
-            purpose: 'BOOKING',
-            referenceId: booking.id,
-            couponCode: null,
-            loyaltyPoints: 0,
-          }),
-        });
-        if (order.provider !== 'MOCK') {
-          throw new Error(t('bookings.checkoutComingSoon'));
-        }
-        await api('/api/v1/payments/verify', {
-          method: 'POST',
-          body: JSON.stringify({
-            paymentOrderId: order.id,
-            providerPaymentId: `pay_mobile_${Date.now()}`,
-            signature: 'mock-signature',
-          }),
-        });
-        setMessage(t('bookings.paidSuccess', { number: booking.bookingNumber }));
-      } else {
-        setMessage(t('bookings.venueSuccess', { number: booking.bookingNumber }));
-      }
-      await Promise.all([load(), findSlots()]);
+      if (paymentOption === 'PAY_NOW') await completePayment('BOOKING', booking.id);
+      const confirmation=paymentOption==='PAY_NOW'
+        ? t('bookings.paidSuccess',{number:booking.bookingNumber})
+        : t('bookings.venueSuccess',{number:booking.bookingNumber});
+      await Promise.all([load(),findSlots()]);
+      setMessage(confirmation);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t('bookings.bookError'));
     } finally {
@@ -312,6 +321,15 @@ export default function BookingsScreen() {
         {!!message && <Text style={styles.message}>{message}</Text>}
 
         <Text style={styles.sectionTitle}>{t('bookings.bookFacility')}</Text>
+        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')} disabled={proof?.status==='APPROVED'}
+          style={{marginBottom:12,padding:13,borderRadius:10,backgroundColor:proof?.status==='REJECTED'?'#fff0ed':BrandColors.surface,borderWidth:1,borderColor:BrandColors.border}}>
+          <Text style={{color:BrandColors.textPrimary}}>
+            {!proof?t('bookings.proofChecking'):proof.status==='PENDING'?t('bookings.proofPending'):
+              proof.status==='APPROVED'?t('bookings.proofApproved'):
+              proof.status==='REJECTED'?t('bookings.proofRejected'):t('bookings.proofRequired')}
+          </Text>
+          {!!proof?.reviewNote&&proof.status==='REJECTED'&&<Text style={{color:'#9b2810'}}>{proof.reviewNote}</Text>}
+        </Pressable>
         {loading && !sports.length ? (
           <ActivityIndicator color={BrandColors.accent} />
         ) : (
@@ -320,7 +338,7 @@ export default function BookingsScreen() {
               label={t('bookings.chooseSport')}
               placeholder={t('bookings.sportPlaceholder')}
               value={sportCode}
-              options={sports.map((sport) => ({ value: sport.code, label: sport.name }))}
+              options={sports.map((sport) => ({ value: sport.code, label: t("sports."+sport.code.toLowerCase(),{defaultValue:sport.name}) }))}
               onChange={(value) => {
                 setSportCode(value);
                 setFacilityId('');
@@ -339,6 +357,7 @@ export default function BookingsScreen() {
               }))}
               onChange={(value) => {
                 setFacilityId(value);
+                setTermsAccepted(false);
                 setSlots([]);
               }}
             />
@@ -386,6 +405,15 @@ export default function BookingsScreen() {
           )}
         </Pressable>
 
+        {!!facilities.find(item => item.id === facilityId)?.termsAndConditions && (
+          <Pressable accessibilityRole="checkbox" accessibilityState={{checked:termsAccepted}}
+            onPress={() => setTermsAccepted(v => !v)}
+            style={{marginTop:14,padding:14,borderRadius:12,backgroundColor:BrandColors.surface,borderWidth:1,borderColor:BrandColors.border}}>
+            <Text style={{fontWeight:'900',color:BrandColors.textPrimary}}>{termsAccepted ? '☑' : '☐'} {t('bookings.facilityTerms')}</Text>
+            <Text style={{color:BrandColors.textSecondary,marginTop:6,lineHeight:20}}>{i18n.language.startsWith('kn')?(facilities.find(item => item.id === facilityId)?.termsAndConditionsKn||facilities.find(item => item.id === facilityId)?.termsAndConditions):facilities.find(item => item.id === facilityId)?.termsAndConditions}</Text>
+            <Text style={{color:BrandColors.textPrimary,marginTop:6}}>{t('bookings.termsAgreement')}</Text>
+          </Pressable>
+        )}
         {!!slots.length && (
           <>
             <Text style={styles.sectionTitle}>{t('bookings.availableSlots')}</Text>
@@ -401,12 +429,15 @@ export default function BookingsScreen() {
                       <Text style={styles.available}>
                         {t('bookings.availableCount', { count: slot.available })}
                       </Text>
+                      <Text style={styles.available} accessibilityLabel={quotes[slot.id] ? `Final slot price ₹${quotes[slot.id].total.toFixed(2)} including tax ₹${quotes[slot.id].tax.toFixed(2)}` : "Price unavailable"}>
+                        {quotes[slot.id] ? `₹${quotes[slot.id].total.toFixed(2)} (${t("bookings.includingTax")} ₹${quotes[slot.id].tax.toFixed(2)})` : t("bookings.priceUnavailable")}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.actionRow}>
                     <Pressable
-                      disabled={!slot.available || !!processing}
-                      style={[styles.payButton, (!slot.available || !!processing) && styles.disabled]}
+                      disabled={!slot.available || !quotes[slot.id] || !!processing}
+                      style={[styles.payButton, (!slot.available || !quotes[slot.id] || !!processing) && styles.disabled]}
                       onPress={() => void book(slot.id, 'PAY_NOW')}
                     >
                       {processing === `${slot.id}-PAY_NOW` ? (
@@ -416,8 +447,8 @@ export default function BookingsScreen() {
                       )}
                     </Pressable>
                     <Pressable
-                      disabled={!slot.available || !!processing}
-                      style={[styles.venueButton, (!slot.available || !!processing) && styles.disabled]}
+                      disabled={!slot.available || !quotes[slot.id] || !!processing}
+                      style={[styles.venueButton, (!slot.available || !quotes[slot.id] || !!processing) && styles.disabled]}
                       onPress={() => void book(slot.id, 'PAY_AT_VENUE')}
                     >
                       {processing === `${slot.id}-PAY_AT_VENUE` ? (
@@ -458,6 +489,12 @@ export default function BookingsScreen() {
                   {booking.startTime.slice(0, 5)}–{booking.endTime.slice(0, 5)} ·{' '}
                   {booking.paymentStatus.replaceAll('_', ' ')}
                 </Text>
+                {booking.status==='CONFIRMED'&&['PAID','NOT_REQUIRED'].includes(booking.paymentStatus)&&(
+                  <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={()=>router.push({pathname:'/booking-qr',params:{id:booking.id}})}>
+                    <MaterialCommunityIcons name="qrcode" size={20} color="#fff"/>
+                    <Text style={styles.primaryButtonText}>Show check-in QR</Text>
+                  </Pressable>
+                )}
                 {!terminalStatuses.has(booking.status) && (
                   <Pressable
                     disabled={processing === `cancel-${booking.id}`}

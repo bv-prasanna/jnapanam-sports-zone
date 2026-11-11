@@ -22,7 +22,7 @@ public class AdminReportingService {
         LocalDate[] r = range(from, to);
         long gross = value("SELECT COALESCE(SUM(amount_paise),0) FROM payment_orders WHERE status IN ('PAID','PARTIALLY_REFUNDED','REFUNDED') AND created_at::date BETWEEN ? AND ?", r);
         long refunds = value("SELECT COALESCE(SUM(pr.amount_paise),0) FROM payment_refunds pr JOIN payment_orders po ON po.id=pr.payment_order_id WHERE pr.status='PROCESSED' AND pr.processed_at::date BETWEEN ? AND ?", r);
-        return new DashboardResponse(r[0], r[1], value("SELECT COUNT(*) FROM users"), value("SELECT COUNT(*) FROM sports WHERE status='ACTIVE'"), value("SELECT COUNT(*) FROM facilities WHERE status='ACTIVE'"), value("SELECT COUNT(*) FROM bookings WHERE confirmed_at::date BETWEEN ? AND ?", r), value("SELECT COUNT(*) FROM bookings WHERE checked_in_at::date BETWEEN ? AND ?", r), value("SELECT COUNT(*) FROM customer_memberships WHERE status='ACTIVE'"), value("SELECT COUNT(*) FROM training_enrollments WHERE status='ENROLLED'"), value("SELECT COUNT(*) FROM tournaments WHERE status IN ('REGISTRATION_OPEN','REGISTRATION_CLOSED','IN_PROGRESS')"), gross, refunds, gross-refunds);
+        return new DashboardResponse(r[0], r[1], value("SELECT COUNT(*) FROM users"), value("SELECT COUNT(*) FROM users WHERE status='ACTIVE'"), value("SELECT COUNT(*) FROM sports WHERE status='ACTIVE'"), value("SELECT COUNT(*) FROM facilities WHERE status='ACTIVE'"), value("SELECT COUNT(*) FROM bookings WHERE confirmed_at::date BETWEEN ? AND ?", r), value("SELECT COUNT(*) FROM bookings WHERE checked_in_at::date BETWEEN ? AND ?", r), value("SELECT COUNT(*) FROM customer_memberships WHERE status='ACTIVE'"), value("SELECT COUNT(*) FROM training_enrollments WHERE status='ENROLLED'"), value("SELECT COUNT(*) FROM tournaments WHERE status IN ('REGISTRATION_OPEN','REGISTRATION_CLOSED','IN_PROGRESS')"), gross, refunds, gross-refunds);
     }
 
     @Transactional(readOnly = true)
@@ -45,6 +45,26 @@ public class AdminReportingService {
 
     @Transactional(readOnly = true)
     public List<Map<String,Object>> tournaments(LocalDate from,LocalDate to){LocalDate[]r=range(from,to);return jdbc.queryForList("SELECT t.code,t.name,s.name AS sport,t.status,t.start_date,t.end_date,t.max_teams,COUNT(DISTINCT tt.id) AS registered_teams,COUNT(DISTINCT tf.id) AS fixtures,COUNT(DISTINCT tf.id) FILTER (WHERE tf.status='COMPLETED') AS completed_fixtures FROM tournaments t JOIN sports s ON s.id=t.sport_id LEFT JOIN tournament_teams tt ON tt.tournament_id=t.id LEFT JOIN tournament_fixtures tf ON tf.tournament_id=t.id WHERE t.start_date<=? AND t.end_date>=? GROUP BY t.code,t.name,s.name,t.status,t.start_date,t.end_date,t.max_teams ORDER BY t.start_date,t.name",r[1],r[0]);}
+
+    /** Query only safe metadata, never request bodies, credentials or query strings. */
+    public record ErrorLog(UUID id,Instant occurredAt,String method,String path,int status,
+                           String correlationId,long durationMs,String action){}
+    @Transactional(readOnly=true)
+    public List<ErrorLog> errors(int limit,Integer status){
+        if(status!=null&&(status<400||status>599))
+            throw new BadRequestException("Choose an HTTP error status between 400 and 599");
+        int safe=Math.max(1,Math.min(limit,200));
+        return jdbc.query("""
+                SELECT id,occurred_at,http_method,request_path,response_status,correlation_id,duration_ms,action
+                FROM audit_logs WHERE response_status>=400
+                AND (CAST(? AS integer) IS NULL OR response_status=CAST(? AS integer))
+                ORDER BY occurred_at DESC LIMIT ?
+                """,(rs,row)->new ErrorLog(rs.getObject("id",UUID.class),
+                rs.getTimestamp("occurred_at").toInstant(),rs.getString("http_method"),
+                rs.getString("request_path"),rs.getInt("response_status"),
+                rs.getString("correlation_id"),rs.getLong("duration_ms"),rs.getString("action")),
+                status,status,safe);
+    }
 
     @Transactional(readOnly = true) public List<AuditLogResponse> audit(int limit){int safe=Math.max(1,Math.min(limit,500));return audit.findAllByOrderByOccurredAtDesc(PageRequest.of(0,safe)).stream().map(AuditLogResponse::from).toList();}
 

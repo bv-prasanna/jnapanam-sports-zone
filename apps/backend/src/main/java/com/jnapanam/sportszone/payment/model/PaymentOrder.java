@@ -18,6 +18,7 @@ public class PaymentOrder {
  @Column(name="promotion_code",length=40) private String promotionCode;
  @Column(name="loyalty_points_used",nullable=false) private long loyaltyPointsUsed;
  @Column(name="loyalty_points_earned",nullable=false) private long loyaltyPointsEarned;
+ @Column(name="billing_gross_paise")private Long billingGrossPaise;@Column(name="billing_taxable_paise")private Long billingTaxablePaise;@Column(name="billing_tax_paise")private Long billingTaxPaise;@Column(name="billing_rate_percent",precision=7,scale=3)private java.math.BigDecimal billingRatePercent;@Column(name="billing_loyalty_tender_paise")private Long billingLoyaltyTenderPaise;@Column(name="billing_promotion_treatment",length=30)private String billingPromotionTreatment;@Column(name="billing_loyalty_treatment",length=30)private String billingLoyaltyTreatment;@Column(name="billing_snapshot_at")private Instant billingSnapshotAt;
  @Column(nullable=false,length=3) private String currency;
  @Column(nullable=false,length=20) private String provider;
  @Column(name="provider_order_id",unique=true,length=120) private String providerOrderId;
@@ -37,6 +38,8 @@ public class PaymentOrder {
   receiptNumber="JNZ-PAY-"+id.toString().substring(0,8).toUpperCase();status=PaymentStatus.CREATED;createdAt=Instant.now();updatedAt=createdAt;
  }
  public void pricing(long original,long discount,String promotion,long pointsUsed,long loyaltyValuePaise){originalAmountPaise=original;discountPaise=discount;promotionCode=promotion;loyaltyPointsUsed=pointsUsed;amountPaise=original-discount-loyaltyValuePaise;if(amountPaise<1)amountPaise=1;updatedAt=Instant.now();}
+ public void billingSnapshot(long gross,long net,long tax,java.math.BigDecimal rate,long loyaltyTender,String couponMode,String loyaltyMode){if(billingSnapshotAt!=null)throw new IllegalStateException("Billing snapshot cannot change");if(gross<0||net<0||tax<0||loyaltyTender<0||gross!=net+tax)throw new IllegalArgumentException("Invalid invoice breakdown");billingGrossPaise=gross;billingTaxablePaise=net;billingTaxPaise=tax;billingRatePercent=rate;billingLoyaltyTenderPaise=loyaltyTender;billingPromotionTreatment=couponMode;billingLoyaltyTreatment=loyaltyMode;billingSnapshotAt=Instant.now();}
+ public Long getBillingGrossPaise(){return billingGrossPaise;}public Long getBillingTaxablePaise(){return billingTaxablePaise;}public Long getBillingTaxPaise(){return billingTaxPaise;}public java.math.BigDecimal getBillingRatePercent(){return billingRatePercent;}public Long getBillingLoyaltyTenderPaise(){return billingLoyaltyTenderPaise;}public Instant getBillingSnapshotAt(){return billingSnapshotAt;}public String getBillingPromotionTreatment(){return billingPromotionTreatment;}public String getBillingLoyaltyTreatment(){return billingLoyaltyTreatment;}
  public void loyaltyEarned(long value){loyaltyPointsEarned=value;updatedAt=Instant.now();}
  public void providerOrder(String value){providerOrderId=value;updatedAt=Instant.now();}
  public void paid(String paymentId){providerPaymentId=paymentId;status=PaymentStatus.PAID;paidAt=Instant.now();updatedAt=paidAt;}

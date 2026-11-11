@@ -46,6 +46,14 @@ public class User {
     public Set<Role> getRoles() { return roles; }
     public boolean isActive() { return status == UserStatus.ACTIVE; }
     public void update(String fullName,String email,String mobile,String addressLine,String city,String state,String postalCode,String emergencyName,String emergencyMobile){this.fullName=fullName.trim();this.email=email.trim().toLowerCase(java.util.Locale.ROOT);this.mobile=clean(mobile);this.addressLine=clean(addressLine);this.city=clean(city);this.state=clean(state);this.postalCode=clean(postalCode);this.emergencyContactName=clean(emergencyName);this.emergencyContactMobile=clean(emergencyMobile);updatedAt=Instant.now();}
+    public void contactDetails(String phone,String address,String locationCity,String locationState,String zip){
+        if(phone!=null) mobile=clean(phone);
+        if(address!=null) addressLine=clean(address);
+        if(locationCity!=null) city=clean(locationCity);
+        if(locationState!=null) state=clean(locationState);
+        if(zip!=null) postalCode=clean(zip);
+        updatedAt=Instant.now();
+    }
     public void status(UserStatus value){status=value;updatedAt=Instant.now();}
     public void replaceRoles(Set<Role> value){roles.clear();roles.addAll(value);updatedAt=Instant.now();}
     public void password(String hash,boolean force){passwordHash=hash;forcePasswordChange=force;updatedAt=Instant.now();}

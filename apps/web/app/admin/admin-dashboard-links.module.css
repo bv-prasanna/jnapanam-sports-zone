@@ -1,0 +1,25 @@
+.hub{display:grid;gap:18px;margin:4px 0 26px}
+.heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.eyebrow{font-size:11px;letter-spacing:.11em;color:var(--admin-accent);font-weight:900}
+.heading h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(19px,2vw,23px);font-weight:800;color:var(--admin-ink);margin:5px 0}
+.heading p{font-size:14px;line-height:1.5;color:var(--admin-muted);margin:0}
+.featured{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.featuredCard{min-width:0;display:flex;flex-direction:column;gap:9px;min-height:145px;padding:18px;border-radius:14px;background:#fffdf8;border:1px solid var(--admin-line);text-decoration:none;color:var(--admin-ink);box-shadow:0 3px 12px #28330f0d;transition:border-color .15s,box-shadow .15s,transform .15s}
+.featuredCard strong{font-size:16px;line-height:1.3;font-weight:850;color:var(--admin-primary)}
+.featuredCard span{font-size:13px;line-height:1.55;color:var(--admin-muted)}
+.featuredCard .open{font-size:12px;font-weight:800;color:var(--admin-accent);margin-top:auto}
+.featuredCard:hover,.moduleLink:hover{border-color:var(--admin-accent);box-shadow:0 5px 18px #28330f1a;transform:translateY(-1px)}
+.featuredCard:focus-visible,.moduleLink:focus-visible{outline:3px solid var(--gold,#d99a32);outline-offset:3px}
+.categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.category{background:white;border:1px solid var(--admin-line);border-radius:14px;padding:16px;min-width:0}
+.category h3{font-size:14px;font-family:Georgia,'Times New Roman',serif;color:var(--admin-primary);margin:0 0 12px;font-weight:850}
+.moduleLinks{display:grid;gap:5px}
+.moduleLink{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;border-radius:9px;padding:9px 10px;text-decoration:none;color:var(--admin-ink);border:1px solid transparent}
+.moduleLink span:first-child{display:grid;gap:3px;min-width:0}
+.moduleLink strong{font-size:13px;line-height:1.35;font-weight:750}
+.moduleLink small{font-size:12px;line-height:1.4;color:var(--admin-muted)}
+.moduleLink span:last-child{color:var(--admin-accent);font-size:17px}
+@media(max-width:1150px){.featured{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:850px){.categories{grid-template-columns:1fr}}
+@media(max-width:560px){.featured{grid-template-columns:1fr}.featuredCard{min-height:118px}.category{padding:13px}}
+@media(prefers-reduced-motion:reduce){.featuredCard,.moduleLink{transition:none}}

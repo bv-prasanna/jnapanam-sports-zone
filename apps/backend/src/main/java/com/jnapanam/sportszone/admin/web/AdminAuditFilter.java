@@ -5,6 +5,8 @@ import com.jnapanam.sportszone.admin.repository.AuditLogRepository;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.*;
 import org.springframework.security.core.*;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,15 +17,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @Order(-99)
 public class AdminAuditFilter extends OncePerRequestFilter {
+    private static final Logger LOG = LoggerFactory.getLogger(AdminAuditFilter.class);
     private static final Set<String> MUTATING = Set.of("POST", "PUT", "PATCH", "DELETE");
     private final AuditLogRepository logs;
     public AdminAuditFilter(AuditLogRepository logs) { this.logs = logs; }
 
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        boolean auditedPath = path.startsWith("/api/v1/admin/") || path.startsWith("/api/v1/operations/")
-                || path.startsWith("/api/v1/auth/") || path.equals("/api/v1/profile/password");
-        return !MUTATING.contains(request.getMethod()) || !auditedPath;
+        boolean auditedPath = path.startsWith("/api/v1/");
+        return !auditedPath || "OPTIONS".equals(request.getMethod());
     }
 
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -31,19 +33,31 @@ public class AdminAuditFilter extends OncePerRequestFilter {
         long started = System.nanoTime();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UUID actor = actor(authentication);
-        String correlationId = headerOrNew(request, "X-Correlation-ID");
+        String correlationId = (String) request.getAttribute(ApiRequestTelemetryFilter.CORRELATION_ATTRIBUTE);
+        if (correlationId == null) correlationId = headerOrNew(request, "X-Correlation-ID");
         response.setHeader("X-Correlation-ID", correlationId);
         try {
             chain.doFilter(request, response);
         } finally {
             try {
+                int status = response.getStatus();
+                if (status >= 400 || MUTATING.contains(request.getMethod())) {
                 Resource resource = resource(request.getRequestURI());
-                logs.save(new AuditLog(actor, request.getMethod(), request.getRequestURI(), response.getStatus(),
-                        clientAddress(request), request.getMethod() + "_" + resource.type(), resource.type(),
-                        resource.id(), limited(request.getQueryString(), 1000), correlationId,
+                Object rawCode=request.getAttribute("jnapanam.errorCode");
+                String safeCode=rawCode instanceof String value && value.matches("[A-Z0-9_]{3,65}")?value:"HTTP_"+status;
+                String action=status>=400?"ERROR_"+safeCode:request.getMethod()+"_"+resource.type();
+                AuditLog event = new AuditLog(actor, request.getMethod(), safePath(request.getRequestURI()), status,
+                        clientAddress(request), action, resource.type(),
+                        resource.id(), null, correlationId,
                         limited(request.getHeader("User-Agent"), 300),
-                        (System.nanoTime() - started) / 1_000_000));
+                        (System.nanoTime() - started) / 1_000_000);
+                event.recordLocation(request.getHeader("X-Client-Latitude"), request.getHeader("X-Client-Longitude"),request.getHeader("X-Location-Status"));
+                logs.save(event);
+                request.setAttribute(ApiRequestTelemetryFilter.AUDITED_ATTRIBUTE, Boolean.TRUE);
+                if (status >= 500) LOG.warn("API failure status={} path={} correlationId={}", status, event.getRequestPath(), correlationId);
+                }
             } catch (Exception ignored) {
+                LOG.warn("Unable to persist audit correlationId={}", correlationId);
                 // An audit persistence problem must not change the business response.
             }
         }
@@ -60,8 +74,9 @@ public class AdminAuditFilter extends OncePerRequestFilter {
     }
 
     private static String clientAddress(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        return forwarded == null || forwarded.isBlank() ? request.getRemoteAddr() : limited(forwarded.split(",")[0].trim(), 80);
+        // Direct client-supplied forwarding headers are untrusted. The configured ingress
+        // must normalize the real client address before it reaches the servlet request.
+        return limited(request.getRemoteAddr(), 80);
     }
 
     private static Resource resource(String path) {
@@ -72,6 +87,10 @@ public class AdminAuditFilter extends OncePerRequestFilter {
             if (parts[i].matches("[0-9a-fA-F-]{36}")) { id = parts[i]; break; }
         }
         return new Resource(type, id);
+    }
+
+    static String safePath(String value) {
+        return limited(value.replaceAll("(?i)/[^/]*@[^/]*", "/{private}").replaceAll("/[0-9]{7,}", "/{number}"), 300);
     }
 
     private static String limited(String value, int max) {

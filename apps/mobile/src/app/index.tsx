@@ -2,9 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
-import { LanguageSwitch } from '@/components/language-switch';
 import { BrandColors } from '@/constants/brand';
 import { useAuth } from '@/features/auth/auth-context';
 import { styles } from '@/features/home/home.styles';
@@ -48,16 +47,6 @@ export default function HomeScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.topBar}>
-          <Image
-            source={require('@/assets/images/jnapanam-logo-current.png')}
-            style={styles.logo}
-            resizeMode="contain"
-            accessibilityLabel={t('common.appName')}
-          />
-          <LanguageSwitch />
-        </View>
-
         <View style={styles.hero}>
           <Text style={styles.eyebrow}>{t('home.destination')}</Text>
           <Text style={styles.greeting}>
@@ -73,16 +62,16 @@ export default function HomeScreen() {
 
         <View style={styles.body}>
           {(isOperations || isShopKeeper) && <>
-            <Text style={[styles.sectionTitle, styles.servicesTitle]}>Staff workspace</Text>
+            <Text style={[styles.sectionTitle, styles.servicesTitle]}>{t("mobileMenu.staff")}</Text>
             <View style={styles.servicesList}>
               {isOperations && <Pressable style={styles.serviceCard} onPress={() => router.push('/operations')}>
                 <View style={styles.serviceIcon}><MaterialCommunityIcons name="clipboard-account-outline" size={25} color={BrandColors.primary} /></View>
-                <View style={styles.serviceContent}><Text style={styles.serviceTitle}>Today&apos;s Operations</Text><Text style={styles.serviceDescription}>Payment, customer verification, check-in and checkout for today&apos;s bookings.</Text></View>
+                <View style={styles.serviceContent}><Text style={styles.serviceTitle}>{t("mobileMenu.operations")}</Text><Text style={styles.serviceDescription}>{t("home.operationsDescription")}</Text></View>
                 <MaterialCommunityIcons name="chevron-right" size={24} color={BrandColors.accent} />
               </Pressable>}
               {isShopKeeper && <Pressable style={styles.serviceCard} onPress={() => router.push('/shop-counter')}>
                 <View style={styles.serviceIcon}><MaterialCommunityIcons name="storefront-outline" size={25} color={BrandColors.primary} /></View>
-                <View style={styles.serviceContent}><Text style={styles.serviceTitle}>Shop Counter</Text><Text style={styles.serviceDescription}>Walk-in sale, prebooked order fulfilment and shop counter operations.</Text></View>
+                <View style={styles.serviceContent}><Text style={styles.serviceTitle}>{t("mobileMenu.shopCounter")}</Text><Text style={styles.serviceDescription}>{t("home.counterDescription")}</Text></View>
                 <MaterialCommunityIcons name="chevron-right" size={24} color={BrandColors.accent} />
               </Pressable>}
             </View>
@@ -111,7 +100,7 @@ export default function HomeScreen() {
                       color={BrandColors.accent}
                     />
                   </View>
-                  <Text style={styles.sportName}>{sport.name}</Text>
+                  <Text style={styles.sportName}>{t("sports."+sport.code.toLowerCase(),{defaultValue:sport.name})}</Text>
                   {!!sport.description && <Text style={styles.sportSubtitle} numberOfLines={2}>{sport.description}</Text>}
                   <View style={styles.cardLink}>
                     <Text style={styles.cardLinkText}>{t('home.bookNow')}</Text>
@@ -140,6 +129,7 @@ export default function HomeScreen() {
             ))}
           </View>
 
+          <Pressable style={styles.serviceCard} onPress={() => router.push('/subscriptions')}><View style={styles.serviceIcon}><MaterialCommunityIcons name="repeat" size={25} color={BrandColors.primary}/></View><View style={styles.serviceContent}><Text style={styles.serviceTitle}>{t("mobileMenu.subscriptions")}</Text><Text style={styles.serviceDescription}>{t("home.subscriptionsDescription")}</Text></View><MaterialCommunityIcons name="chevron-right" size={24} color={BrandColors.accent}/></Pressable>
           <Pressable style={styles.profileCard} onPress={() => router.push('/profile')}>
             <MaterialCommunityIcons name={user ? 'account-circle-outline' : 'login'} size={29} color={BrandColors.surface} />
             <View style={styles.profileCopy}>

@@ -17,16 +17,20 @@ app:
     currency: INR
   booking:
     hold-minutes: 10
+    require-profile-photo: false
   security:
     jwt-secret: Sm5hcGFuYW0gU3BvcnRzIFpvbmUgQXV0b21hdGVkIFRlc3QgSldUIFNlY3JldCE=
     access-token-minutes: 60
     refresh-token-days: 1
     privileged-mfa-required: false
+    customer-mfa-required: false
+    # Existing mobile-OTP integration tests are retained until migrated to email.
+    mobile-otp-enabled: true
     # Test profile only: exercise password-reset token lifecycle without an email provider.
     # PasswordRecoveryService rejects token exposure under prod/production profiles.
     expose-development-reset-token: true
     test-otp-enabled: true
-    test-otp: '9876'
+    test-otp: '987654'
   cors:
     allowed-origins:
       - http://localhost:3000

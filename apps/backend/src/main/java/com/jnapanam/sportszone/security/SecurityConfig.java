@@ -3,6 +3,8 @@ package com.jnapanam.sportszone.security;
 import javax.crypto.SecretKey;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -21,14 +23,21 @@ import org.springframework.web.cors.*;
 public class SecurityConfig {
     @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(12); }
     @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception { return configuration.getAuthenticationManager(); }
-    @Bean SecretKey jwtSecretKey(SecurityProperties properties) { return TokenService.secretKey(properties.jwtSecret()); }
+    static final String DEVELOPMENT_JWT_SECRET = "Sm5hcGFuYW0gU3BvcnRzIFpvbmUgRGV2ZWxvcG1lbnQgSldUIFNlY3JldCAyMDI2IQ==";
+    @Bean SecretKey jwtSecretKey(SecurityProperties properties, Environment environment) {
+        if (environment.acceptsProfiles(Profiles.of("prod", "production"))
+                && DEVELOPMENT_JWT_SECRET.equals(properties.jwtSecret())) {
+            throw new IllegalStateException("Production JWT_SECRET must be unique and cannot use the development default");
+        }
+        return TokenService.secretKey(properties.jwtSecret());
+    }
     @Bean JwtEncoder jwtEncoder(SecretKey key) { return NimbusJwtEncoder.withSecretKey(key).build(); }
     @Bean JwtDecoder jwtDecoder(SecretKey key) { return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256).build(); }
     @Bean CorsConfigurationSource corsConfigurationSource(CorsProperties properties) {
         CorsConfiguration cors = new CorsConfiguration();
         cors.setAllowedOrigins(properties.allowedOrigins());
         cors.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        cors.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-ID"));
+        cors.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-ID", "X-Client-Latitude", "X-Client-Longitude", "X-Location-Status", "X-Jnapanam-Platform", "X-Jnapanam-Version-Code"));
         cors.setExposedHeaders(java.util.List.of("X-Correlation-ID", "Content-Disposition"));
         cors.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -44,7 +53,10 @@ public class SecurityConfig {
     @Bean SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConverter converter) throws Exception {
         return http.cors(Customizer.withDefaults()).csrf(csrf -> csrf.disable()).sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**", "/api/v1/public/**", "/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/commerce/settings", "/api/v1/commerce/categories", "/api/v1/commerce/products", "/api/v1/commerce/products/*").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/subscriptions/offerings", "/api/v1/subscriptions/config").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").hasAnyRole("SUPER_ADMIN", "ADMIN")
+                        .requestMatchers("/api/v1/auth/**", "/api/v1/public/**", "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter))).build();
     }

@@ -2,42 +2,65 @@
   "expo": {
     "name": "Jnapanam Sports Zone",
     "slug": "jnapanam-sports-zone",
-    "version": "1.0.0",
+    "version": "1.1.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/jnapanam-brand.png",
     "scheme": "jnapanamsportszone",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/jnapanam-brand.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.jnapanam.sportszone"
     },
     "android": {
       "package": "com.jnapanam.sportszone",
       "adaptiveIcon": {
-        "backgroundColor": "#E8F5EE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/jnapanam-brand.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 3
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/jnapanam-brand.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B5D3B",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/jnapanam-brand.png",
+          "imageWidth": 140
         }
       ],
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Jnapanam uses your location with your permission to record where activities occur. You can continue without location.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Jnapanam staff to scan customer check-in QR codes",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Jnapanam to capture your profile photo for venue entry verification",
+          "photosPermission": "Allow Jnapanam to select your profile photo",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
