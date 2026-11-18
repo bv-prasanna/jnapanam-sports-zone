@@ -16,6 +16,16 @@
       "android": {
         "buildType": "app-bundle"
       }
+    },
+    "ios-uat": {
+      "distribution": "store",
+      "environment": "preview",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "ios-uat": {
+      "ios": {}
     }
   }
 }
