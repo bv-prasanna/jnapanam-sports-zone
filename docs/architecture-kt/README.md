@@ -12,6 +12,7 @@
 - [Status code, audit security and web/mobile UAT checklist](HTTP_AUDIT_UI_CHECKLIST.md)
 - [KT demonstration and release sign-off](KT_DEMO.md)
 - [All web and Expo screens — evidence-driven UAT matrix](SCREEN_BY_SCREEN_UAT_MATRIX.md)
+- [iPhone iOS build, TestFlight UAT and App Store release runbook](IOS_TESTFLIGHT_UAT_RELEASE.md)
 - [App-skeleton reuse rules, commands and KT evidence](APP_SKELETON_REUSE_AND_KT.md)
 - [Read-only migration source verification script](../../scripts/verify-flyway-source.sh)
 
