@@ -54,9 +54,15 @@ public class CommerceService {
     public List<Product> products(String category) {
         String sql = "select p.*,c.code category_code from commerce_products p "
                 + "join commerce_categories c on c.id=p.category_id "
-                + "where p.status='ACTIVE' and c.status='ACTIVE' "
-                + "and (? is null or upper(c.code)=upper(?)) order by p.name";
-        return jdbc.query(sql, (r, n) -> product(r), category, category);
+                + "where p.status='ACTIVE' and c.status='ACTIVE' ";
+        // Avoid binding a NULL parameter to "? IS NULL": PostgreSQL cannot always
+        // infer its SQL type, which can make the public, unfiltered shop catalogue
+        // fail with "could not determine data type of parameter".
+        if (category == null || category.isBlank()) {
+            return jdbc.query(sql + "order by p.name", (r, n) -> product(r));
+        }
+        return jdbc.query(sql + "and upper(c.code)=upper(?) order by p.name",
+                (r, n) -> product(r), category.trim());
     }
 
     public Product product(UUID id) {
