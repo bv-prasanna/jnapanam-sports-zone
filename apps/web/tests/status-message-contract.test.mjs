@@ -42,3 +42,16 @@ test('shop settings remain usable when public product catalogue temporarily fail
  assert.match(shop,/Retry catalogue/);
  assert.match(shop,/!productsError&&!loading/);
 });
+
+test('shop checkout supports configured delivery with a validated saved/editable address',async()=>{
+ const shop=await source('app/shop/page.tsx');
+ const css=await source('app/shop/shop.module.css');
+ assert.match(shop,/settings\.deliveryEnabled/);
+ assert.match(shop,/fulfilmentType,paymentMethod:"PAY_AT_PICKUP"/);
+ assert.match(shop,/Enter the complete delivery address before placing your order/);
+ for(const field of ['addressLine','city','state','postalCode'])assert.ok(shop.includes(field));
+ assert.match(shop,/settings\.deliveryFeePaise/);
+ assert.match(shop,/taxEstimatePaise/);
+ assert.match(css,/\.deliveryFields/);
+ assert.match(css,/\.fulfilment/);
+});
