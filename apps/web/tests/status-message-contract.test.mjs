@@ -32,3 +32,13 @@ test('cart mutations distinguish successful write from failed totals refresh',as
  assert.match(shop,/messageKind==="error"\?"alert":"status"/);
  for(const cls of ['messageSuccess','messageWarning','messageError'])assert.ok(css.includes('.'+cls));
 });
+
+test('shop settings remain usable when public product catalogue temporarily fails',async()=>{
+ const shop=await source('app/shop/page.tsx');
+ assert.match(shop,/const s=await api<Settings>\("\/api\/v1\/commerce\/settings"\)/);
+ assert.match(shop,/const p=await api<Product\[]>\("\/api\/v1\/commerce\/products"\)/);
+ assert.match(shop,/setProductsError\(errorText\(e\)\)/);
+ assert.match(shop,/Your shop is available, but your cart or order history could not be refreshed/);
+ assert.match(shop,/Retry catalogue/);
+ assert.match(shop,/!productsError&&!loading/);
+});
