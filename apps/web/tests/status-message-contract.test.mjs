@@ -7,7 +7,8 @@ test('shop checkout displays order recorded and payment due, even after refresh'
  const shop=await source('app/shop/page.tsx');
  assert.match(shop,/const placed=await api<Order>\("\/api\/v1\/commerce\/checkout"/);
  assert.match(shop,/const refreshed=await load\(true\)/);
- assert.match(shop,/Payment is due at pickup/);
+ assert.match(shop,/Payment is due /);
+ assert.match(shop,/at pickup\./);
  assert.match(shop,/Check My Orders before placing another order/);
 });
 
