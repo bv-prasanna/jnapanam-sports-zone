@@ -55,3 +55,11 @@ test('shop checkout supports configured delivery with a validated saved/editable
  assert.match(css,/\.deliveryFields/);
  assert.match(css,/\.fulfilment/);
 });
+
+test('delivery checkout uses facility collection semantics and validates a six-digit PIN',async()=>{
+ const shop=await source('app/shop/page.tsx');
+ assert.match(shop,/Payment is due .*at the facility before delivery/);
+ assert.match(shop,/Place delivery order · pay at facility/);
+ assert.match(shop,/replace\(\/\\D\/g,""\)\.slice\(0,6\)/);
+ assert.match(shop,/if\(settings&&!settings\.deliveryEnabled\)setFulfilmentType\("PICKUP"\)/);
+});
