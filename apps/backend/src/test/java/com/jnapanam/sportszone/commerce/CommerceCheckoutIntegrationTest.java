@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jnapanam.sportszone.commerce.dto.CommerceDtos.CheckoutRequest;
 import com.jnapanam.sportszone.commerce.dto.CommerceDtos.Order;
+import com.jnapanam.sportszone.commerce.dto.CommerceDtos.Product;
 import com.jnapanam.sportszone.commerce.service.CommerceService;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,18 @@ class CommerceCheckoutIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired CommerceService commerce;
+
+    @Test
+    void publicCatalogueLoadsWithoutCategoryAndSupportsCategoryFilter() throws Exception {
+        Fixture fixture = fixture(10, 1, 10_000, 18.0);
+
+        assertThat(commerce.products(null))
+                .extracting(Product::id)
+                .contains(fixture.productId());
+        assertThat(commerce.products("  " + fixture.categoryCode().toLowerCase() + "  "))
+                .extracting(Product::id)
+                .containsExactly(fixture.productId());
+    }
 
     @Test
     void checkoutPersistsOrderItemsUpdatesStockAndClearsCart() throws Exception {
@@ -102,7 +115,7 @@ class CommerceCheckoutIntegrationTest {
         jdbc.update("insert into commerce_cart_items(user_id,variant_id,quantity) values(?,?,?)",
                 userId, variantId, cartQuantity);
 
-        return new Fixture(userId, variantId);
+        return new Fixture(userId, variantId, productId, "CAT_" + suffix);
     }
 
     private CheckoutRequest pickupRequest(String paymentMethod) {
@@ -121,5 +134,5 @@ class CommerceCheckoutIntegrationTest {
         return result == null ? 0 : result;
     }
 
-    private record Fixture(UUID userId, UUID variantId) {}
+    private record Fixture(UUID userId, UUID variantId, UUID productId, String categoryCode) {}
 }
