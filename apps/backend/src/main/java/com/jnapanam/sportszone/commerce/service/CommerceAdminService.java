@@ -138,7 +138,8 @@ public class CommerceAdminService {
 
     public List<Map<String, Object>> orders() {
         return jdbc.queryForList("select id,order_number,status,fulfilment_type,payment_method,"
-                + "payment_status,original_total_paise,loyalty_points_used,loyalty_discount_paise,"
+                + "payment_status,counter_payment_method,payment_reference,payment_collected_by,"
+                + "payment_collected_at,original_total_paise,loyalty_points_used,loyalty_discount_paise,"
                 + "total_paise,recipient_name,mobile,created_at from commerce_orders order by created_at desc");
     }
 
