@@ -21,7 +21,54 @@ export default function Shop(){
  const {user,language}=useApp();const [settings,setSettings]=useState<Settings|null>(null);const [products,setProducts]=useState<Product[]>([]);const [productsError,setProductsError]=useState("");
  const [cart,setCart]=useState<Cart>({items:[],subtotalPaise:0});const [quote,setQuote]=useState<Quote|null>(null);const [points,setPoints]=useState(0);
  const [orders,setOrders]=useState<Order[]>([]);const [tab,setTab]=useState("shop");const [message,setMessage]=useState("");const [messageKind,setMessageKind]=useState<"success"|"warning"|"error"|"info">("info");const [loading,setLoading]=useState(true);const [heroIndex,setHeroIndex]=useState(0);
- const load=useCallback(async(preserveFeedback=false)=>{setLoading(true);let orderDataLoaded=true;try{const s=await api<Settings>("/api/v1/commerce/settings");setSettings(s);}catch(e){if(!preserveFeedback){setMessageKind("error");setMessage(e instanceof ApiError?e.message:"The shop could not be loaded. Please try again.");}return false;}try{const p=await api<Product[]>("/api/v1/commerce/products");setProducts(p);setProductsError("");}catch(e){setProducts([]);setProductsError(errorText(e));}if(user){try{const [c,o]=await Promise.all([api<Cart>("/api/v1/commerce/cart"),api<Order[]>("/api/v1/commerce/orders")]);setCart(c);setOrders(o);if(c.items.length){try{setQuote(await api<Quote>("/api/v1/commerce/cart/loyalty-quote"));}catch{setQuote(null);}}else setQuote(null);}catch(e){orderDataLoaded=false;if(!preserveFeedback){setMessageKind("warning");setMessage("Your shop is available, but your cart or order history could not be refreshed. Please retry before checking out.");}}}if(!preserveFeedback&&orderDataLoaded){setMessage("");setMessageKind("info")}return orderDataLoaded;}finally{setLoading(false)}},[user]);
+ const load=useCallback(async(preserveFeedback=false)=>{
+  setLoading(true);
+  let orderDataLoaded=true;
+  try{
+   try{
+    const s=await api<Settings>("/api/v1/commerce/settings");
+    setSettings(s);
+   }catch(e){
+    if(!preserveFeedback){
+     setMessageKind("error");
+     setMessage(e instanceof ApiError?e.message:"The shop could not be loaded. Please try again.");
+    }
+    return false;
+   }
+   try{
+    const p=await api<Product[]>("/api/v1/commerce/products");
+    setProducts(p);
+    setProductsError("");
+   }catch(e){
+    setProducts([]);
+    setProductsError(errorText(e));
+   }
+   if(user){
+    try{
+     const [c,o]=await Promise.all([api<Cart>("/api/v1/commerce/cart"),api<Order[]>("/api/v1/commerce/orders")]);
+     setCart(c);
+     setOrders(o);
+     if(c.items.length){
+      try{setQuote(await api<Quote>("/api/v1/commerce/cart/loyalty-quote"));}
+      catch{setQuote(null);}
+     }else setQuote(null);
+    }catch{
+     orderDataLoaded=false;
+     if(!preserveFeedback){
+      setMessageKind("warning");
+      setMessage("Your shop is available, but your cart or order history could not be refreshed. Please retry before checking out.");
+     }
+    }
+   }
+   if(!preserveFeedback&&orderDataLoaded){
+    setMessage("");
+    setMessageKind("info");
+   }
+   return orderDataLoaded;
+  }finally{
+   setLoading(false);
+  }
+ },[user]);
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{const timer=window.setInterval(()=>setHeroIndex(i=>(i+1)%heroMedia.length),5000);return()=>window.clearInterval(timer)},[]);
  async function add(id:string){if(!user){setMessageKind("warning");setMessage("Please login to add items.");return}try{const updated=await api<Cart>("/api/v1/commerce/cart/items",{method:"PUT",body:JSON.stringify({variantId:id,quantity:1})});setCart(updated);try{setQuote(await api<Quote>("/api/v1/commerce/cart/loyalty-quote"));setMessageKind("success");setMessage("Added to cart.")}catch{setMessageKind("warning");setMessage("Item added, but cart totals could not refresh. Open the cart to verify totals.")}}catch(e){setMessageKind("error");setMessage(errorText(e))}}
