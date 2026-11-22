@@ -75,7 +75,7 @@ public class ShopCounterService {
         if ("PAID".equalsIgnoreCase(String.valueOf(order.get("payment_status")))) return order(orderId, false);
         String method = request.paymentMethod().trim().toUpperCase();
         if (!Set.of("CASH", "UPI", "CARD").contains(method)) throw new ConflictException("Payment method must be CASH, UPI or CARD");
-        jdbc.update("update commerce_orders set payment_status='PAID',status=case when status='PLACED' then 'CONFIRMED' else status end,updated_at=now() where id=?", orderId);
+        jdbc.update("update commerce_orders set payment_status='PAID',counter_payment_method=?,payment_reference=?,payment_collected_by=?,payment_collected_at=now(),status=case when status='PLACED' then 'CONFIRMED' else status end,updated_at=now() where id=? and payment_status<>'PAID'", method, clean(request.paymentReference()), actor, orderId);
         jdbc.update("insert into commerce_stock_movements(variant_id,quantity_delta,reason,reference_id,actor_id) select variant_id,0,'COUNTER_PAYMENT',?,? from commerce_order_items where order_id=? limit 1",
                 orderId, actor, orderId);
         if (order.get("user_id") instanceof UUID userId) {
