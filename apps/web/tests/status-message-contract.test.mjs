@@ -7,7 +7,8 @@ test('shop checkout displays order recorded and payment due, even after refresh'
  const shop=await source('app/shop/page.tsx');
  assert.match(shop,/const placed=await api<Order>\("\/api\/v1\/commerce\/checkout"/);
  assert.match(shop,/const refreshed=await load\(true\)/);
- assert.match(shop,/Payment is due at pickup/);
+ assert.match(shop,/Payment is due /);
+ assert.match(shop,/at pickup\./);
  assert.match(shop,/Check My Orders before placing another order/);
 });
 
@@ -41,4 +42,25 @@ test('shop settings remain usable when public product catalogue temporarily fail
  assert.match(shop,/Your shop is available, but your cart or order history could not be refreshed/);
  assert.match(shop,/Retry catalogue/);
  assert.match(shop,/!productsError&&!loading/);
+});
+
+test('shop checkout supports configured delivery with a validated saved/editable address',async()=>{
+ const shop=await source('app/shop/page.tsx');
+ const css=await source('app/shop/shop.module.css');
+ assert.match(shop,/settings\.deliveryEnabled/);
+ assert.match(shop,/fulfilmentType,paymentMethod:"PAY_AT_PICKUP"/);
+ assert.match(shop,/Enter the complete delivery address before placing your order/);
+ for(const field of ['addressLine','city','state','postalCode'])assert.ok(shop.includes(field));
+ assert.match(shop,/settings\.deliveryFeePaise/);
+ assert.match(shop,/taxEstimatePaise/);
+ assert.match(css,/\.deliveryFields/);
+ assert.match(css,/\.fulfilment/);
+});
+
+test('delivery checkout uses facility collection semantics and validates a six-digit PIN',async()=>{
+ const shop=await source('app/shop/page.tsx');
+ assert.match(shop,/Payment is due .*at the facility before delivery/);
+ assert.match(shop,/Place delivery order · pay at facility/);
+ assert.match(shop,/replace\(\/\\D\/g,""\)\.slice\(0,6\)/);
+ assert.match(shop,/if\(settings&&!settings\.deliveryEnabled\)setFulfilmentType\("PICKUP"\)/);
 });

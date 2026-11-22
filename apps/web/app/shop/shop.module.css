@@ -18,3 +18,13 @@
 .messageSuccess{border-left-color:#26814f;background:#edf7ee}
 .messageWarning{border-left-color:#ba771d;background:#fff5e3}
 .messageError{border-left-color:#bc3b30;background:#fff0ed}
+
+.fulfilment{display:grid;gap:12px;padding:16px;background:#f3f6ee;border:1px solid #dce6d3;border-radius:14px;margin:14px 0}
+.fulfilment strong{font-size:15px}
+.fulfilment label{display:flex;align-items:center;gap:9px;font-weight:650}
+.fulfilment input{accent-color:var(--shop-accent)}
+.deliveryFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.deliveryFields label{display:grid;gap:6px;font-size:13px;font-weight:750}
+.deliveryFields input{width:100%;min-width:0;padding:11px 12px;border:1px solid #cbc5b8;border-radius:9px;background:white;color:var(--shop-text);font:inherit}
+.totalNote{display:block;color:var(--shop-secondary);line-height:1.5;margin-top:-8px;margin-bottom:12px}
+@media(max-width:600px){.deliveryFields{grid-template-columns:1fr}}
