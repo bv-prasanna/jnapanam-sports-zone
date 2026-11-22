@@ -8,7 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jnapanam.sportszone.commerce.dto.CommerceDtos.CheckoutRequest;
 import com.jnapanam.sportszone.commerce.dto.CommerceDtos.Order;
 import com.jnapanam.sportszone.commerce.dto.CommerceDtos.Product;
+import com.jnapanam.sportszone.commerce.dto.ShopCounterDtos.CounterPaymentRequest;
 import com.jnapanam.sportszone.commerce.service.CommerceService;
+import com.jnapanam.sportszone.commerce.service.ShopCounterService;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,7 @@ class CommerceCheckoutIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired CommerceService commerce;
+    @Autowired ShopCounterService shopCounter;
 
     @Test
     void publicCatalogueLoadsWithoutCategoryAndSupportsCategoryFilter() throws Exception {
@@ -76,6 +79,27 @@ class CommerceCheckoutIntegrationTest {
         assertThat(order.totalPaise()).isEqualTo(12_500);
         assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId())).isEqualTo(4);
         assertThat(count("select count(*) from commerce_order_items where order_id=?", order.id())).isEqualTo(1);
+    }
+
+    @Test
+    void counterPaymentPersistsMethodReferenceCollectorAndTimestampAndIsIdempotent() throws Exception {
+        Fixture fixture = fixture(5, 1, 12_500, 0.0);
+        jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true where singleton_id=true");
+        Order order = commerce.checkout(fixture.userId(), pickupRequest("PAY_AT_PICKUP"));
+
+        var paid = shopCounter.collectOrderPayment(fixture.userId(), order.id(),
+                new CounterPaymentRequest("UPI", "UTR-JNZ-12345"));
+
+        assertThat(paid.get("payment_status")).isEqualTo("PAID");
+        assertThat(paid.get("counter_payment_method")).isEqualTo("UPI");
+        assertThat(paid.get("payment_reference")).isEqualTo("UTR-JNZ-12345");
+        assertThat(paid.get("payment_collected_by")).isEqualTo(fixture.userId());
+        assertThat(paid.get("payment_collected_at")).isNotNull();
+
+        var duplicate = shopCounter.collectOrderPayment(fixture.userId(), order.id(),
+                new CounterPaymentRequest("CASH", null));
+        assertThat(duplicate.get("counter_payment_method")).isEqualTo("UPI");
+        assertThat(duplicate.get("payment_reference")).isEqualTo("UTR-JNZ-12345");
     }
 
     @Test
