@@ -18,10 +18,57 @@ const money=(v:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency
 const heroMedia=["/images/hero-sports.jpg","/images/sport-cricket.png","/images/sport-swimming.png"];
 
 export default function Shop(){
- const {user,language}=useApp();const [settings,setSettings]=useState<Settings|null>(null);const [products,setProducts]=useState<Product[]>([]);
+ const {user,language}=useApp();const [settings,setSettings]=useState<Settings|null>(null);const [products,setProducts]=useState<Product[]>([]);const [productsError,setProductsError]=useState("");
  const [cart,setCart]=useState<Cart>({items:[],subtotalPaise:0});const [quote,setQuote]=useState<Quote|null>(null);const [points,setPoints]=useState(0);
  const [orders,setOrders]=useState<Order[]>([]);const [tab,setTab]=useState("shop");const [message,setMessage]=useState("");const [messageKind,setMessageKind]=useState<"success"|"warning"|"error"|"info">("info");const [loading,setLoading]=useState(true);const [heroIndex,setHeroIndex]=useState(0);
- const load=useCallback(async(preserveFeedback=false)=>{setLoading(true);try{const [s,p]=await Promise.all([api<Settings>("/api/v1/commerce/settings"),api<Product[]>("/api/v1/commerce/products")]);setSettings(s);setProducts(p);if(user){const [c,o]=await Promise.all([api<Cart>("/api/v1/commerce/cart"),api<Order[]>("/api/v1/commerce/orders")]);setCart(c);setOrders(o);if(c.items.length)setQuote(await api<Quote>("/api/v1/commerce/cart/loyalty-quote"));else setQuote(null)}if(!preserveFeedback){setMessage("");setMessageKind("info")}return true;}catch(e){if(!preserveFeedback){setMessageKind("error");setMessage(e instanceof ApiError?e.status===401||e.status===403?"Shop catalog access is incorrectly restricted. Please report this issue.":e.message:"The shop could not be loaded. Please try again.");}return false;}finally{setLoading(false)}},[user]);
+ const load=useCallback(async(preserveFeedback=false)=>{
+  setLoading(true);
+  let orderDataLoaded=true;
+  try{
+   try{
+    const s=await api<Settings>("/api/v1/commerce/settings");
+    setSettings(s);
+   }catch(e){
+    if(!preserveFeedback){
+     setMessageKind("error");
+     setMessage(e instanceof ApiError?e.message:"The shop could not be loaded. Please try again.");
+    }
+    return false;
+   }
+   try{
+    const p=await api<Product[]>("/api/v1/commerce/products");
+    setProducts(p);
+    setProductsError("");
+   }catch(e){
+    setProducts([]);
+    setProductsError(errorText(e));
+   }
+   if(user){
+    try{
+     const [c,o]=await Promise.all([api<Cart>("/api/v1/commerce/cart"),api<Order[]>("/api/v1/commerce/orders")]);
+     setCart(c);
+     setOrders(o);
+     if(c.items.length){
+      try{setQuote(await api<Quote>("/api/v1/commerce/cart/loyalty-quote"));}
+      catch{setQuote(null);}
+     }else setQuote(null);
+    }catch{
+     orderDataLoaded=false;
+     if(!preserveFeedback){
+      setMessageKind("warning");
+      setMessage("Your shop is available, but your cart or order history could not be refreshed. Please retry before checking out.");
+     }
+    }
+   }
+   if(!preserveFeedback&&orderDataLoaded){
+    setMessage("");
+    setMessageKind("info");
+   }
+   return orderDataLoaded;
+  }finally{
+   setLoading(false);
+  }
+ },[user]);
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{const timer=window.setInterval(()=>setHeroIndex(i=>(i+1)%heroMedia.length),5000);return()=>window.clearInterval(timer)},[]);
  async function add(id:string){if(!user){setMessageKind("warning");setMessage("Please login to add items.");return}try{const updated=await api<Cart>("/api/v1/commerce/cart/items",{method:"PUT",body:JSON.stringify({variantId:id,quantity:1})});setCart(updated);try{setQuote(await api<Quote>("/api/v1/commerce/cart/loyalty-quote"));setMessageKind("success");setMessage("Added to cart.")}catch{setMessageKind("warning");setMessage("Item added, but cart totals could not refresh. Open the cart to verify totals.")}}catch(e){setMessageKind("error");setMessage(errorText(e))}}
@@ -35,8 +82,9 @@ export default function Shop(){
  return <><SiteHeader/><main className={styles.page} style={vars}><section className={styles.hero}><div className={styles.heroMedia} style={{backgroundImage:`url(${heroMedia[heroIndex]})`}}/><div className={styles.heroShade}/><div className={styles.heroCopy}><span>{shopName}</span><h1>{hero}</h1><p>{subtitle}</p><div className={styles.heroDots}>{heroMedia.map((_,i)=><button key={i} className={i===heroIndex?styles.heroDotActive:""} onClick={()=>setHeroIndex(i)} aria-label={`Show shop hero ${i+1}`}/>)}</div></div></section>
  <nav className={styles.tabs}>{["shop","cart","orders"].map(x=><button key={x} className={tab===x?styles.active:""} onClick={()=>setTab(x)}>{x==="cart"?`Cart (${cart.items.length})`:x==="orders"?"My orders":"Shop"}</button>)}</nav>
  {message&&<p className={[styles.message,messageKind==="success"?styles.messageSuccess:messageKind==="error"?styles.messageError:messageKind==="warning"?styles.messageWarning:""].join(" ")} role={messageKind==="error"?"alert":"status"}>{message}</p>}
+ {tab==="shop"&&productsError&&<p className={styles.message+" "+styles.messageWarning} role="alert">We could not load the product catalogue. Your shop page is still available. {productsError} <button className={styles.primary} type="button" onClick={()=>void load(true)} disabled={loading}>{loading?"Retrying…":"Retry catalogue"}</button></p>}
  {tab==="shop"&&<section className={styles.grid}>{products.map(p=><article className={styles.card} key={p.id}>{p.imageUrl?<img className={styles.productImage} src={p.imageUrl} alt={p.name}/>:<div className={styles.placeholder}>{shopName}</div>}<small>{p.categoryCode}</small><h2>{language==="kn"&&p.nameKn?p.nameKn:p.name}</h2><p>{language==="kn"&&p.descriptionKn?p.descriptionKn:p.description}</p>{p.variants.map(v=><div className={styles.variant} key={v.id}><span><small>{language==="kn"?"ಗಾತ್ರ":"Size"}</small><b>{v.label}</b></span><span><small>{language==="kn"?"ಬೆಲೆ":"Price"}</small><b>{money(v.pricePaise)}</b></span><button disabled={!v.stockQuantity} onClick={()=>void add(v.id)}>{v.stockQuantity?(language==="kn"?"ಸೇರಿಸಿ":"Add"):(language==="kn"?"ಸ್ಟಾಕ್ ಇಲ್ಲ":"Out of stock")}</button></div>)}{!p.variants.length&&<p className={styles.noVariant}>Pricing and size options will be available soon.</p>}</article>)}</section>}
- {tab==="shop"&&!products.length&&!loading&&<p className={styles.empty}>No merchandise is available yet.</p>}
+ {tab==="shop"&&!products.length&&!productsError&&!loading&&<p className={styles.empty}>No merchandise is available yet.</p>}
  {tab==="cart"&&<section className={styles.panel}><h2>Your cart</h2>{cart.items.map(i=><div className={styles.row} key={i.variantId}><div><b>{i.productName}</b><span>{i.variantLabel+" · Qty "+i.quantity}</span></div><b>{money(i.lineTotalPaise)}</b><button onClick={()=>void remove(i.variantId)}>Remove</button></div>)}{cart.items.length?<><div className={styles.total}><span>Subtotal</span><b>{money(cart.subtotalPaise)}</b></div>{quote&&quote.maximumRedeemablePoints>0&&<label className={styles.loyalty}><span>Use loyalty points</span><input type="number" min="0" max={quote.maximumRedeemablePoints} value={points} onChange={e=>setPoints(Math.min(quote.maximumRedeemablePoints,Math.max(0,Number(e.target.value))))}/><small>Balance: {quote.balancePoints} · Maximum for this cart: {quote.maximumRedeemablePoints} · Discount: {money(points*quote.pointValuePaise)}</small></label>}<div className={styles.payable}><span>Payable</span><b>{money(cart.subtotalPaise-points*(quote?.pointValuePaise||0))}</b></div><button className={styles.primary} disabled={!settings.payAtFacilityEnabled} onClick={()=>void checkout()}>{settings.payAtFacilityEnabled?"Collect & pay at facility":"Pay at facility unavailable"}</button></>:<p>Your cart is empty.</p>}</section>}
  {tab==="orders"&&<section className={styles.panel}><h2>My orders</h2>{orders.map(o=><div className={styles.row} key={o.id}><div><b>{o.orderNumber}</b><span>{o.fulfilmentType}{o.loyaltyPointsUsed?` · ${o.loyaltyPointsUsed} points used`:""}</span></div><b>{money(o.totalPaise)}</b><em>{o.status}</em></div>)}{!orders.length&&<p>No orders yet.</p>}</section>}
  </main><SiteFooter/></>
