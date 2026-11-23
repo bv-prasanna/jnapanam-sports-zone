@@ -17,7 +17,9 @@ export type User = {
   status:string;roles:string[];requiresUpfrontPayment:boolean;
 };
 const defaultHost=Platform.OS==='android'?'10.0.2.2':'localhost';
-export const API_URL=(process.env.EXPO_PUBLIC_API_URL||'http://'+defaultHost+':8080').replace(/\/$/,'');
+// Local development may use the emulator/localhost fallback. Release builds must
+// provide EXPO_PUBLIC_API_URL so a published app can never target its own device.
+export const API_URL=(process.env.EXPO_PUBLIC_API_URL||(typeof __DEV__!=='undefined'&&__DEV__?'http://'+defaultHost+':8080':'')).replace(/\/$/,'');
 export const REFRESH_TOKEN_KEY = 'jnapanam.refreshToken';
 let accessToken:string|null=null;
 let refreshInFlight:Promise<string|null>|null=null;
@@ -26,6 +28,9 @@ export function setAccessToken(token:string|null){accessToken=token;}
 export function onSessionExpired(handler:(()=>void)|null){sessionExpiredHandler=handler;}
 export class ApiError extends Error {
   constructor(message:string,public status:number,public code?:string){super(message);this.name='ApiError';}
+}
+function assertApiUrlConfigured(){
+  if(!API_URL)throw new ApiError('The app is not configured to reach Jnapanam services. Please install the latest release or contact support.',0,'API_URL_NOT_CONFIGURED');
 }
 const friendly=(key:'network'|'timeout'|'server'|'session'|'generic')=>i18n.t('errors.'+key);
 const technical=/socketexception|fetch failed|network request failed|software caused connection abort|stacktrace|java\.|exception:|connection refused|read timed out|unexpected token/i;
@@ -43,6 +48,7 @@ export function userFriendlyError(reason:unknown,fallback?:string){
  * Never remove saved credentials when the network is unavailable or the server is 5xx.
  */
 export async function refreshAccessToken():Promise<string|null>{
+  assertApiUrlConfigured();
   if(refreshInFlight)return refreshInFlight;
   refreshInFlight=(async()=>{
     const saved=await getStoredValue(REFRESH_TOKEN_KEY);
@@ -86,6 +92,7 @@ export async function clearMobileSession(){
 }
 
 export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
+  assertApiUrlConfigured();
   const method=(options.method||'GET').toUpperCase();
   const geoHeaders=['POST','PUT','PATCH','DELETE'].includes(method)?await getEventLocationHeaders():{};
   // Never attach an expired JWT to login, registration, password-reset or refresh endpoints.
