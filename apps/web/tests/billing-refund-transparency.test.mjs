@@ -7,7 +7,8 @@ test('billing receipt API exposes refund deductions and descriptions',async()=>{
  const service=await readFile(new URL('../../backend/src/main/java/com/jnapanam/sportszone/pricing/VenueBillingService.java',import.meta.url),'utf8');
  assert.match(service,/deduction_paise as "deductionPaise"/);
  assert.match(service,/deduction_description as "deductionDescription"/);
- assert.match(service,/reason,status,processed_at as "processedAt"/);
+ assert.match(service,/status,processed_at as "processedAt"/);
+ assert.doesNotMatch(service,/deduction_description as "deductionDescription",reason/);
 });
 
 test('customer billing receipt separates refunds from retained charges',async()=>{
