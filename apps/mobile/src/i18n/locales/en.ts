@@ -12,7 +12,7 @@ const en = {
     noEmail:'No invoice email is sent by default. Download the PDF from the secure web portal.',
     noInvoice:'An invoice has not been issued yet. Your payment receipt is available in your account.',
     refundHistory:'Refund history',refundToCustomer:'Refund to customer: {{amount}}',
-    retainedCharges:'Retained charges: {{amount}}',deductionDescription:'Deduction reason: {{description}}'
+    retainedCharges:'Retained charges: {{amount}}',deductionRequested:'Proposed deduction: {{amount}}',deductionDescription:'Deduction reason: {{description}}'
   },
   mobileTraining:{
     places:'places',coach:'Coach',enrol:'Enrol',full:'Batch full',noMatching:'No matching training',
