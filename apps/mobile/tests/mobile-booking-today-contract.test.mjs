@@ -27,3 +27,10 @@ test('Razorpay success uses a native app-return deep link and rechecks server pa
  assert.match(payments,/receipt\.status !== 'PAID'/);
  assert.match(route,/<Redirect href="\/bookings"/);
 });
+
+test('booking list refreshes authoritative payment status whenever the screen regains focus',async()=>{
+ const page=await source('src/app/bookings.tsx');
+ assert.match(page,/useFocusEffect\(useCallback\(\(\)=>\{\s*void load\(\);\s*\},\[load\]\)\)/);
+ assert.doesNotMatch(page,/useEffect\(\(\)=>\{\s*void load\(\);\s*\},\s*\[load\]\)/);
+ assert.match(page,/api<Booking\[]>\('\/api\/v1\/bookings\/me'\)/);
+});
