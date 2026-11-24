@@ -11,7 +11,7 @@ test('mobile billing displays refund amounts and retained deduction descriptions
  assert.match(screen,/deductionPaise/);
  assert.match(screen,/deductionDescription/);
  for(const locale of [en,kn]){
-  for(const key of ['refundHistory:','refundToCustomer:','retainedCharges:','deductionDescription:'])
+  for(const key of ['refundHistory:','refundToCustomer:','retainedCharges:','deductionRequested:','deductionDescription:'])
    assert.ok(locale.includes(key),key);
  }
 });
