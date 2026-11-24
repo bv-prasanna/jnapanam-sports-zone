@@ -12,7 +12,7 @@ const kn = {
     noEmail:'ಪೂರ್ವನಿಯೋಜಿತವಾಗಿ ಇನ್‌ವಾಯ್ಸ್ ಇಮೇಲ್ ಕಳುಹಿಸುವುದಿಲ್ಲ. ಸುರಕ್ಷಿತ ಪೋರ್ಟಲ್‌ನಿಂದ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.',
     noInvoice:'ಇನ್ನೂ ಇನ್‌ವಾಯ್ಸ್ ನೀಡಿಲ್ಲ. ನಿಮ್ಮ ಪಾವತಿ ರಸೀದಿ ಖಾತೆಯಲ್ಲಿ ಲಭ್ಯವಿದೆ.',
     refundHistory:'ಮರುಪಾವತಿ ಇತಿಹಾಸ',refundToCustomer:'ಗ್ರಾಹಕರಿಗೆ ಮರುಪಾವತಿ: {{amount}}',
-    retainedCharges:'ಉಳಿಸಿಕೊಂಡ ಶುಲ್ಕಗಳು: {{amount}}',deductionDescription:'ಕಡಿತದ ಕಾರಣ: {{description}}'
+    retainedCharges:'ಉಳಿಸಿಕೊಂಡ ಶುಲ್ಕಗಳು: {{amount}}',deductionRequested:'ಪ್ರಸ್ತಾಪಿತ ಕಡಿತ: {{amount}}',deductionDescription:'ಕಡಿತದ ಕಾರಣ: {{description}}'
   },
   mobileTraining:{
     places:'ಸ್ಥಾನಗಳು',coach:'ತರಬೇತುದಾರ',enrol:'ನೋಂದಾಯಿಸಿ',full:'ಬ್ಯಾಚ್ ಭರ್ತಿಯಾಗಿದೆ',noMatching:'ಹೊಂದುವ ತರಬೇತಿ ಇಲ್ಲ',
