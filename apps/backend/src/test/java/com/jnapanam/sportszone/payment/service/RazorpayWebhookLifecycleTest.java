@@ -128,7 +128,7 @@ class RazorpayWebhookLifecycleTest {
         refund.submitted("rfnd_001");
         when(refunds.findByProviderRefundId("rfnd_001")).thenReturn(Optional.of(refund));
         when(refunds.findByPaymentOrderId(order.getId())).thenReturn(List.of(refund));
-        String json="{\"event\":\"refund.processed\",\"payload\":{\"refund\":{\"entity\":{\"id\":\"rfnd_001\",\"payment_id\":\"pay_001\",\"amount\":10000}}}}";
+        String json="{\"event\":\"refund.processed\",\"payload\":{\"refund\":{\"entity\":{\"id\":\"rfnd_deduction\",\"payment_id\":\"pay_001\",\"amount\":8000}}}}";
         event("evt-refund-processed",json);
         assertEquals(RefundStatus.PROCESSED,refund.getStatus());
         assertEquals(PaymentStatus.REFUNDED,order.getStatus());
