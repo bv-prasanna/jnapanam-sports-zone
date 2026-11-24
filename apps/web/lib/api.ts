@@ -1,4 +1,6 @@
-export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "");
+// Keep localhost convenient in development, but never silently ship a production
+// web client that calls the end user's own machine.
+export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV !== "production" ? "http://localhost:8080" : "")).replace(/\/$/, "");
 
 export type TokenResponse = { tokenType: string; accessToken: string; accessTokenExpiresAt: string; refreshToken: string };
 export type User = { id: string; fullName: string; displayName?: string; profilePhotoUrl?: string; email: string; mobile?: string; addressLine?: string; city?: string; state?: string; postalCode?: string; status: string; roles: string[]; requiresUpfrontPayment: boolean };
@@ -18,6 +20,10 @@ function expireSession() {
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public details?: unknown) { super(message); }
+}
+
+function assertApiBaseUrlConfigured() {
+  if (!API_BASE_URL) throw new ApiError(0, "The website is not configured to reach Jnapanam services. Please contact support.");
 }
 
 /** Consistent, safe messages for users on every API-backed web page. */
@@ -75,6 +81,7 @@ export function clearSession() {
 }
 
 async function refreshAccess(): Promise<string | null> {
+  assertApiBaseUrlConfigured();
   if (typeof window === "undefined") return null;
   const refreshToken = localStorage.getItem(REFRESH_KEY);
   if (!refreshToken) return null;
@@ -108,6 +115,7 @@ async function attachEventLocation(headers: Headers, method: string) {
 }
 
 export async function api<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+  assertApiBaseUrlConfigured();
   const headers = new Headers(init.headers);
   const multipart = typeof FormData !== "undefined" && init.body instanceof FormData;
   if (!headers.has("Content-Type") && init.body && !multipart) headers.set("Content-Type", "application/json");
@@ -145,6 +153,7 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
 
 /** Download authenticated binary files; standard api() expects JSON. */
 export async function apiBlob(path:string):Promise<Blob>{
+  assertApiBaseUrlConfigured();
   let jwt=accessToken || await refreshAccess();
   const request=()=>fetchSafe(`${API_BASE_URL}${path}`,{headers:jwt?{Authorization:`Bearer ${jwt}`}:{}});
   let response=await request();
@@ -179,6 +188,7 @@ export async function logout() {
 
 
 export async function apiDocument(path:string):Promise<Blob>{
+  assertApiBaseUrlConfigured();
   const request=async(token:string|null)=>fetchSafe(`${API_BASE_URL}${path}`,{headers:token?{Authorization:`Bearer ${token}`}:{}});
   let response=await request(accessToken);
   if(response.status===401){const token=await refreshAccess();if(token)response=await request(token);}
