@@ -93,7 +93,9 @@ useEffect(()=>{
    .finally(()=>setHistoryBusy(false));
  }
 }
-const processedPaise=history.filter(item=>item.status==="PROCESSED").reduce((total,item)=>total+item.amountPaise,0);
+const processedRefundPaise=history.filter(item=>item.status==="PROCESSED").reduce((total,item)=>total+item.amountPaise,0);
+const retainedPaise=history.filter(item=>item.status==="PROCESSED").reduce((total,item)=>total+(item.deductionPaise||0),0);
+const processedPaise=processedRefundPaise+retainedPaise;
 const balancePaise=Math.max(0,Number(selected?.amountPaise||0)-processedPaise);
 const deductionValid=/^\d+(\.\d{1,2})?$/.test(deduction.trim());
 const deductionPaise=deductionValid?Math.round(Number(deduction)*100):NaN;
@@ -166,7 +168,8 @@ If Razorpay shows Captured but Jnapanam does not show PAID, investigate before r
  {!gatewayEvents.length&&!eventsLoading&&!eventsError&&<p className="empty-state">No gateway callbacks recorded yet. Check Razorpay's dashboard for attempts that did not reach this server.</p>}</div>
  </section>{selected&&<div className="portal-dialog-backdrop"><section className="portal-dialog admin-confirm-dialog" role="dialog" aria-modal="true"><button className="dialog-close" type="button" onClick={()=>setSelected(null)} disabled={saving}>×</button><span className="eyebrow">Payment {mode}</span><h2>{String(selected.receiptNumber)}</h2><p>{bookingDetails(selected)}</p><form onSubmit={submit} noValidate>{error&&<div className="dialog-error" role="alert">{error}</div>}{mode==="refund"&&<section className="admin-refund-calculator">
  <p><strong>Captured payment:</strong> {adminMoney(selected.amountPaise)}</p>
- <p><strong>Already refunded:</strong> {adminMoney(processedPaise)}</p>
+ <p><strong>Already refunded to customer:</strong> {adminMoney(processedRefundPaise)}</p>
+ <p><strong>Charges already retained:</strong> {adminMoney(retainedPaise)}</p>
  <p><strong>Remaining refundable balance:</strong> {adminMoney(balancePaise)}</p>
  {historyBusy&&<p role="status">Checking earlier refund requests…</p>}
  {pendingRefund&&<div className="dialog-error" role="alert">An earlier refund is still pending or needs reconciliation. Check Razorpay before submitting another.</div>}
