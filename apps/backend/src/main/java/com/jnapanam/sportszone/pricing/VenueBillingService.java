@@ -79,7 +79,7 @@ public class VenueBillingService {
             """,paymentId);
         List<Map<String,Object>> returns=jdbc.queryForList("""
             select id,amount_paise as "amountPaise",deduction_paise as "deductionPaise",
-            deduction_description as "deductionDescription",reason,status,processed_at as "processedAt"
+            deduction_description as "deductionDescription",status,processed_at as "processedAt"
             from payment_refunds where payment_order_id=? order by requested_at
             """,paymentId);
         Map<String,Object> body=new LinkedHashMap<>();
