@@ -131,6 +131,7 @@ class RazorpayWebhookLifecycleTest {
         String json = """
                 {"event":"refund.processed","payload":{"refund":{"entity":{"id":"rfnd_001","payment_id":"pay_001","amount":10000}}}}
                 """;
+        event("evt-refund-processed",json);
         assertEquals(RefundStatus.PROCESSED,refund.getStatus());
         assertEquals(PaymentStatus.REFUNDED,order.getStatus());
         verify(notifications).refund(eq(order.getUser().getId()),eq(order.getReceiptNumber()),eq(10000L));
@@ -147,6 +148,7 @@ class RazorpayWebhookLifecycleTest {
         PaymentRefund next=new PaymentRefund(order,8000L,"Cancellation with retained venue fee",2000L,
                 "Venue administration charge");
         next.submitted("rfnd_deduction");
+        when(orders.findLockedById(order.getId())).thenReturn(Optional.of(order));
         when(refunds.findByProviderRefundId("rfnd_deduction")).thenReturn(Optional.of(next));
         when(refunds.findByPaymentOrderId(order.getId())).thenReturn(List.of(earlier,next));
         String json = """
