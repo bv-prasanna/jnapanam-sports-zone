@@ -230,9 +230,12 @@ public class PaymentService {
         List<PaymentRefund> existing = refunds.findByPaymentOrderId(id);
         if (existing.stream().anyMatch(r -> r.getStatus() == RefundStatus.REQUESTED))
             throw new ConflictException("A refund is pending or needs reconciliation. Check Razorpay before requesting another refund.");
-        long already = existing.stream().filter(r -> r.getStatus() == RefundStatus.PROCESSED)
-                .mapToLong(PaymentRefund::getAmountPaise).sum();
-        long available = order.getAmountPaise() - already;
+        // A processed deduction is also a settled portion of the captured amount.
+        // Subtract both the customer refund and the retained charge so a later
+        // refund cannot accidentally return money that operations explicitly kept.
+        long alreadySettled = existing.stream().filter(r -> r.getStatus() == RefundStatus.PROCESSED)
+                .mapToLong(PaymentService::settledAmount).sum();
+        long available = order.getAmountPaise() - alreadySettled;
         Long deductionInput = request.deductionPaise();
         long deduction = deductionInput == null ? 0 : deductionInput;
         if (available <= 0 || deduction < 0 || deduction >= available)
@@ -264,18 +267,26 @@ public class PaymentService {
         if (refund.getStatus() == RefundStatus.PROCESSED) return;
         PaymentOrder order = refund.getPaymentOrder();
         refund.processed(providerRefundId);
-        long total = refunds.findByPaymentOrderId(order.getId()).stream()
-                .filter(r -> r.getStatus() == RefundStatus.PROCESSED)
-                .mapToLong(PaymentRefund::getAmountPaise).sum();
+        List<PaymentRefund> processed = refunds.findByPaymentOrderId(order.getId()).stream()
+                .filter(r -> r.getStatus() == RefundStatus.PROCESSED).toList();
+        long totalRefunded = processed.stream().mapToLong(PaymentRefund::getAmountPaise).sum();
+        long totalSettled = processed.stream().mapToLong(PaymentService::settledAmount).sum();
         // During a synchronous mock refund, the just-created row must be counted
-        // even when the test repository has not yet included it in findByPaymentOrderId.
-        if (total < refund.getAmountPaise()) total = refund.getAmountPaise();
-        order.refundStatus(total);
-        if(total >= order.getAmountPaise()){
+        // even when the repository has not yet included it in findByPaymentOrderId.
+        if (processed.stream().noneMatch(r -> r.getId().equals(refund.getId()))) {
+            totalRefunded = Math.addExact(totalRefunded, refund.getAmountPaise());
+            totalSettled = Math.addExact(totalSettled, settledAmount(refund));
+        }
+        // REFUNDED means the captured balance has been fully settled: returned
+        // to the customer or explicitly retained as a documented deduction.
+        order.refundStatus(totalSettled);
+        // Reverse rewards and mark the booking refunded only when the full
+        // captured amount was actually returned to the customer.
+        if (totalRefunded >= order.getAmountPaise()) {
             loyaltyService.reverseRedemption(order.getUser(),order);
             loyaltyService.reverseEarn(order.getUser(),order);
         }
-        if (total >= order.getAmountPaise() && order.getPurpose() == PaymentPurpose.BOOKING)
+        if (totalRefunded >= order.getAmountPaise() && order.getPurpose() == PaymentPurpose.BOOKING)
             bookings.findById(order.getReferenceId()).ifPresent(Booking::refunded);
         notificationService.refund(order.getUser().getId(), order.getReceiptNumber(), refund.getAmountPaise());
     }
@@ -387,6 +398,10 @@ public class PaymentService {
         // captured as verified observations, never treated as captured money.
         webhookEvents.save(new PaymentWebhookEvent(eventId, type, sha256(body), result,
                 objectId, providerOrderId, providerPaymentId, amount));
+    }
+
+    private static long settledAmount(PaymentRefund refund) {
+        return Math.addExact(refund.getAmountPaise(), refund.getDeductionPaise());
     }
 
     private static String safeIdentifier(String value) {
