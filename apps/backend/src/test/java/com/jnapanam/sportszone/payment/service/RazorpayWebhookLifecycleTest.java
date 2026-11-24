@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jnapanam.sportszone.booking.repository.BookingRepository;
 import com.jnapanam.sportszone.booking.service.BookingService;
 import com.jnapanam.sportszone.common.exception.BadRequestException;
+import com.jnapanam.sportszone.common.exception.ConflictException;
 import com.jnapanam.sportszone.identity.model.User;
 import com.jnapanam.sportszone.identity.repository.UserRepository;
 import com.jnapanam.sportszone.loyalty.service.LoyaltyService;
@@ -127,13 +128,39 @@ class RazorpayWebhookLifecycleTest {
         refund.submitted("rfnd_001");
         when(refunds.findByProviderRefundId("rfnd_001")).thenReturn(Optional.of(refund));
         when(refunds.findByPaymentOrderId(order.getId())).thenReturn(List.of(refund));
-        String json="{\"event\":\"refund.processed\",\"payload\":{\"refund\":{\"entity\":{\"id\":\"rfnd_001\",\"payment_id\":\"pay_001\",\"amount\":10000}}}}";
+        String json = """
+                {"event":"refund.processed","payload":{"refund":{"entity":{"id":"rfnd_001","payment_id":"pay_001","amount":10000}}}}
+                """;
         event("evt-refund-processed",json);
         assertEquals(RefundStatus.PROCESSED,refund.getStatus());
         assertEquals(PaymentStatus.REFUNDED,order.getStatus());
         verify(notifications).refund(eq(order.getUser().getId()),eq(order.getReceiptNumber()),eq(10000L));
         event("evt-refund-second-event",json);
         verify(notifications,times(1)).refund(any(),anyString(),anyLong());
+    }
+
+    @Test void processedRefundAndRetainedDeductionSettleTheRemainingCapturedBalance() throws Exception {
+        PaymentOrder order=paidOrder();
+        order.refundStatus(5000L);
+        PaymentRefund earlier=new PaymentRefund(order,5000L,"Earlier approved partial refund");
+        earlier.submitted("rfnd_previous");
+        earlier.processed("rfnd_previous");
+        PaymentRefund next=new PaymentRefund(order,8000L,"Cancellation with retained venue fee",2000L,
+                "Venue administration charge");
+        next.submitted("rfnd_deduction");
+        when(orders.findLockedById(order.getId())).thenReturn(Optional.of(order));
+        when(refunds.findByProviderRefundId("rfnd_deduction")).thenReturn(Optional.of(next));
+        when(refunds.findByPaymentOrderId(order.getId())).thenReturn(List.of(earlier,next));
+        String json = """
+                {"event":"refund.processed","payload":{"refund":{"entity":{"id":"rfnd_deduction","payment_id":"pay_001","amount":8000}}}}
+                """;
+        event("evt-refund-with-deduction",json);
+        assertEquals(RefundStatus.PROCESSED,next.getStatus());
+        assertEquals(PaymentStatus.REFUNDED,order.getStatus(),
+                "the prior 5,000 refund plus 8,000 refund and 2,000 retained charge settle 15,000");
+        assertThrows(ConflictException.class,
+                ()->service.refund(order.getId(),new RefundRequest(null,"Do not refund retained fee")));
+        verify(notifications).refund(eq(order.getUser().getId()),eq(order.getReceiptNumber()),eq(8000L));
     }
 
     @Test void failedRefundDoesNotMakePaymentRefunded() throws Exception {
