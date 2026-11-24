@@ -9,7 +9,7 @@ import {api} from '@/lib/api';
 
 type Profile={recipientAddress:string;stateCode:string;gstin:string};
 type Payment={id:string;receiptNumber:string;amountPaise:number;status:string;purpose:string};
-type Billing={receiptNumber:string;documents:{documentNumber:string;kind:string;totalPaise:number;taxPaise:number;state:string}[];refunds:{id:string;amountPaise:number;deductionPaise:number;deductionDescription?:string|null;reason:string;status:string}[]};
+type Billing={receiptNumber:string;documents:{documentNumber:string;kind:string;totalPaise:number;taxPaise:number;state:string}[];refunds:{id:string;amountPaise:number;deductionPaise:number;deductionDescription?:string|null;status:string}[]};
 const money=(n:number)=>`₹${(n/100).toFixed(2)}`;
 const states=[['29','Karnataka'],['37','Andhra Pradesh'],['33','Tamil Nadu'],['32','Kerala'],['36','Telangana'],['27','Maharashtra'],['07','Delhi'],['24','Gujarat'],['09','Uttar Pradesh'],['08','Rajasthan'],['19','West Bengal'],['06','Haryana'],['03','Punjab'],['10','Bihar'],['21','Odisha'],['23','Madhya Pradesh'],['22','Chhattisgarh'],['20','Jharkhand'],['18','Assam'],['30','Goa'],['01','Jammu & Kashmir'],['02','Himachal Pradesh'],['05','Uttarakhand'],['04','Chandigarh'],['11','Sikkim'],['12','Arunachal Pradesh'],['13','Nagaland'],['14','Manipur'],['15','Mizoram'],['16','Tripura'],['17','Meghalaya'],['26','Dadra and Nagar Haveli and Daman and Diu'],['31','Lakshadweep'],['34','Puducherry'],['35','Andaman & Nicobar Islands'],['38','Ladakh']];
 
