@@ -190,9 +190,11 @@ export default function BookingsScreen() {
     }
   }, [t, user]);
 
-  useEffect(() => {
+  // Hosted checkout returns to this route after payment verification. Refresh
+  // authoritative booking/payment state every time the customer focuses it.
+  useFocusEffect(useCallback(() => {
     void load();
-  }, [load]);
+  }, [load]));
 
   const filteredFacilities = useMemo(
     () => facilities.filter((facility) => facility.sportCode === sportCode),
