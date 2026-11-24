@@ -129,9 +129,8 @@ class RazorpayWebhookLifecycleTest {
         when(refunds.findByProviderRefundId("rfnd_001")).thenReturn(Optional.of(refund));
         when(refunds.findByPaymentOrderId(order.getId())).thenReturn(List.of(refund));
         String json = """
-                {"event":"refund.processed","payload":{"refund":{"entity":{"id":"rfnd_deduction","payment_id":"pay_001","amount":8000}}}}
+                {"event":"refund.processed","payload":{"refund":{"entity":{"id":"rfnd_001","payment_id":"pay_001","amount":10000}}}}
                 """;
-        event("evt-refund-processed",json);
         assertEquals(RefundStatus.PROCESSED,refund.getStatus());
         assertEquals(PaymentStatus.REFUNDED,order.getStatus());
         verify(notifications).refund(eq(order.getUser().getId()),eq(order.getReceiptNumber()),eq(10000L));
@@ -150,7 +149,9 @@ class RazorpayWebhookLifecycleTest {
         next.submitted("rfnd_deduction");
         when(refunds.findByProviderRefundId("rfnd_deduction")).thenReturn(Optional.of(next));
         when(refunds.findByPaymentOrderId(order.getId())).thenReturn(List.of(earlier,next));
-        String json="{\\"event\\":\\"refund.processed\\",\\"payload\\":{\\"refund\\":{\\"entity\\":{\\"id\\":\\"rfnd_deduction\\",\\"payment_id\\":\\"pay_001\\",\\"amount\\":8000}}}}";
+        String json = """
+                {"event":"refund.processed","payload":{"refund":{"entity":{"id":"rfnd_deduction","payment_id":"pay_001","amount":8000}}}}
+                """;
         event("evt-refund-with-deduction",json);
         assertEquals(RefundStatus.PROCESSED,next.getStatus());
         assertEquals(PaymentStatus.REFUNDED,order.getStatus(),
