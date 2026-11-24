@@ -7,7 +7,7 @@ type Doc={kind:string;state:string;documentNumber:string;taxablePaise:number;tax
 type Receipt={receiptNumber:string;status:string;paymentAmountPaise:number;bookingNumber?:string;discountPaise:number;
 originalAmountPaise?:number;promotionCode?:string;loyaltyPointsUsed?:number;billingLoyaltyTenderPaise?:number;billingGrossPaise?:number;billingTaxablePaise?:number;billingTaxPaise?:number;billingRatePercent?:number;
 facilityName?:string;sportName?:string;slotDate?:string;startTime?:string;endTime?:string;
-documents:Doc[];refunds:{id:string;amountPaise:number;deductionPaise:number;deductionDescription?:string|null;reason:string;status:string;processedAt?:string|null}[]};
+documents:Doc[];refunds:{id:string;amountPaise:number;deductionPaise:number;deductionDescription?:string|null;status:string;processedAt?:string|null}[]};
 const rs=(paise:unknown)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(Number(paise||0)/100);
 export default function BillingDocumentsPage(){
  const params=useParams();const id=String(params.id||"");const [receipt,setReceipt]=useState<Receipt|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false);
