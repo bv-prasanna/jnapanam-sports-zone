@@ -106,7 +106,7 @@ class CommerceAdminOrderLifecycleIntegrationTest {
         jdbc.update("insert into commerce_products(id,category_id,sku,name,tax_percent,status) values(?,?,?,?,0,'ACTIVE')",product,category,"ADP_"+suffix,"Admin Test Product");
         jdbc.update("insert into commerce_variants(id,product_id,sku,label,price_paise,stock_quantity,low_stock_threshold,status) values(?,?,?,?,?,?,1,'ACTIVE')",variant,product,"ADV_"+suffix,"Standard",12500,5);
         jdbc.update("insert into commerce_cart_items(user_id,variant_id,quantity) values(?,?,1)",user,variant);
-        if(loyaltyPoints>0)jdbc.update("insert into loyalty_wallets(user_id,points_balance,lifetime_earned,lifetime_redeemed,updated_at,version) values(?,?,?,0,now(),0)",user,loyaltyPoints,loyaltyPoints);
+        if(loyaltyPoints>0)jdbc.update("insert into loyalty_wallets(user_id,points_balance,lifetime_earned,lifetime_redeemed,updated_at,version) values(?,?,?,0,now(),0)",user,loyaltyPoints+2,loyaltyPoints+2);
         jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true,delivery_enabled=true where singleton_id=true");
         CheckoutRequest request=fulfilment.equals("DELIVERY")
                 ?new CheckoutRequest("DELIVERY","PAY_AT_PICKUP","Customer","8296022107","12 Main Road","Holalkere","Karnataka","577526",loyaltyPoints)
