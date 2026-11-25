@@ -22,6 +22,7 @@ const items:Item[]=[
  {key:"admin",label:"Admin Console",href:"/admin",admin:true},
  {key:"verification",label:"Document Verification",href:"/admin/verification",admin:true},
  {key:"assignments",label:"Operator Assignments",href:"/admin/operator-assignments",admin:true},
+ {key:"promotions",label:"Promotions & Offers",href:"/admin/promotions",admin:true},
  {key:"exceptions",label:"Operations & Exceptions",href:"/admin/release-readiness",admin:true}
 ];
 export function PortalSideNavigation({active}:{active:string}){
