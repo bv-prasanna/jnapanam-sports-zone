@@ -83,6 +83,14 @@ class AdminRefundDeductionTest {
     verify(gateway).refund(eq("pay_1234"),eq(14000L),anyString(),anyString());
  }
 
+ @Test void lateCapturedPaymentForExpiredBookingCanBeRefundedForReconciliation() {
+    when(booking.getStatus()).thenReturn(BookingStatus.PAYMENT_EXPIRED);
+    var result=service.refund(order.getId(),new RefundRequest(15000L,"Late gateway capture after booking payment expiry"));
+    assertEquals(15000L,result.amountPaise());
+    assertEquals(RefundStatus.REQUESTED,result.status());
+    verify(gateway).refund(eq("pay_1234"),eq(15000L),anyString(),anyString());
+ }
+
  @Test void confirmedFutureBookingMustFirstBeCancelled() {
     when(booking.getStatus()).thenReturn(BookingStatus.CONFIRMED);
     assertThrows(ConflictException.class,
