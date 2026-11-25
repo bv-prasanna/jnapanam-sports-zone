@@ -69,6 +69,9 @@ public class ShopCounterService {
     @Transactional
     public Map<String, Object> collectOrderPayment(UUID actor, UUID orderId, CounterPaymentRequest request) {
         Map<String, Object> order = order(orderId, true);
+        String currentStatus = String.valueOf(order.get("status"));
+        if (Set.of("CANCELLED", "DELIVERED").contains(currentStatus))
+            throw new ConflictException("Cancelled or delivered orders cannot receive counter payment");
         if (!"PAY_AT_PICKUP".equalsIgnoreCase(String.valueOf(order.get("payment_method")))) {
             throw new ConflictException("This order is not a pay-at-counter order");
         }
@@ -126,6 +129,7 @@ public class ShopCounterService {
         if (!Set.of("ORDER", "SALE").contains(sourceType)) throw new ConflictException("Source type must be ORDER or SALE");
         if (!Set.of("EXCHANGE", "STORE_CREDIT", "REFUND").contains(resolution)) throw new ConflictException("Resolution must be EXCHANGE, STORE_CREDIT or REFUND");
 
+        lockAndValidateReturnSource(sourceType, request.sourceId());
         SourceItem source = sourceItem(sourceType, request.sourceId(), request.variantId());
         int alreadyReturned = returnedQuantity(sourceType, request.sourceId(), request.variantId());
         if (request.quantity() + alreadyReturned > source.quantity()) throw new ConflictException("Return quantity exceeds remaining purchased quantity");
@@ -210,6 +214,19 @@ public class ShopCounterService {
         List<Map<String, Object>> rows = jdbc.queryForList("select * from commerce_orders where id=?" + (lock ? " for update" : ""), orderId);
         if (rows.isEmpty()) throw new NotFoundException("Order not found");
         return rows.getFirst();
+    }
+
+    private void lockAndValidateReturnSource(String sourceType, UUID sourceId) {
+        String sql = sourceType.equals("ORDER")
+                ? "select status,payment_status from commerce_orders where id=? for update"
+                : "select 'PAID' status,payment_status from shop_counter_sales where id=? for update";
+        List<Map<String,Object>> rows = jdbc.queryForList(sql, sourceId);
+        if (rows.isEmpty()) throw new NotFoundException(sourceType.equals("ORDER") ? "Order not found" : "Sale not found");
+        Map<String,Object> source = rows.getFirst();
+        if (sourceType.equals("ORDER") && "CANCELLED".equalsIgnoreCase(String.valueOf(source.get("status"))))
+            throw new ConflictException("Cancelled orders cannot be returned because their stock has already been restored");
+        if (!"PAID".equalsIgnoreCase(String.valueOf(source.get("payment_status"))))
+            throw new ConflictException("Only paid purchases can be returned");
     }
 
     private SourceItem sourceItem(String sourceType, UUID sourceId, UUID variantId) {
