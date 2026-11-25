@@ -57,6 +57,20 @@ class CommerceAdminOrderLifecycleIntegrationTest {
     }
 
     @Test
+    void counterHandoverRequiresPaidReadyForPickupOrder() throws Exception {
+        Fixture fixture=fixture("PICKUP");
+        counter.collectOrderPayment(fixture.userId(),fixture.orderId(),new CounterPaymentRequest("CASH",null));
+        assertThatThrownBy(()->counter.fulfil(fixture.userId(),fixture.orderId()))
+                .isInstanceOf(ConflictException.class).hasMessageContaining("READY_FOR_PICKUP");
+
+        admin.orderStatus(fixture.userId(),fixture.orderId(),"PACKED");
+        admin.orderStatus(fixture.userId(),fixture.orderId(),"READY_FOR_PICKUP");
+        var delivered=counter.fulfil(fixture.userId(),fixture.orderId());
+        assertThat(delivered.get("status")).isEqualTo("DELIVERED");
+        assertThat(text("select status from commerce_orders where id=?",fixture.orderId())).isEqualTo("DELIVERED");
+    }
+
+    @Test
     void adminCannotSkipFulfilmentStagesOrDeliverBeforePayment() throws Exception {
         Fixture fixture=fixture("PICKUP");
         assertThatThrownBy(()->admin.orderStatus(fixture.userId(),fixture.orderId(),"DELIVERED"))
