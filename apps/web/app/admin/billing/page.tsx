@@ -4,7 +4,7 @@ import {api} from "@/lib/api";
 import styles from "../pricing/pricing.module.css";
 type Profile={legalName:string;gstin:string;registeredAddress:string;stateCode:string;serviceAccountingCode:string;signatory:string};
 type Payment={id:string;receiptNumber:string;purpose:string;status:string;amountPaise:number};
-type Refund={id:string;amountPaise:number;status:string};
+type Refund={id:string;amountPaise:number;deductionPaise:number;deductionDescription?:string|null;status:string};
 type TaxSettings={couponTaxTreatment:"REVIEW_REQUIRED"|"INVOICE_DISCOUNT";loyaltyTaxTreatment:"REVIEW_REQUIRED"|"PAYMENT_TENDER"|"INVOICE_DISCOUNT";eInvoiceApplicable:boolean;invoiceEmailEnabled:boolean};
 type PurposeTax={purpose:string;taxRatePercent:number;active:boolean;placeOfSupplyStateCode?:string;autoIssueEnabled?:boolean};
 type Receipt={receiptNumber:string;status:string;paymentAmountPaise:number;bookingNumber?:string;documents:{documentNumber:string;kind:string;state:string}[];refunds:Refund[]};
@@ -72,6 +72,6 @@ export default function BillingAdmin(){
  <p className={styles.help}>Verify place-of-supply treatment and discount/loyalty allocation before issuing. Documents cannot be edited after issue.</p>
  <button className={styles.primary} type="button" disabled={busy||!!receipt.documents?.some(d=>d.kind==="INVOICE")} onClick={()=>void issue()}>Issue GST invoice</button>
  <a href={`/billing-documents/${selected}`} target="_blank" rel="noopener noreferrer">View / print receipt and issued documents</a><h3>Issued documents</h3>{receipt.documents?.length?receipt.documents.map(d=><p key={d.documentNumber}>{d.kind.replace("_"," ")}: {d.documentNumber} · {d.state}</p>):<p>No documents issued.</p>}
- <h3>Processed refunds</h3>{receipt.refunds?.length?receipt.refunds.map(r=><p key={r.id}>₹{(r.amountPaise/100).toFixed(2)} · {r.status} {r.status==="PROCESSED"&&<button disabled={busy} type="button" onClick={()=>void credit(r.id)}>Issue credit note</button>}</p>):<p>No refunds.</p>}
+ <h3>Refund history</h3>{receipt.refunds?.length?receipt.refunds.map(r=><p key={r.id}>Refund to customer: ₹{(r.amountPaise/100).toFixed(2)} · {r.status} {r.status==="PROCESSED"&&r.deductionPaise>0&&<> · Retained: ₹{(r.deductionPaise/100).toFixed(2)} {r.deductionDescription||""}</>} {r.status==="PROCESSED"&&<button disabled={busy} type="button" onClick={()=>void credit(r.id)}>Issue credit note</button>}</p>):<p>No refunds.</p>}
  </>}</div></section></main>;
 }

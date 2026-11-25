@@ -7,7 +7,7 @@ type Doc={kind:string;state:string;documentNumber:string;taxablePaise:number;tax
 type Receipt={receiptNumber:string;status:string;paymentAmountPaise:number;bookingNumber?:string;discountPaise:number;
 originalAmountPaise?:number;promotionCode?:string;loyaltyPointsUsed?:number;billingLoyaltyTenderPaise?:number;billingGrossPaise?:number;billingTaxablePaise?:number;billingTaxPaise?:number;billingRatePercent?:number;
 facilityName?:string;sportName?:string;slotDate?:string;startTime?:string;endTime?:string;
-documents:Doc[];refunds:{id:string;amountPaise:number;status:string}[]};
+documents:Doc[];refunds:{id:string;amountPaise:number;deductionPaise:number;deductionDescription?:string|null;status:string;processedAt?:string|null}[]};
 const rs=(paise:unknown)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(Number(paise||0)/100);
 export default function BillingDocumentsPage(){
  const params=useParams();const id=String(params.id||"");const [receipt,setReceipt]=useState<Receipt|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false);
@@ -31,9 +31,12 @@ export default function BillingDocumentsPage(){
  {receipt.billingTaxPaise!=null&&<tr><td>Included tax {receipt.billingRatePercent!=null?`(${receipt.billingRatePercent}%)`:""}</td><td>{rs(receipt.billingTaxPaise)}</td></tr>}
  {receipt.billingGrossPaise!=null&&<tr><td>Total consideration (cash + loyalty)</td><td>{rs(receipt.billingGrossPaise)}</td></tr>}
  <tr className={styles.total}><th>Actual payment collected</th><th>{rs(receipt.paymentAmountPaise)}</th></tr>
- <tr><td>Processed refunds</td><td>{rs(receipt.refunds.filter(r=>r.status==="PROCESSED").reduce((sum,r)=>sum+(r.amountPaise||0),0))}</td></tr>
+ <tr><td>Processed refunds to customer</td><td>{rs(receipt.refunds.filter(r=>r.status==="PROCESSED").reduce((sum,r)=>sum+(r.amountPaise||0),0))}</td></tr>
+ <tr><td>Processed retained charges</td><td>{rs(receipt.refunds.filter(r=>r.status==="PROCESSED").reduce((sum,r)=>sum+(r.deductionPaise||0),0))}</td></tr>
  <tr className={styles.total}><th>Net payment retained</th><th>{rs(receipt.paymentAmountPaise-receipt.refunds.filter(r=>r.status==="PROCESSED").reduce((sum,r)=>sum+(r.amountPaise||0),0))}</th></tr>
- </tbody></table><p>This payment receipt is not a GST tax invoice. GST components are displayed only in an issued tax document below.</p></section>
+ </tbody></table>
+ {receipt.refunds.length>0&&<div><h3>Refund history</h3>{receipt.refunds.map(r=><p key={r.id}>Status: {r.status.replaceAll("_"," ")} · Refund to customer: {rs(r.amountPaise)} {r.status==="PROCESSED"&&r.deductionPaise>0&&<> · Retained: {rs(r.deductionPaise)} {r.deductionDescription||""}</>}</p>)}</div>}
+ <p>This payment receipt is not a GST tax invoice. GST components are displayed only in an issued tax document below.</p></section>
  {receipt.documents.length===0&&<section className={styles.receipt}><h2>GST document not yet issued</h2><p>Your payment receipt is available above. A GST invoice can be requested after the venue configures the appropriate tax rules and you save your billing address.</p><p><a href="/billing-profile">Update my billing address / GSTIN</a></p><button type="button" disabled={busy} onClick={()=>void requestInvoice()}>{busy?"Checking…":"Request GST invoice (no email)"}</button></section>}
  {receipt.documents.map(doc=>{let d:Record<string,unknown>={};try{d=JSON.parse(doc.details||"{}")}catch{}const seller=(d.supplier||{}) as Record<string,string>;return <article key={doc.documentNumber} className={styles.receipt}>
  <header><span>{doc.kind==="INVOICE"?"TAX INVOICE":"GST CREDIT NOTE"}</span><h2>{doc.documentNumber}</h2><button type="button" onClick={()=>void download(doc.documentNumber)}>Download PDF</button><p>Issued: {doc.issuedAt?new Date(doc.issuedAt).toLocaleDateString("en-IN"):"—"}</p></header>
