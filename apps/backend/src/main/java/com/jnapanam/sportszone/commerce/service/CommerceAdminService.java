@@ -2,6 +2,8 @@ package com.jnapanam.sportszone.commerce.service;
 
 import static com.jnapanam.sportszone.commerce.dto.CommerceDtos.*;
 import com.jnapanam.sportszone.notification.service.NotificationService;
+import com.jnapanam.sportszone.common.exception.ConflictException;
+import com.jnapanam.sportszone.common.exception.NotFoundException;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -121,18 +123,57 @@ public class CommerceAdminService {
     }
 
     @Transactional
-    public void orderStatus(UUID id, String status) {
-        String next = status.toUpperCase();
+    public void orderStatus(UUID actor, UUID id, String status) {
+        String next = status == null ? "" : status.trim().toUpperCase();
         if (!Set.of("PLACED", "CONFIRMED", "PACKED", "READY_FOR_PICKUP", "SHIPPED",
                 "DELIVERED", "CANCELLED").contains(next)) {
             throw new IllegalArgumentException("Unsupported order status");
         }
-        requireChanged(jdbc.update("update commerce_orders set status=?,updated_at=now() where id=?",
-                next, id), "Order");
-        var order = jdbc.queryForMap("select user_id,order_number from commerce_orders where id=?", id);
-        if (order.get("user_id") instanceof UUID userId) {
-            notifications.lifecycle(userId, "COMMERCE", "Shop order " + next.replace('_', ' ').toLowerCase(),
-                    "Order " + order.get("order_number") + " is now " + next.replace('_', ' ').toLowerCase() + ".");
+        List<Map<String,Object>> rows = jdbc.queryForList(
+                "select status,payment_status,fulfilment_type,user_id,order_number from commerce_orders where id=? for update", id);
+        if (rows.isEmpty()) throw new NotFoundException("Order not found");
+        Map<String,Object> current = rows.getFirst();
+        String previous = String.valueOf(current.get("status"));
+        String payment = String.valueOf(current.get("payment_status"));
+        String fulfilment = String.valueOf(current.get("fulfilment_type"));
+        if (previous.equals(next)) return;
+
+        if ("CANCELLED".equals(next)) {
+            if (!Set.of("PLACED", "CONFIRMED").contains(previous))
+                throw new ConflictException("Only placed or confirmed orders can be cancelled");
+            if ("PAID".equalsIgnoreCase(payment))
+                throw new ConflictException("This order has already been paid. Use the return/refund workflow instead.");
+            int changed = jdbc.update("update commerce_orders set status='CANCELLED',cancellation_reason='Cancelled by operations',updated_at=now() "
+                    + "where id=? and status=? and payment_status<>'PAID'", id, previous);
+            if (changed != 1) throw new ConflictException("Order status changed. Refresh before trying again.");
+            jdbc.queryForList("select variant_id,quantity from commerce_order_items where order_id=?", id)
+                    .forEach(item -> {
+                        UUID variantId = (UUID) item.get("variant_id");
+                        int quantity = (Integer) item.get("quantity");
+                        jdbc.update("update commerce_variants set stock_quantity=stock_quantity+? where id=?", quantity, variantId);
+                        jdbc.update("insert into commerce_stock_movements(variant_id,quantity_delta,reason,reference_id,actor_id) "
+                                + "values(?,?,'CANCELLATION',?,?)", variantId, quantity, id, actor);
+                    });
+        } else {
+            boolean allowed = switch (previous) {
+                case "PLACED" -> "CONFIRMED".equals(next);
+                case "CONFIRMED" -> "PACKED".equals(next);
+                case "PACKED" -> ("PICKUP".equals(fulfilment) && "READY_FOR_PICKUP".equals(next))
+                        || ("DELIVERY".equals(fulfilment) && "SHIPPED".equals(next));
+                case "READY_FOR_PICKUP", "SHIPPED" -> "DELIVERED".equals(next);
+                default -> false;
+            };
+            if (!allowed) throw new ConflictException("Invalid order transition from " + previous + " to " + next);
+            if (Set.of("SHIPPED", "DELIVERED").contains(next) && !"PAID".equalsIgnoreCase(payment))
+                throw new ConflictException("Collect payment before shipping or delivering this order");
+            requireChanged(jdbc.update("update commerce_orders set status=?,updated_at=now() where id=? and status=?",
+                    next, id, previous), "Order");
+        }
+
+        if (current.get("user_id") instanceof UUID userId) {
+            String display = next.replace('_', ' ').toLowerCase();
+            notifications.lifecycle(userId, "COMMERCE", "Shop order " + display,
+                    "Order " + current.get("order_number") + " is now " + display + ".");
         }
     }
 
