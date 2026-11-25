@@ -130,7 +130,7 @@ public class CommerceAdminService {
             throw new IllegalArgumentException("Unsupported order status");
         }
         List<Map<String,Object>> rows = jdbc.queryForList(
-                "select status,payment_status,fulfilment_type,user_id,order_number from commerce_orders where id=? for update", id);
+                "select status,payment_status,fulfilment_type,user_id,order_number,loyalty_points_used from commerce_orders where id=? for update", id);
         if (rows.isEmpty()) throw new NotFoundException("Order not found");
         Map<String,Object> current = rows.getFirst();
         String previous = String.valueOf(current.get("status"));
@@ -146,6 +146,10 @@ public class CommerceAdminService {
             int changed = jdbc.update("update commerce_orders set status='CANCELLED',cancellation_reason='Cancelled by operations',updated_at=now() "
                     + "where id=? and status=? and payment_status<>'PAID'", id, previous);
             if (changed != 1) throw new ConflictException("Order status changed. Refresh before trying again.");
+            if (current.get("user_id") instanceof UUID userId) {
+                long points = current.get("loyalty_points_used") instanceof Number value ? value.longValue() : 0L;
+                restoreShopOrderLoyalty(userId, id, String.valueOf(current.get("order_number")), points);
+            }
             jdbc.queryForList("select variant_id,quantity from commerce_order_items where order_id=?", id)
                     .forEach(item -> {
                         UUID variantId = (UUID) item.get("variant_id");
@@ -175,6 +179,17 @@ public class CommerceAdminService {
             notifications.lifecycle(userId, "COMMERCE", "Shop order " + display,
                     "Order " + current.get("order_number") + " is now " + display + ".");
         }
+    }
+
+    private void restoreShopOrderLoyalty(UUID userId, UUID orderId, String orderNumber, long points) {
+        if (points <= 0) return;
+        int changed = jdbc.update("update loyalty_wallets set points_balance=points_balance+?,"
+                + "lifetime_redeemed=greatest(0,lifetime_redeemed-?),updated_at=now(),version=version+1 where user_id=?",
+                points, points, userId);
+        if (changed != 1) throw new IllegalStateException("Unable to restore shop loyalty points for cancelled order");
+        jdbc.update("insert into loyalty_transactions(id,user_id,transaction_type,points,description,created_at) "
+                + "values(?,?,'REVERSAL',?,?,now())", UUID.randomUUID(), userId, points,
+                "Restored after cancelling shop order " + orderNumber);
     }
 
     public List<Map<String, Object>> orders() {
