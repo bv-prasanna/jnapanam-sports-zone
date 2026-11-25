@@ -380,7 +380,6 @@ public class PaymentService {
                     result = providerPaymentId.equals(target.getProviderPaymentId())
                             ? "ALREADY_APPLIED" : "REVIEW_REQUIRED";
                 }
-                }
             }
         } else if (type.startsWith("refund.")) {
             providerPaymentId = safeIdentifier(entity.path("payment_id").asText(null));
