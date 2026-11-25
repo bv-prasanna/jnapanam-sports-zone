@@ -2,6 +2,8 @@ package com.jnapanam.sportszone.commerce.service;
 
 import static com.jnapanam.sportszone.commerce.dto.CommerceDtos.*;
 import com.jnapanam.sportszone.notification.service.NotificationService;
+import com.jnapanam.sportszone.common.exception.ConflictException;
+import com.jnapanam.sportszone.common.exception.NotFoundException;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -137,6 +139,10 @@ public class CommerceService {
         if (!Set.of("PICKUP", "DELIVERY").contains(fulfil)) {
             throw new IllegalArgumentException("Fulfilment type must be PICKUP or DELIVERY");
         }
+        String method = r.paymentMethod().trim().toUpperCase();
+        if (!Set.of("PAY_AT_PICKUP").contains(method)) {
+            throw new IllegalArgumentException("Online shop payment is not enabled yet. Choose pay at pickup.");
+        }
         if (fulfil.equals("DELIVERY")
                 && (blank(r.addressLine()) || blank(r.city()) || blank(r.state()) || blank(r.postalCode()))) {
             throw new IllegalArgumentException("Delivery address, city, state and postal code are required");
@@ -183,7 +189,6 @@ public class CommerceService {
         long total = originalTotal - loyaltyDiscount;
         UUID id = UUID.randomUUID();
         String number = "JNZ-SHOP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        String method = r.paymentMethod().toUpperCase();
         String paymentStatus = "PENDING";
         String orderSql = "insert into commerce_orders(id,order_number,user_id,status,fulfilment_type,"
                 + "payment_method,payment_status,subtotal_paise,tax_paise,delivery_fee_paise,"
@@ -256,12 +261,20 @@ public class CommerceService {
 
     @Transactional
     public Order cancel(UUID user, UUID id, String reason) {
-        Order order = order(user, id);
-        if (!Set.of("PLACED", "CONFIRMED").contains(order.status())) {
-            throw new IllegalArgumentException("This order cannot be cancelled");
-        }
-        jdbc.update("update commerce_orders set status='CANCELLED',cancellation_reason=?,updated_at=now() where id=?",
-                reason, id);
+        // Serialize cancellation with counter collection and other cancellation
+        // attempts. Restocking must happen exactly once and only for unpaid orders.
+        List<Map<String,Object>> locked = jdbc.queryForList(
+                "select status,payment_status from commerce_orders where id=? and user_id=? for update", id, user);
+        if (locked.isEmpty()) throw new NotFoundException("Order not found");
+        Map<String,Object> current = locked.getFirst();
+        if (!Set.of("PLACED", "CONFIRMED").contains(String.valueOf(current.get("status"))))
+            throw new ConflictException("This order cannot be cancelled");
+        if ("PAID".equalsIgnoreCase(String.valueOf(current.get("payment_status"))))
+            throw new ConflictException("This order has already been paid. Submit a return/refund request instead.");
+        int changed = jdbc.update("update commerce_orders set status='CANCELLED',cancellation_reason=?,updated_at=now() "
+                + "where id=? and user_id=? and status in ('PLACED','CONFIRMED') and payment_status<>'PAID'",
+                reason, id, user);
+        if (changed != 1) throw new ConflictException("Order status changed. Refresh before trying again.");
         jdbc.queryForList("select variant_id,quantity from commerce_order_items where order_id=?", id)
                 .forEach(row -> {
                     UUID variant = (UUID) row.get("variant_id");
@@ -272,8 +285,12 @@ public class CommerceService {
                                     + "values(?,?,'CANCELLATION',?,?)",
                             variant, quantity, id, user);
                 });
-        notifications.lifecycle(user, "COMMERCE", "Shop order cancelled", "Order " + order.orderNumber() + " was cancelled.");
+        notifications.lifecycle(user, "COMMERCE", "Shop order cancelled", "Order " + orderNumber(id) + " was cancelled.");
         return order(user, id);
+    }
+
+    private String orderNumber(UUID id) {
+        return jdbc.queryForObject("select order_number from commerce_orders where id=?", String.class, id);
     }
 
     private boolean blank(String value) {
@@ -287,7 +304,7 @@ public class CommerceService {
                 + "join commerce_variants v on v.id=ci.variant_id "
                 + "join commerce_products p on p.id=v.product_id "
                 + "join commerce_categories c on c.id=p.category_id "
-                + "where ci.user_id=? order by ci.created_at" + (lock ? " for update of v" : "");
+                + "where ci.user_id=? order by ci.created_at" + (lock ? " for update of ci,v" : "");
         return jdbc.queryForList(sql, user);
     }
 
