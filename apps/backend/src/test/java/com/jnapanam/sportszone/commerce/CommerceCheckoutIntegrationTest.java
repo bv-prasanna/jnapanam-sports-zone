@@ -46,8 +46,9 @@ class CommerceCheckoutIntegrationTest {
     @Test
     void checkoutPersistsOrderItemsUpdatesStockAndClearsCart() throws Exception {
         Fixture fixture = fixture(10, 2, 10_000, 18.0);
+        jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true where singleton_id=true");
 
-        Order order = commerce.checkout(fixture.userId(), pickupRequest("ONLINE"));
+        Order order = commerce.checkout(fixture.userId(), pickupRequest("PAY_AT_PICKUP"));
 
         assertThat(order.status()).isEqualTo("PLACED");
         assertThat(order.fulfilmentType()).isEqualTo("PICKUP");
@@ -141,10 +142,23 @@ class CommerceCheckoutIntegrationTest {
     }
 
     @Test
-    void checkoutRollsBackWhenCartQuantityExceedsAvailableStock() throws Exception {
-        Fixture fixture = fixture(1, 2, 10_000, 18.0);
+    void unsupportedOnlineShopPaymentIsRejectedWithoutCreatingAnUnpaidOrder() throws Exception {
+        Fixture fixture = fixture(5, 1, 12_500, 0.0);
 
         assertThatThrownBy(() -> commerce.checkout(fixture.userId(), pickupRequest("ONLINE")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Online shop payment is not enabled yet");
+        assertThat(count("select count(*) from commerce_orders where user_id=?", fixture.userId())).isZero();
+        assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId())).isEqualTo(5);
+        assertThat(count("select count(*) from commerce_cart_items where user_id=?", fixture.userId())).isEqualTo(1);
+    }
+
+    @Test
+    void checkoutRollsBackWhenCartQuantityExceedsAvailableStock() throws Exception {
+        Fixture fixture = fixture(1, 2, 10_000, 18.0);
+        jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true where singleton_id=true");
+
+        assertThatThrownBy(() -> commerce.checkout(fixture.userId(), pickupRequest("PAY_AT_PICKUP")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("only 1 item");
 
