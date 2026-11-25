@@ -368,6 +368,18 @@ public class PaymentService {
                     notifyFulfilment(target);
                     result = "APPLIED";
                 }
+                } else {
+                    // A second captured charge for an already-paid order must not
+                    // fulfil the same purchase twice or disappear as an ordinary
+                    // observation. Keep the second provider payment ID in the
+                    // webhook audit row for staff reconciliation.
+                    PaymentOrder target = order.get();
+                    if (amount == null || amount != target.getAmountPaise()
+                            || !target.getCurrency().equals(entity.path("currency").asText()))
+                        throw new BadRequestException("Captured payment amount or currency mismatch");
+                    result = providerPaymentId.equals(target.getProviderPaymentId())
+                            ? "ALREADY_APPLIED" : "REVIEW_REQUIRED";
+                }
                 }
             }
         } else if (type.startsWith("refund.")) {
