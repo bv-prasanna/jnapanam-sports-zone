@@ -183,6 +183,30 @@ class RazorpayWebhookLifecycleTest {
         assertEquals(RefundStatus.REQUESTED,refund.getStatus());
         verify(events,never()).save(any());
     }
+    @Test void secondDistinctCapturedPaymentForPaidOrderRequiresReconciliation() throws Exception {
+        PaymentOrder order=paidOrder();
+        when(orders.findByProviderOrderId("order_001")).thenReturn(Optional.of(order));
+        event("evt-second-capture",
+          "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_002\",\"order_id\":\"order_001\",\"amount\":10000,\"currency\":\"INR\",\"status\":\"captured\"}}}}");
+        assertEquals("pay_001",order.getProviderPaymentId(),"the original payment remains linked to the order");
+        ArgumentCaptor<PaymentWebhookEvent> captured=ArgumentCaptor.forClass(PaymentWebhookEvent.class);
+        verify(events).save(captured.capture());
+        assertEquals("REVIEW_REQUIRED",captured.getValue().getStatus());
+        assertEquals("pay_002",captured.getValue().getProviderPaymentId());
+        verifyNoInteractions(notifications);
+    }
+
+    @Test void duplicateCapturedEventForSamePaymentIsAuditedWithoutSecondFulfilment() throws Exception {
+        PaymentOrder order=paidOrder();
+        when(orders.findByProviderOrderId("order_001")).thenReturn(Optional.of(order));
+        event("evt-same-capture-new-event-id",
+          "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_001\",\"order_id\":\"order_001\",\"amount\":10000,\"currency\":\"INR\",\"status\":\"captured\"}}}}");
+        ArgumentCaptor<PaymentWebhookEvent> captured=ArgumentCaptor.forClass(PaymentWebhookEvent.class);
+        verify(events).save(captured.capture());
+        assertEquals("ALREADY_APPLIED",captured.getValue().getStatus());
+        verifyNoInteractions(notifications);
+    }
+
     @Test void lateCapturedPaymentAfterBookingExpiryMustBeRecordedForReconciliation() throws Exception {
         User user=mock(User.class);
         when(user.getId()).thenReturn(UUID.randomUUID());
