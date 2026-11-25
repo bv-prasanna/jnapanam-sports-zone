@@ -17,7 +17,7 @@ type Settings = {
 type Category = {id:string;code:string;name:string;nameKn?:string;description?:string;imageUrl?:string;status:string;displayOrder:number;loyaltyMaxPercent?:number};
 type Variant = {id:string;sku:string;label:string;pricePaise:number;stockQuantity:number;lowStockThreshold:number;status:string};
 type Product = {id:string;categoryId:string;categoryCode:string;sku:string;name:string;nameKn?:string;description?:string;descriptionKn?:string;imageUrl?:string;taxPercent:number;status:string;loyaltyMaxPercent?:number;variants:Variant[]};
-type Order = {id:string;order_number:string;status:string;fulfilment_type:string;total_paise:number;recipient_name:string;created_at:string};
+type Order = {id:string;order_number:string;status:string;fulfilment_type:string;payment_status:string;total_paise:number;recipient_name:string;created_at:string};
 type Tab = "branding"|"categories"|"products"|"import"|"inventory"|"orders";
 const emptyCategory={code:"",name:"",nameKn:"",description:"",imageUrl:"",displayOrder:0,loyaltyMaxPercent:"",status:"ACTIVE"};
 const emptyProduct={categoryId:"",sku:"",name:"",nameKn:"",description:"",descriptionKn:"",imageUrl:"",taxPercent:0,loyaltyMaxPercent:"",status:"DRAFT"};
@@ -80,6 +80,19 @@ export default function CommerceAdminPage(){
   async function adjustStock(e:FormEvent){e.preventDefault();await run(
     ()=>api("/api/v1/admin/commerce/variants/"+stock.variantId+"/stock",{method:"POST",body:JSON.stringify({quantityDelta:Number(stock.quantity),reason:stock.reason})}),
     "Inventory updated.");setStock(v=>({...v,quantity:""}))}
+  function orderStatusOptions(order:Order):string[]{
+    const current=order.status;
+    let next:string[]=[];
+    if(current==="PLACED")next=["CONFIRMED"];
+    else if(current==="CONFIRMED")next=["PACKED"];
+    else if(current==="PACKED"){
+      if(order.fulfilment_type==="PICKUP")next=["READY_FOR_PICKUP"];
+      else if(order.payment_status==="PAID")next=["SHIPPED"];
+    }
+    else if(current==="READY_FOR_PICKUP"||current==="SHIPPED")next=order.payment_status==="PAID"?["DELIVERED"]:[];
+    if(["PLACED","CONFIRMED"].includes(current)&&order.payment_status!=="PAID")next.push("CANCELLED");
+    return [current,...next];
+  }
   async function orderStatus(id:string,status:string){await run(
     ()=>api("/api/v1/admin/commerce/orders/"+id+"/status",{method:"PATCH",body:JSON.stringify({status})}),"Order status updated.")}
 
@@ -153,7 +166,7 @@ export default function CommerceAdminPage(){
       <button className={styles.primary} disabled={busy||!stock.variantId}>Update inventory</button></form></div>
       <List title="Inventory">{products.flatMap(p=>p.variants.map(v=><article className={v.stockQuantity<=v.lowStockThreshold?styles.low:""} key={v.id}><b>{p.name} — {v.label}</b><span>{v.sku} · ₹{(v.pricePaise/100).toFixed(2)} · Stock {v.stockQuantity}</span></article>))}</List></div>}
 
-    {tab==="orders"&&<List title="Orders">{orders.map(o=><article key={o.id}><b>{o.order_number} — {o.recipient_name}</b><span>{o.fulfilment_type} · ₹{(Number(o.total_paise)/100).toFixed(2)} · {o.status}</span><select value={o.status} onChange={e=>void orderStatus(o.id,e.target.value)} disabled={busy}>{["PLACED","CONFIRMED","PACKED","READY_FOR_PICKUP","SHIPPED","DELIVERED","CANCELLED"].map(s=><option key={s}>{s}</option>)}</select></article>)}</List>}
+    {tab==="orders"&&<List title="Orders">{orders.map(o=><article key={o.id}><b>{o.order_number} — {o.recipient_name}</b><span>{o.fulfilment_type} · ₹{(Number(o.total_paise)/100).toFixed(2)} · {o.status}</span><select value={o.status} onChange={e=>void orderStatus(o.id,e.target.value)} disabled={busy}>{orderStatusOptions(o).map(s=><option key={s}>{s}</option>)}</select></article>)}</List>}
   </main>
 }
 

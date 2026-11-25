@@ -95,7 +95,9 @@ public class ShopCounterService {
             throw new ConflictException("Collect payment before handing over the order");
         }
         String status = String.valueOf(order.get("status"));
-        if (Set.of("DELIVERED", "CANCELLED").contains(status)) throw new ConflictException("Order cannot be fulfilled from its current status");
+        if (!"PICKUP".equalsIgnoreCase(String.valueOf(order.get("fulfilment_type")))
+                || !"READY_FOR_PICKUP".equals(status))
+            throw new ConflictException("Only paid orders marked READY_FOR_PICKUP can be handed over at the counter");
         jdbc.update("update commerce_orders set status='DELIVERED',updated_at=now() where id=?", orderId);
         if (order.get("user_id") instanceof UUID userId) {
             notifications.lifecycle(userId, "COMMERCE", "Shop order delivered",
