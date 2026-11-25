@@ -221,8 +221,13 @@ public class PaymentService {
         if (order.getPurpose() == PaymentPurpose.BOOKING) {
             Booking booking = bookings.findById(order.getReferenceId())
                     .orElseThrow(() -> new NotFoundException("Booking not found"));
-            if (booking.getStatus() != BookingStatus.CANCELLED && booking.getStatus() != BookingStatus.NO_SHOW)
-                throw new ConflictException("Cancel the booking or mark the past booking NO_SHOW before issuing a refund.");
+            // A verified late gateway capture can arrive after the booking's payment
+            // window expired and the slot was released. Such a booking cannot be
+            // cancelled again, but the captured money must remain refundable.
+            if (booking.getStatus() != BookingStatus.CANCELLED
+                    && booking.getStatus() != BookingStatus.NO_SHOW
+                    && booking.getStatus() != BookingStatus.PAYMENT_EXPIRED)
+                throw new ConflictException("Cancel the booking, allow payment expiry, or mark the past booking NO_SHOW before issuing a refund.");
             if (booking.getStatus() == BookingStatus.NO_SHOW && request.reason().trim().length() < 10)
                 throw new BadRequestException("Explain the genuine no-show refund exception in at least 10 characters.");
         }

@@ -28,6 +28,11 @@ test('backend refund safeguards are enforced beyond the admin screen',async()=>{
  assert.match(service,/deductionDescription.length\(\) < 3/);
 });
 
+test('admin payment console exposes refunds for late captures on expired bookings',async()=>{
+ const page=await source('app/admin/page.tsx');
+ assert.match(page,/\["CANCELLED","NO_SHOW","PAYMENT_EXPIRED"\]\.includes\(String\(booking\.status\)\)/);
+ assert.match(page,/\["PAYMENT_EXPIRED","CANCELLED"\]\.includes\(String\(linkedBooking\(row\)\?\.status\)\)/);
+});
 test('processed retained deductions reduce the admin refund balance',async()=>{
  const page=await source('app/admin/page.tsx');
  assert.match(page,/const retainedPaise=history\.filter\(item=>item\.status==="PROCESSED"\)\.reduce\(\(total,item\)=>total\+\(item\.deductionPaise\|\|0\),0\)/);
