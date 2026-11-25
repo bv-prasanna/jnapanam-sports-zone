@@ -80,8 +80,18 @@ public class PaymentService {
         if (key == null || key.isBlank() || key.length() > 100)
             throw new BadRequestException("A valid Idempotency-Key header is required");
         Optional<PaymentOrder> existing = orders.findByUserIdAndIdempotencyKey(userId, key);
-        if (existing.isPresent())
-            return response(existing.get());
+        if (existing.isPresent()) {
+            PaymentOrder prior = existing.get();
+            String requestedCoupon = normalizeCoupon(request.couponCode());
+            String priorCoupon = normalizeCoupon(prior.getPromotionCode());
+            long requestedPoints = request.loyaltyPoints() == null ? 0 : request.loyaltyPoints();
+            if (prior.getPurpose() != request.purpose()
+                    || !prior.getReferenceId().equals(request.referenceId())
+                    || !Objects.equals(priorCoupon, requestedCoupon)
+                    || prior.getLoyaltyPointsUsed() != requestedPoints)
+                throw new ConflictException("Idempotency-Key was already used for a different payment request. Start a new payment attempt.");
+            return response(prior);
+        }
         if (orders.existsByPurposeAndReferenceIdAndStatus(request.purpose(), request.referenceId(), PaymentStatus.PAID))
             throw new ConflictException("This item is already paid");
         User user = users.findById(userId).orElseThrow(() -> new UnauthorizedException("User not found"));
@@ -413,6 +423,10 @@ public class PaymentService {
         if (value == null || value.isBlank()) return null;
         // Protect the audit row against oversized untrusted provider fields.
         return value.length() > 120 ? value.substring(0, 120) : value;
+    }
+
+    private static String normalizeCoupon(String value) {
+        return value == null || value.isBlank() ? null : value.trim().toUpperCase(Locale.ROOT);
     }
 
     private long resolveAmount(UUID userId, PaymentPurpose purpose, UUID ref) {
