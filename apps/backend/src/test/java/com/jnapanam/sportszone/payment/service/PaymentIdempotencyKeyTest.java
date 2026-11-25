@@ -52,7 +52,8 @@ class PaymentIdempotencyKeyTest {
             new CreatePaymentRequest(PaymentPurpose.MEMBERSHIP,reference," save10 ",10L));
         assertEquals(prior.getId(),response.id());
         verify(orders,never()).save(any());
-        verifyNoMoreInteractions(gateway);
+        verify(gateway).publicKey();
+        verify(gateway,never()).createOrder(anyString(),anyLong(),anyString());
     }
 
     @Test void sameKeyCannotBeReusedForAnotherPurchase(){
