@@ -85,7 +85,10 @@ export default function CommerceAdminPage(){
     let next:string[]=[];
     if(current==="PLACED")next=["CONFIRMED"];
     else if(current==="CONFIRMED")next=["PACKED"];
-    else if(current==="PACKED")next=[order.fulfilment_type==="PICKUP"?"READY_FOR_PICKUP":"SHIPPED"];
+    else if(current==="PACKED"){
+      if(order.fulfilment_type==="PICKUP")next=["READY_FOR_PICKUP"];
+      else if(order.payment_status==="PAID")next=["SHIPPED"];
+    }
     else if(current==="READY_FOR_PICKUP"||current==="SHIPPED")next=order.payment_status==="PAID"?["DELIVERED"]:[];
     if(["PLACED","CONFIRMED"].includes(current)&&order.payment_status!=="PAID")next.push("CANCELLED");
     return [current,...next];
