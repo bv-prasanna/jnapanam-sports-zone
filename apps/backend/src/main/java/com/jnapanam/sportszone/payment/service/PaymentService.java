@@ -362,6 +362,7 @@ public class PaymentService {
                     notificationService.payment(target.getUser().getId(), target.getReceiptNumber(), target.getAmountPaise());
                     notifyFulfilment(target);
                     result = "APPLIED";
+                }
                 } else {
                     // A second captured charge for an already-paid order must not
                     // fulfil the same purchase twice or disappear as an ordinary
