@@ -100,9 +100,9 @@ public class CommerceAdminController {
     }
 
     @PatchMapping("/orders/{id}/status")
-    public ResponseEntity<Void> status(@PathVariable UUID id,
+    public ResponseEntity<Void> status(Authentication authentication, @PathVariable UUID id,
             @Valid @RequestBody StatusRequest request) {
-        service.orderStatus(id, request.status());
+        service.orderStatus(UUID.fromString(authentication.getName()), id, request.status());
         return ResponseEntity.noContent().build();
     }
 }
