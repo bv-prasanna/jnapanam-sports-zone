@@ -301,7 +301,7 @@ public class CommerceService {
                 + "join commerce_variants v on v.id=ci.variant_id "
                 + "join commerce_products p on p.id=v.product_id "
                 + "join commerce_categories c on c.id=p.category_id "
-                + "where ci.user_id=? order by ci.created_at" + (lock ? " for update of v" : "");
+                + "where ci.user_id=? order by ci.created_at" + (lock ? " for update of ci,v" : "");
         return jdbc.queryForList(sql, user);
     }
 
