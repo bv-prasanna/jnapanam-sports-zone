@@ -154,6 +154,28 @@ class CommerceCheckoutIntegrationTest {
     }
 
     @Test
+    void customerCancellationRestoresRedeemedShopPointsAndIsIdempotent() throws Exception {
+        Fixture fixture=fixture(5,1,12_500,0.0);
+        jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true where singleton_id=true");
+        jdbc.update("insert into loyalty_wallets(user_id,points_balance,lifetime_earned,lifetime_redeemed,updated_at,version) values(?,?,?,0,now(),0)",
+                fixture.userId(),5,5);
+        CheckoutRequest request=new CheckoutRequest("PICKUP","PAY_AT_PICKUP","Commerce Customer","8296022107",
+                null,null,null,null,2L);
+        Order order=commerce.checkout(fixture.userId(),request);
+        assertThat(value("select points_balance from loyalty_wallets where user_id=?",fixture.userId())).isEqualTo(3);
+        assertThat(value("select lifetime_redeemed from loyalty_wallets where user_id=?",fixture.userId())).isEqualTo(2);
+
+        commerce.cancel(fixture.userId(),order.id(),"Customer cancelled before collection");
+        assertThat(value("select points_balance from loyalty_wallets where user_id=?",fixture.userId())).isEqualTo(5);
+        assertThat(value("select lifetime_redeemed from loyalty_wallets where user_id=?",fixture.userId())).isZero();
+        assertThat(count("select count(*) from loyalty_transactions where user_id=? and transaction_type='REVERSAL'",fixture.userId())).isEqualTo(1);
+        assertThatThrownBy(()->commerce.cancel(fixture.userId(),order.id(),"Duplicate cancellation"))
+                .isInstanceOf(com.jnapanam.sportszone.common.exception.ConflictException.class);
+        assertThat(value("select points_balance from loyalty_wallets where user_id=?",fixture.userId())).isEqualTo(5);
+        assertThat(count("select count(*) from loyalty_transactions where user_id=? and transaction_type='REVERSAL'",fixture.userId())).isEqualTo(1);
+    }
+
+    @Test
     void checkoutRollsBackWhenCartQuantityExceedsAvailableStock() throws Exception {
         Fixture fixture = fixture(1, 2, 10_000, 18.0);
         jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true where singleton_id=true");
