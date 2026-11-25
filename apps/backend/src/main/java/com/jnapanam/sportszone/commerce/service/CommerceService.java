@@ -275,6 +275,7 @@ public class CommerceService {
                 + "where id=? and user_id=? and status in ('PLACED','CONFIRMED') and payment_status<>'PAID'",
                 reason, id, user);
         if (changed != 1) throw new ConflictException("Order status changed. Refresh before trying again.");
+        restoreShopOrderLoyalty(user, id);
         jdbc.queryForList("select variant_id,quantity from commerce_order_items where order_id=?", id)
                 .forEach(row -> {
                     UUID variant = (UUID) row.get("variant_id");
@@ -287,6 +288,18 @@ public class CommerceService {
                 });
         notifications.lifecycle(user, "COMMERCE", "Shop order cancelled", "Order " + orderNumber(id) + " was cancelled.");
         return order(user, id);
+    }
+
+    private void restoreShopOrderLoyalty(UUID userId, UUID orderId) {
+        Long points = jdbc.queryForObject("select loyalty_points_used from commerce_orders where id=?", Long.class, orderId);
+        if (points == null || points <= 0) return;
+        int changed = jdbc.update("update loyalty_wallets set points_balance=points_balance+?,"
+                + "lifetime_redeemed=greatest(0,lifetime_redeemed-?),updated_at=now(),version=version+1 where user_id=?",
+                points, points, userId);
+        if (changed != 1) throw new IllegalStateException("Unable to restore shop loyalty points for cancelled order");
+        jdbc.update("insert into loyalty_transactions(id,user_id,transaction_type,points,description,created_at) "
+                + "values(?,?,'REVERSAL',?,?,now())", UUID.randomUUID(), userId, points,
+                "Restored after cancelling shop order " + orderNumber(orderId));
     }
 
     private String orderNumber(UUID id) {
