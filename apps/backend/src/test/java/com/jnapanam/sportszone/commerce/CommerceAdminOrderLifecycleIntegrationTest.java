@@ -90,6 +90,6 @@ class CommerceAdminOrderLifecycleIntegrationTest {
     }
 
     private String text(String sql,Object id){return jdbc.queryForObject(sql,String.class,id);}
-    private int number(String sql,Object id){Integer value=jdbc.queryForObject(sql,Integer.class,id);return value==null?0:value;}
+    private int number(String sql,Object id){Long value=jdbc.queryForObject(sql,Long.class,id);return value==null?0:value.intValue();}
     private record Fixture(UUID userId,UUID variantId,UUID orderId){}
 }
