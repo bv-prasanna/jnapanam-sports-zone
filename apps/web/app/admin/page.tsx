@@ -142,6 +142,9 @@ return <>{notice&&<div className="form-note admin-notice" role="status">{notice}
 <p className="admin-payment-guide">An order marked CREATED is <strong>not proof of payment</strong>.
 Confirm the transaction status in Razorpay Live Mode → Transactions → Payments.
 If Razorpay shows Captured but Jnapanam does not show PAID, investigate before reopening or reselling the slot.</p>
+{gatewayEvents.some(event=>String(event.result)==="REVIEW_REQUIRED")&&<div className="form-error" role="alert">
+ <strong>Gateway payment review required:</strong> One or more captured payments could not be safely matched to a single active purchase. Reconcile each REVIEW_REQUIRED event against Razorpay before issuing refunds or granting access.
+</div>}
 {needReview.length>0&&<div className="form-error" role="alert">
  <strong>Payment reconciliation required:</strong> {needReview.length} paid booking order(s)
  link to expired or cancelled bookings. Check Razorpay and the booking before any further sale or refund.
