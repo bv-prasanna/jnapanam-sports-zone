@@ -139,6 +139,10 @@ public class CommerceService {
         if (!Set.of("PICKUP", "DELIVERY").contains(fulfil)) {
             throw new IllegalArgumentException("Fulfilment type must be PICKUP or DELIVERY");
         }
+        String method = r.paymentMethod().trim().toUpperCase();
+        if (!Set.of("PAY_AT_PICKUP").contains(method)) {
+            throw new IllegalArgumentException("Online shop payment is not enabled yet. Choose pay at pickup.");
+        }
         if (fulfil.equals("DELIVERY")
                 && (blank(r.addressLine()) || blank(r.city()) || blank(r.state()) || blank(r.postalCode()))) {
             throw new IllegalArgumentException("Delivery address, city, state and postal code are required");
@@ -185,7 +189,6 @@ public class CommerceService {
         long total = originalTotal - loyaltyDiscount;
         UUID id = UUID.randomUUID();
         String number = "JNZ-SHOP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        String method = r.paymentMethod().toUpperCase();
         String paymentStatus = "PENDING";
         String orderSql = "insert into commerce_orders(id,order_number,user_id,status,fulfilment_type,"
                 + "payment_method,payment_status,subtotal_paise,tax_paise,delivery_fee_paise,"
