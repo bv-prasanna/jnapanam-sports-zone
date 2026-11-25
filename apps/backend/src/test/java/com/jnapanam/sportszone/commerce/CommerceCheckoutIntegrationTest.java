@@ -103,6 +103,44 @@ class CommerceCheckoutIntegrationTest {
     }
 
     @Test
+    void paidCounterOrderCannotBeCancelledOrRestocked() throws Exception {
+        Fixture fixture = fixture(5, 1, 12_500, 0.0);
+        jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true where singleton_id=true");
+        Order order = commerce.checkout(fixture.userId(), pickupRequest("PAY_AT_PICKUP"));
+        shopCounter.collectOrderPayment(fixture.userId(), order.id(), new CounterPaymentRequest("CASH", null));
+
+        assertThatThrownBy(() -> commerce.cancel(fixture.userId(), order.id(), "Customer changed mind"))
+                .isInstanceOf(com.jnapanam.sportszone.common.exception.ConflictException.class)
+                .hasMessageContaining("already been paid");
+        assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId())).isEqualTo(4);
+        assertThat(textValue("select status from commerce_orders where id=?", order.id())).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    void cancelledOrderCannotBePaidAtCounterOrReturnedAgain() throws Exception {
+        Fixture fixture = fixture(5, 1, 12_500, 0.0);
+        jdbc.update("update commerce_shop_settings set pay_at_facility_enabled=true where singleton_id=true");
+        Order order = commerce.checkout(fixture.userId(), pickupRequest("PAY_AT_PICKUP"));
+        commerce.cancel(fixture.userId(), order.id(), "Customer cancelled before collection");
+
+        assertThatThrownBy(() -> shopCounter.collectOrderPayment(fixture.userId(), order.id(),
+                new CounterPaymentRequest("UPI", "UTR-CANCELLED")))
+                .isInstanceOf(com.jnapanam.sportszone.common.exception.ConflictException.class)
+                .hasMessageContaining("cannot receive counter payment");
+        assertThatThrownBy(() -> shopCounter.createReturn(fixture.userId(),
+                new com.jnapanam.sportszone.commerce.dto.ShopCounterDtos.ReturnRequest(
+                        "ORDER", order.id(), fixture.variantId(), 1, "REFUND", null, "Return request")))
+                .isInstanceOf(com.jnapanam.sportszone.common.exception.ConflictException.class)
+                .hasMessageContaining("Cancelled orders");
+        assertThat(value("select stock_quantity from commerce_variants where id=?", fixture.variantId())).isEqualTo(5);
+        assertThat(textValue("select payment_status from commerce_orders where id=?", order.id())).isEqualTo("PENDING");
+    }
+
+    private String textValue(String sql, Object argument) {
+        return jdbc.queryForObject(sql, String.class, argument);
+    }
+
+    @Test
     void checkoutRollsBackWhenCartQuantityExceedsAvailableStock() throws Exception {
         Fixture fixture = fixture(1, 2, 10_000, 18.0);
 
