@@ -10,7 +10,7 @@ test('admin commerce exposes only valid next shop order states',async()=>{
  assert.match(page,/if\(current==="PLACED"\)next=\["CONFIRMED"\]/);
  assert.match(page,/else if\(current==="CONFIRMED"\)next=\["PACKED"\]/);
  assert.match(page,/order\.fulfilment_type==="PICKUP"\)next=\["READY_FOR_PICKUP"\]/);
- assert.match(page,/order\.fulfilment_type==="DELIVERY"&&order\.payment_status==="PAID"\)next=\["SHIPPED"\]/);
+ assert.match(page,/else if\(order\.payment_status==="PAID"\)next=\["SHIPPED"\]/);
  assert.match(page,/\["PLACED","CONFIRMED"\]\.includes\(current\)&&order\.payment_status!=="PAID"\)next\.push\("CANCELLED"\)/);
  assert.match(page,/order\.payment_status==="PAID"\?\["DELIVERED"\]:\[\]/);
 });
