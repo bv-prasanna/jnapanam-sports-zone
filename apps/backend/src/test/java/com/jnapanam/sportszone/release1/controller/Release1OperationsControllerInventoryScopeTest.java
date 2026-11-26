@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.jnapanam.sportszone.admin.service.OperatorAssignmentService;
 import com.jnapanam.sportszone.common.exception.NotFoundException;
 import com.jnapanam.sportszone.release1.service.Release1OperationsService;
+import com.jnapanam.sportszone.tournament.service.TournamentService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,8 +17,9 @@ import org.springframework.security.core.Authentication;
 class Release1OperationsControllerInventoryScopeTest {
     private final Release1OperationsService service = mock(Release1OperationsService.class);
     private final OperatorAssignmentService assignments = mock(OperatorAssignmentService.class);
+    private final TournamentService tournaments = mock(TournamentService.class);
     private final Release1OperationsController controller =
-            new Release1OperationsController(service, assignments);
+            new Release1OperationsController(service, assignments, tournaments);
     private final UUID operatorId = UUID.randomUUID();
     private final UUID assignedFacilityId = UUID.randomUUID();
     private final Authentication authentication = mock(Authentication.class);
