@@ -3,6 +3,7 @@ package com.jnapanam.sportszone.release1.controller;
 import com.jnapanam.sportszone.admin.service.OperatorAssignmentService;
 import com.jnapanam.sportszone.common.exception.NotFoundException;
 import com.jnapanam.sportszone.release1.service.Release1OperationsService;
+import com.jnapanam.sportszone.tournament.service.TournamentService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,10 +17,13 @@ import org.springframework.web.bind.annotation.*;
 public class Release1OperationsController {
     private final Release1OperationsService service;
     private final OperatorAssignmentService assignments;
+    private final TournamentService tournaments;
 
-    public Release1OperationsController(Release1OperationsService service, OperatorAssignmentService assignments) {
+    public Release1OperationsController(Release1OperationsService service, OperatorAssignmentService assignments,
+            TournamentService tournaments) {
         this.service = service;
         this.assignments = assignments;
+        this.tournaments = tournaments;
     }
 
     @PostMapping("/support/{id}")
@@ -74,8 +78,13 @@ public class Release1OperationsController {
 
     @PutMapping("/tournaments/{id}/standings/{team}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','ORGANIZER')")
-    public Map<String, Object> standing(@PathVariable UUID id, @PathVariable UUID team,
+    public Map<String, Object> standing(Authentication auth, @PathVariable UUID id, @PathVariable UUID team,
             @RequestBody Map<String, Object> body) {
+        UUID actorId = uid(auth);
+        if (!assignments.isAdministratorActor(actorId) && tournaments.managedBy(actorId).stream()
+                .noneMatch(tournament -> tournament.id().equals(id))) {
+            throw new NotFoundException("Tournament not found");
+        }
         return service.standing(id, team, num(body, "played"), num(body, "won"), num(body, "drawn"),
                 num(body, "lost"), num(body, "points"), num(body, "scoreFor"), num(body, "scoreAgainst"),
                 Double.parseDouble(String.valueOf(body.getOrDefault("tieBreakValue", 0))));

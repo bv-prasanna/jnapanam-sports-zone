@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.jnapanam.sportszone.admin.service.OperatorAssignmentService;
 import com.jnapanam.sportszone.common.exception.NotFoundException;
 import com.jnapanam.sportszone.release1.service.Release1OperationsService;
+import com.jnapanam.sportszone.tournament.service.TournamentService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,8 +17,9 @@ import org.springframework.security.core.Authentication;
 class Release1OperationsControllerInventoryScopeTest {
     private final Release1OperationsService service = mock(Release1OperationsService.class);
     private final OperatorAssignmentService assignments = mock(OperatorAssignmentService.class);
+    private final TournamentService tournaments = mock(TournamentService.class);
     private final Release1OperationsController controller =
-            new Release1OperationsController(service, assignments);
+            new Release1OperationsController(service, assignments, tournaments);
     private final UUID operatorId = UUID.randomUUID();
     private final UUID assignedFacilityId = UUID.randomUUID();
     private final Authentication authentication = mock(Authentication.class);
@@ -72,4 +74,18 @@ class Release1OperationsControllerInventoryScopeTest {
                 Map.of("equipmentName", "General stock", "totalQuantity", 10)));
         verify(assignments, never()).assertFacilityAllowed(any(), any());
     }
-}
+
+    @Test
+    void organizerCannotUpdateStandingsForTournamentTheyDoNotManage() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        when(authentication.getName()).thenReturn(operatorId.toString());
+        when(assignments.isAdministratorActor(operatorId)).thenReturn(false);
+        when(tournaments.managedBy(operatorId)).thenReturn(List.of());
+
+        assertThrows(NotFoundException.class, () -> controller.standing(authentication, tournamentId, teamId,
+                Map.of("played", 1, "won", 1, "drawn", 0, "lost", 0, "points", 3,
+                        "scoreFor", 2, "scoreAgainst", 0)));
+        verifyNoInteractions(service);
+    }
+}\n
