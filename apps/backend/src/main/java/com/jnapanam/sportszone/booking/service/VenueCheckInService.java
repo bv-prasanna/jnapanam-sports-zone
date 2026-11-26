@@ -47,7 +47,7 @@ public class VenueCheckInService {
         Booking booking = bookings.findLockedByBookingNumber(bookingNumber)
                 .orElseThrow(() -> new NotFoundException("Booking not found"));
         if (!booking.getUser().getId().equals(userId)) throw new NotFoundException("Booking not found");
-        if (!booking.getSlot().getDate().equals(LocalDate.now())) throw new ConflictException("Only today's booking can be checked in");
+        if (!booking.getSlot().getDate().equals(LocalDate.now(VENUE_ZONE))) throw new ConflictException("Only today's booking can be checked in");
         if (booking.getStatus() != BookingStatus.CONFIRMED) throw new ConflictException("Only confirmed bookings can be checked in");
         if (booking.getPaymentStatus() != BookingPaymentStatus.PAID
                 && booking.getPaymentStatus() != BookingPaymentStatus.NOT_REQUIRED) {
