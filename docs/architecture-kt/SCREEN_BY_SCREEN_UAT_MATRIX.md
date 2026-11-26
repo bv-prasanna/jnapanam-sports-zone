@@ -1,6 +1,6 @@
 # Jnapanam — Screen-by-screen UAT execution matrix
 
-> Generated from GitHub `main` file inventory on 2026-11-10. **This matrix is a test plan, not a claim that a visual or device test passed.** It lists 38 web route page files and 22 mobile screen files. Test all routes using customer, operator, shopkeeper and admin accounts with different permissions.
+> Generated from GitHub `main` file inventory on 2026-11-10. **This matrix is a test plan, not a claim that a visual or device test passed.** It lists 39 web route page files and 22 mobile screen files. Test all routes using customer, operator, shopkeeper and admin accounts with different permissions.
 
 ## Execution protocol
 
@@ -24,6 +24,7 @@
 | `/admin/features` | `apps/web/app/admin/features/page.tsx` | ADMIN / SUPER_ADMIN | Unauthorized role, failed fetch vs no records, bulk actions, tables 375px, confirm/destructive action | Not executed |
 | `/admin/notification-providers` | `apps/web/app/admin/notification-providers/page.tsx` | ADMIN / SUPER_ADMIN | Unauthorized role, failed fetch vs no records, bulk actions, tables 375px, confirm/destructive action | Not executed |
 | `/admin/operator-assignments` | `apps/web/app/admin/operator-assignments/page.tsx` | ADMIN / SUPER_ADMIN | Unauthorized role, failed fetch vs no records, bulk actions, tables 375px, confirm/destructive action | Not executed |
+| `/admin/promotions` | `apps/web/app/admin/promotions/page.tsx` | ADMIN / SUPER_ADMIN | Coupon validation, usage limits, expired/inactive offer, concurrent redemption, 401/403/500, responsive dialog | Not executed |
 | `/admin` | `apps/web/app/admin/page.tsx` | ADMIN / SUPER_ADMIN | Unauthorized role, failed fetch vs no records, bulk actions, tables 375px, confirm/destructive action | Not executed |
 | `/admin/player-growth` | `apps/web/app/admin/player-growth/page.tsx` | ADMIN / SUPER_ADMIN | Unauthorized role, failed fetch vs no records, bulk actions, tables 375px, confirm/destructive action | Not executed |
 | `/admin/pricing` | `apps/web/app/admin/pricing/page.tsx` | ADMIN / SUPER_ADMIN | Unauthorized role, failed fetch vs no records, bulk actions, tables 375px, confirm/destructive action | Not executed |
