@@ -156,6 +156,11 @@ public class OperatorAssignmentService {
         return user;
     }
 
+    @Transactional(readOnly = true)
+    public boolean isAdministratorActor(UUID id) {
+        return isAdministrator(id);
+    }
+
     private boolean isAdministrator(UUID id) {
         User user = users.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
         return user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN || r.getName() == RoleName.SUPER_ADMIN);
