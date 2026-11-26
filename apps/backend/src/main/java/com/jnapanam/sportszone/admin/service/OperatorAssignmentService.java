@@ -31,7 +31,6 @@ public class OperatorAssignmentService {
         this.facilities = facilities;
     }
 
-
     /** A logged-in operator sees only assigned facilities; admin sees the full catalogue. */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> facilitiesForActor(UUID actorId) {
@@ -122,6 +121,27 @@ public class OperatorAssignmentService {
                         + "where lower(b.booking_number)=lower(?) and a.operator_id=?", Integer.class,
                 bookingNumber, actorId);
         if (count == null || count == 0) throw new NotFoundException("Booking not found");
+    }
+
+    /** Prevents operators from creating walk-ins against slots outside their assigned facilities. */
+    @Transactional(readOnly = true)
+    public void assertSlotAllowed(UUID actorId, UUID slotId) {
+        if (isAdministrator(actorId)) return;
+        requireOperator(actorId);
+        Integer count = jdbc.queryForObject("select count(*) from booking_slots s "
+                        + "join operator_facility_assignments a on a.facility_id=s.facility_id "
+                        + "where s.id=? and a.operator_id=?", Integer.class, slotId, actorId);
+        if (count == null || count == 0) throw new NotFoundException("Slot not found");
+    }
+
+    /** Emergency closure is a facility-wide destructive action and must be scoped to assignments. */
+    @Transactional(readOnly = true)
+    public void assertFacilityAllowed(UUID actorId, UUID facilityId) {
+        if (isAdministrator(actorId)) return;
+        requireOperator(actorId);
+        Integer count = jdbc.queryForObject("select count(*) from operator_facility_assignments "
+                        + "where facility_id=? and operator_id=?", Integer.class, facilityId, actorId);
+        if (count == null || count == 0) throw new NotFoundException("Facility not found");
     }
 
     private Set<UUID> assignedFacilityIds(UUID operatorId) {
