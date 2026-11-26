@@ -62,7 +62,7 @@ class OperatorAssignmentServiceTest {
         when(users.findById(adminId)).thenReturn(Optional.of(admin));
 
         assertDoesNotThrow(() -> service.assertFacilityAllowed(adminId, facilityId));
-        verify(jdbc, never()).queryForObject(anyString(), eq(Integer.class), any(), any());
+        verifyNoInteractions(jdbc);
     }
 
     @Test
