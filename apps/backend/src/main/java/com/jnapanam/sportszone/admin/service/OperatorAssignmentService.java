@@ -103,6 +103,17 @@ public class OperatorAssignmentService {
         return result;
     }
 
+    /** Prevents an operator from performing front-desk actions outside assigned facilities. */
+    @Transactional(readOnly = true)
+    public void assertFacilityAllowed(UUID actorId, UUID facilityId) {
+        if (isAdministrator(actorId)) return;
+        requireOperator(actorId);
+        Integer count = jdbc.queryForObject(
+                "select count(*) from operator_facility_assignments where facility_id=? and operator_id=?",
+                Integer.class, facilityId, actorId);
+        if (count == null || count == 0) throw new NotFoundException("Facility not found");
+    }
+
     @Transactional(readOnly = true)
     public void assertBookingAllowed(UUID actorId, UUID bookingId) {
         if (isAdministrator(actorId)) return;
