@@ -74,4 +74,18 @@ class Release1OperationsControllerInventoryScopeTest {
                 Map.of("equipmentName", "General stock", "totalQuantity", 10)));
         verify(assignments, never()).assertFacilityAllowed(any(), any());
     }
-}
+
+    @Test
+    void organizerCannotUpdateStandingsForTournamentTheyDoNotManage() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        when(authentication.getName()).thenReturn(operatorId.toString());
+        when(assignments.isAdministratorActor(operatorId)).thenReturn(false);
+        when(tournaments.managedBy(operatorId)).thenReturn(List.of());
+
+        assertThrows(NotFoundException.class, () -> controller.standing(authentication, tournamentId, teamId,
+                Map.of("played", 1, "won", 1, "drawn", 0, "lost", 0, "points", 3,
+                        "scoreFor", 2, "scoreAgainst", 0)));
+        verifyNoInteractions(service);
+    }
+}\n
