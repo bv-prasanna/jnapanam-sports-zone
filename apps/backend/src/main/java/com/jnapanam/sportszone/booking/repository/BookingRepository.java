@@ -11,6 +11,9 @@ public interface BookingRepository extends JpaRepository<Booking,UUID>{
  @Lock(LockModeType.PESSIMISTIC_WRITE)
  @Query("select b from Booking b where b.id=:id")
  Optional<Booking> findLockedById(@Param("id") UUID id);
+ @Lock(LockModeType.PESSIMISTIC_WRITE)
+ @Query("select b from Booking b where lower(b.bookingNumber)=lower(:bookingNumber)")
+ Optional<Booking> findLockedByBookingNumber(@Param("bookingNumber") String bookingNumber);
  List<Booking> findByUserIdOrderByConfirmedAtDesc(UUID userId);
  Optional<Booking> findByBookingNumberIgnoreCase(String bookingNumber);
  List<Booking> findAllByOrderByConfirmedAtDesc();
